@@ -18,7 +18,8 @@
     "prepare": "tsdx build"
   },
   "peerDependencies": {
-    "react": ">=16"
+    "next": "^9.4.0",
+    "react": "^16.13.1"
   },
   "husky": {
     "hooks": {
