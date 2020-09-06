@@ -1,39 +1,72 @@
-# @happykit/flags
+## `@happykit/flags`
 
-- [@happykit/flags](#happykitflags)
-  - [Setup](#setup)
-  - [Basic Usage](#basic-usage)
-  - [Advanced Usage](#advanced-usage)
-    - [With default flag values](#with-default-flag-values)
-    - [With user targeting](#with-user-targeting)
-    - [With server-side rendering](#with-server-side-rendering)
-    - [With static site generation](#with-static-site-generation)
-    - [With disabled revalidation](#with-disabled-revalidation)
-  - [Examples](#examples)
-    - [Code splitting](#code-splitting)
+Feature Flags for Next.js by [happykit.dev](https://happykit.dev/)
+
+- [`@happykit/flags`](#happykitflags)
+- [Features](#features)
+- [Installation](#installation)
+- [Setup](#setup)
+- [Basic Usage](#basic-usage)
+- [Advanced Usage](#advanced-usage)
+  - [With default flag values](#with-default-flag-values)
+  - [With user targeting](#with-user-targeting)
+  - [With server-side rendering](#with-server-side-rendering)
+  - [With static site generation](#with-static-site-generation)
+  - [With disabled revalidation](#with-disabled-revalidation)
+- [Examples](#examples)
+  - [Code splitting](#code-splitting)
+
+## Features
+
+- written for Next.js
+- integrate using a simple `useFlags` hook
+- only 1 kB in size
+- server-side rendering support
+- extremely fast flag responses (under 100ms on average)
+- target individual users
+- optional static site generation support: redeploy your website on flag changes
+
+## Installation
+
+```
+npm install @happykit/flags
+```
 
 ## Setup
 
+Configure your application in `_app.js`.
+
 ```js
 // _app.js
-import { configure } from "@happykit/flags";
+import { configure } from '@happykit/flags';
 
-configure({
-  clientId: process.env.NEXT_PUBLIC_FLAGS_CLIENT_ID,
-});
+configure({ clientId: process.env.NEXT_PUBLIC_FLAGS_CLIENT_ID });
 ```
+
+Register on [`happykit.dev`](https://happykit.dev/signup) to receive your `clientId`. You'll find it in the **Keys** section of your project settings once you created a project.
+
+Make sure the environment variable containing the `clientId` starts with `NEXT_PUBLIC_` so the value is available on the client side.
+
+Store your `clientId` in `.env.local`:
+
+```bash
+# .env.local
+NEXT_PUBLIC_FLAGS_CLIENT_ID=flags_pub_development_xxxxxxxxxx
+```
+
+Later on, don't forget to also provide the environment variable in production.
 
 ## Basic Usage
 
-Flags are loaded on the client.
+You can load flags on the client with a single `useFlags` call.
 
 ```js
 // pages/foo.js
-import { useFlags, getFlags } from "@happykit/flags";
+import { useFlags, getFlags } from '@happykit/flags';
 
 export default function FooPage(props) {
   const flags = useFlags();
-  return flags.xzibit ? "Yo dawg" : "Hello";
+  return flags.xzibit ? 'Yo dawg' : 'Hello';
 }
 ```
 
@@ -43,11 +76,11 @@ export default function FooPage(props) {
 
 ```js
 // pages/foo.js
-import { useFlags, getFlags } from "@happykit/flags";
+import { useFlags, getFlags } from '@happykit/flags';
 
 export default function FooPage(props) {
   const flags = useFlags({ initialFlags: { xzibit: true } });
-  return flags.xzibit ? "Yo dawg" : "Hello";
+  return flags.xzibit ? 'Yo dawg' : 'Hello';
 }
 ```
 
@@ -57,11 +90,11 @@ You can provide a `user` as the first argument. Use this to enable per-user targ
 
 ```js
 // pages/foo.js
-import { useFlags, getFlags } from "@happykit/flags";
+import { useFlags, getFlags } from '@happykit/flags';
 
 export default function FooPage(props) {
-  const flags = useFlags({ user: { key: "user-id" } });
-  return flags.xzibit ? "Yo dawg" : "Hello";
+  const flags = useFlags({ user: { key: 'user-id' } });
+  return flags.xzibit ? 'Yo dawg' : 'Hello';
 }
 ```
 
@@ -72,18 +105,18 @@ Or if you're using [prerendering](#with-server-side-rendering)
 
 ```js
 // pages/foo.js
-import { useFlags, getFlags } from "@happykit/flags";
+import { useFlags, getFlags } from '@happykit/flags';
 
 export default function FooPage(props) {
   const flags = useFlags({
     user: props.user,
     initialFlags: props.initialFlags,
   });
-  return flags.xzibit ? "Yo dawg" : "Hello";
+  return flags.xzibit ? 'Yo dawg' : 'Hello';
 }
 
 export const getServerSideProps = () => {
-  const user = { key: "user-id" };
+  const user = { key: 'user-id' };
   const initialFlags = getFlags(user);
   return { props: { user, initialFlags } };
 };
@@ -111,11 +144,11 @@ Provide any of these attributes to store them in HappyKit. You will be able to u
 
 ```js
 // pages/foo.js
-import { useFlags, getFlags } from "@happykit/flags";
+import { useFlags, getFlags } from '@happykit/flags';
 
 export default function FooPage(props) {
   const flags = useFlags({ initialFlags: props.initialFlags });
-  return flags.xzibit ? "Yo dawg" : "Hello";
+  return flags.xzibit ? 'Yo dawg' : 'Hello';
 }
 
 export const getServerSideProps = () => {
@@ -128,11 +161,11 @@ export const getServerSideProps = () => {
 
 ```js
 // pages/foo.js
-import { useFlags, getFlags } from "@happykit/flags";
+import { useFlags, getFlags } from '@happykit/flags';
 
 export default function FooPage(props) {
   const flags = useFlags({ initialFlags: props.initialFlags });
-  return flags.xzibit ? "Yo dawg" : "Hello";
+  return flags.xzibit ? 'Yo dawg' : 'Hello';
 }
 
 export const getStaticProps = () => {
@@ -147,11 +180,11 @@ export const getStaticProps = () => {
 
 ```js
 // pages/foo.js
-import { useFlags, getFlags } from "@happykit/flags";
+import { useFlags, getFlags } from '@happykit/flags';
 
 export default function FooPage(props) {
   const flags = useFlags({ revalidateOnFocus: false });
-  return flags.xzibit ? "Yo dawg" : "Hello";
+  return flags.xzibit ? 'Yo dawg' : 'Hello';
 }
 
 export const getStaticProps = () => {
