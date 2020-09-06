@@ -170,6 +170,9 @@ export function useFlags(options?: FlagOptions): Flags {
       // skip responses to outdated requests
       if (fetchId !== latestFetchId) return;
 
+      // skip invalid responses
+      if (typeof nextFlags !== 'object') return;
+
       setFlags(nextFlags);
     };
 
