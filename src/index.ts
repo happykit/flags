@@ -109,7 +109,33 @@ function createBody(
   return body;
 }
 
-export function useFlags(options?: FlagOptions): Flags {
+async function fetchFlags(
+  config: FlagConfig,
+  userAttributes: FlagUserAttributes | null
+): Promise<Flags | null> {
+  try {
+    const response = await fetch(config.endpoint, {
+      method: 'POST',
+      body: JSON.stringify(createBody(config.clientId, userAttributes)),
+    });
+    if (!response.ok) return null;
+
+    const flags: Flags = await response.json();
+    return flags;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
+
+/**
+ * Fetch flags primitive. Use this only if you're interested in the loading
+ * state, use useFlag otherwise.
+ *
+ * @param options flag options
+ * @returns null while loading, Flags otherwise
+ */
+export function usePrimitiveFlags(options?: FlagOptions): Flags | null {
   // use "null" to indicate that no initial flags were provided, but never
   // return "null" from the hook
   const [flags, setFlags] = React.useState<Flags | null>(
@@ -127,17 +153,19 @@ export function useFlags(options?: FlagOptions): Flags {
   React.useEffect(() => {
     if (flags !== null) return;
 
-    (async () => {
-      const response = await fetch(config.endpoint, {
-        method: 'POST',
-        body: JSON.stringify(createBody(config.clientId, userAttributes)),
-      });
-      if (!response.ok) return;
+    let active = true;
 
-      const nextFlags: Flags = await response.json();
-
+    fetchFlags(config, userAttributes).then(nextFlags => {
+      // skip in case the request failed
+      if (!nextFlags) return;
+      // skip in case the component unmounted
+      if (!active) return;
       setFlags(nextFlags);
-    })();
+    });
+
+    return () => {
+      active = false;
+    };
   }, [flags]);
 
   // revalidate when incoming user changes
@@ -159,21 +187,25 @@ export function useFlags(options?: FlagOptions): Flags {
     const listener = async () => {
       const fetchId = (latestFetchId = Date.now());
 
-      const response = await fetch(config.endpoint, {
-        method: 'POST',
-        body: JSON.stringify(createBody(config.clientId, userAttributes)),
-      });
-      if (!response.ok) return;
+      try {
+        const response = await fetch(config.endpoint, {
+          method: 'POST',
+          body: JSON.stringify(createBody(config.clientId, userAttributes)),
+        });
+        if (!response.ok) return;
 
-      const nextFlags: Flags = await response.json();
+        const nextFlags: Flags = await response.json();
 
-      // skip responses to outdated requests
-      if (fetchId !== latestFetchId) return;
+        // skip responses to outdated requests
+        if (fetchId !== latestFetchId) return;
 
-      // skip invalid responses
-      if (typeof nextFlags !== 'object') return;
+        // skip invalid responses
+        if (typeof nextFlags !== 'object') return;
 
-      setFlags(nextFlags);
+        setFlags(nextFlags);
+      } catch (error) {
+        console.error(error);
+      }
     };
 
     window.addEventListener('focus', listener);
@@ -182,17 +214,30 @@ export function useFlags(options?: FlagOptions): Flags {
     };
   }, [revalidateOnFocus, setFlags, userAttributes]);
 
+  return flags;
+}
+
+/**
+ * Fetches feature flags from HappyKit
+ * @param options Options like initial flags or the targeted user.
+ */
+export function useFlags(options?: FlagOptions): Flags {
+  const flags = usePrimitiveFlags(options);
   return flags === null ? {} : flags;
 }
 
 export const getFlags =
   typeof window === 'undefined'
-    ? function getFlags() {
-        console.log('getFlags server', typeof window);
-        return config;
+    ? async function getFlags(userAttributes?: FlagUserAttributes | null) {
+        const flags = await fetchFlags(
+          config,
+          userAttributes ? userAttributes : null
+        );
+        // answer with no flags in case the fetch failed
+        return flags ? flags : {};
       }
-    : () => {
+    : async () => {
         throw new Error(
-          '@happykit/flags: getFlags may only be called from the server bundle'
+          '@happykit/flags: getFlags may not be called on the client'
         );
       };
