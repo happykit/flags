@@ -1,0 +1,195 @@
+import * as React from 'react';
+
+/* global fetch:false */
+
+type Flags = { [key: string]: boolean | number | string };
+
+type FlagConfig = {
+  clientId?: string;
+  endpoint: string;
+};
+
+type FlagUserAttributes = {
+  key: string;
+  email?: string;
+  name?: string;
+  avatar?: string;
+  country?: string;
+};
+
+type FlagOptions = {
+  user?: FlagUserAttributes;
+  initialFlags?: Flags;
+  revalidateOnFocus?: boolean;
+};
+
+const defaultConfig: FlagConfig = {
+  endpoint: 'https://happykit.dev/api/flags',
+};
+
+let config: FlagConfig = defaultConfig;
+
+export const configure = (
+  nextConfig: Partial<FlagConfig> & { clientId: string }
+) => {
+  if (typeof nextConfig !== 'object')
+    throw new Error('@happykit/flags: config must be an object');
+
+  if (typeof nextConfig.clientId !== 'string')
+    throw new Error('@happykit/flags: Missing clientId');
+
+  config = Object.assign({}, defaultConfig, nextConfig);
+};
+
+function toUserAttributes(user: any): FlagUserAttributes | null {
+  if (typeof user !== 'object') return null;
+
+  // users must have a key
+  if (typeof user.key !== 'string' || user.key.trim().length === 0) return null;
+  const userAttributes: FlagUserAttributes = { key: user.key.trim() };
+
+  if (typeof user?.email === 'string') {
+    userAttributes['email'] = user.email;
+  }
+
+  if (typeof user?.name === 'string') {
+    userAttributes['name'] = user.name;
+  }
+
+  if (typeof user?.avatar === 'string') {
+    userAttributes['avatar'] = user.avatar;
+  }
+
+  if (typeof user?.country === 'string') {
+    userAttributes['country'] = user.country;
+  }
+
+  return userAttributes;
+}
+
+// copied from https://github.com/moroshko/shallow-equal/blob/1a6bf512cf896b44f3b7bb3d493411a7c5339a25/src/objects.js
+function shallowEqual(objA: any, objB: any) {
+  if (objA === objB) return true;
+
+  if (!objA || !objB) return false;
+
+  var aKeys = Object.keys(objA);
+  var bKeys = Object.keys(objB);
+  var len = aKeys.length;
+
+  if (bKeys.length !== len) return false;
+
+  for (var i = 0; i < len; i++) {
+    var key = aKeys[i];
+
+    if (
+      objA[key] !== objB[key] ||
+      !Object.prototype.hasOwnProperty.call(objB, key)
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function createBody(
+  clientId: FlagConfig['clientId'],
+  userAttributes: FlagUserAttributes | null
+) {
+  const body: {
+    envKey: FlagConfig['clientId'];
+    user?: FlagUserAttributes;
+  } = {
+    envKey: clientId,
+  };
+
+  if (userAttributes) body.user = userAttributes;
+
+  return body;
+}
+
+export function useFlags(options?: FlagOptions): Flags {
+  // use "null" to indicate that no initial flags were provided, but never
+  // return "null" from the hook
+  const [flags, setFlags] = React.useState<Flags | null>(
+    options?.initialFlags ? options.initialFlags : null
+  );
+
+  const [
+    userAttributes,
+    setUserAttributes,
+  ] = React.useState<FlagUserAttributes | null>(
+    typeof options?.user === 'object' ? toUserAttributes(options.user) : null
+  );
+
+  // fetch on mount when no initialFlags were provided
+  React.useEffect(() => {
+    if (flags !== null) return;
+
+    (async () => {
+      const response = await fetch(config.endpoint, {
+        method: 'POST',
+        body: JSON.stringify(createBody(config.clientId, userAttributes)),
+      });
+      if (!response.ok) return;
+
+      const nextFlags: Flags = await response.json();
+
+      setFlags(nextFlags);
+    })();
+  }, [flags]);
+
+  // revalidate when incoming user changes
+  const incomingUser = options?.user;
+  React.useEffect(() => {
+    const incomingUserAttributes = toUserAttributes(incomingUser);
+    if (shallowEqual(userAttributes, incomingUserAttributes)) return;
+    setUserAttributes(incomingUserAttributes);
+  }, [userAttributes, setUserAttributes, incomingUser]);
+
+  // revalidate on focus
+  const revalidateOnFocus = options?.revalidateOnFocus;
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    // undefined is treated as truthy since revalidateOnFocus defaults to true
+    if (revalidateOnFocus === false) return;
+
+    let latestFetchId: number;
+    const listener = async () => {
+      const fetchId = (latestFetchId = Date.now());
+
+      const response = await fetch(config.endpoint, {
+        method: 'POST',
+        body: JSON.stringify(createBody(config.clientId, userAttributes)),
+      });
+      if (!response.ok) return;
+
+      const nextFlags: Flags = await response.json();
+
+      // skip responses to outdated requests
+      if (fetchId !== latestFetchId) return;
+
+      setFlags(nextFlags);
+    };
+
+    window.addEventListener('focus', listener);
+    return () => {
+      window.removeEventListener('focus', listener);
+    };
+  }, [revalidateOnFocus, setFlags, userAttributes]);
+
+  return flags === null ? {} : flags;
+}
+
+export const getFlags =
+  typeof window === 'undefined'
+    ? function getFlags() {
+        console.log('getFlags server', typeof window);
+        return config;
+      }
+    : () => {
+        throw new Error(
+          '@happykit/flags: getFlags may only be called from the server bundle'
+        );
+      };
