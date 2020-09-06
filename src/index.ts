@@ -7,6 +7,7 @@ type Flags = { [key: string]: boolean | number | string };
 type FlagConfig = {
   clientId?: string;
   endpoint: string;
+  defaultFlags?: Flags;
 };
 
 type FlagUserAttributes = {
@@ -25,6 +26,7 @@ type FlagOptions = {
 
 const defaultConfig: FlagConfig = {
   endpoint: 'https://happykit.dev/api/flags',
+  defaultFlags: {},
 };
 
 let config: FlagConfig = defaultConfig;
@@ -217,13 +219,29 @@ export function usePrimitiveFlags(options?: FlagOptions): Flags | null {
   return flags;
 }
 
+function addDefaults(flags: Flags | null, defaultFlags: Flags = {}) {
+  return Object.assign({}, { ...defaultFlags }, flags);
+}
+
 /**
- * Fetches feature flags from HappyKit
+ * Returns feature flags from HappyKit
  * @param options Options like initial flags or the targeted user.
  */
 export function useFlags(options?: FlagOptions): Flags {
   const flags = usePrimitiveFlags(options);
-  return flags === null ? {} : flags;
+
+  const defaultFlags = config?.defaultFlags;
+  const [flagsWithDefaults, setFlagsWithDefaults] = React.useState<Flags>(
+    addDefaults(flags, defaultFlags)
+  );
+
+  React.useEffect(() => {
+    const nextFlagsWithDefaults = addDefaults(flags, defaultFlags);
+    if (shallowEqual(flagsWithDefaults, nextFlagsWithDefaults)) return;
+    setFlagsWithDefaults(nextFlagsWithDefaults);
+  }, [flags, flagsWithDefaults]);
+
+  return flagsWithDefaults;
 }
 
 export const getFlags =

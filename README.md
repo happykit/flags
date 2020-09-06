@@ -8,10 +8,12 @@ Feature Flags for Next.js by [happykit.dev](https://happykit.dev/)
 - [Setup](#setup)
 - [Basic Usage](#basic-usage)
 - [Advanced Usage](#advanced-usage)
-  - [With default flag values](#with-default-flag-values)
   - [With user targeting](#with-user-targeting)
+  - [Configuring application-wide default values](#configuring-application-wide-default-values)
+  - [With initial flag values](#with-initial-flag-values)
   - [With server-side rendering](#with-server-side-rendering)
   - [With static site generation](#with-static-site-generation)
+  - [With static site generation only](#with-static-site-generation-only)
   - [With disabled revalidation](#with-disabled-revalidation)
 - [Examples](#examples)
   - [Code splitting](#code-splitting)
@@ -72,18 +74,6 @@ export default function FooPage(props) {
 
 ## Advanced Usage
 
-### With default flag values
-
-```js
-// pages/foo.js
-import { useFlags, getFlags } from '@happykit/flags';
-
-export default function FooPage(props) {
-  const flags = useFlags({ initialFlags: { xzibit: true } });
-  return flags.xzibit ? 'Yo dawg' : 'Hello';
-}
-```
-
 ### With user targeting
 
 You can provide a `user` as the first argument. Use this to enable per-user targeting of your flags. A `user` must at least have a `key` property.
@@ -140,6 +130,34 @@ Provide any of these attributes to store them in HappyKit. You will be able to u
 
 <br />
 
+### Configuring application-wide default values
+
+You can configure application-wide default values for flags. These defaults will be used while your flags are being loaded (unless you're using server-side rendering). They'll also be used as fallback values in case the flags couldn't be loaded from HappyKit.
+
+```js
+// _app.js
+import { configure } from '@happykit/flags';
+
+configure({
+  clientId: process.env.NEXT_PUBLIC_FLAGS_CLIENT_ID,
+  defaultValues: { xzibit: true },
+});
+```
+
+### With initial flag values
+
+Being able to set initial flag values is the first step towards server-side rendering. When you pass in `initialFlags` the flags will be set from the beginning. This is avoids the first request on the client.
+
+```js
+// pages/foo.js
+import { useFlags, getFlags } from '@happykit/flags';
+
+export default function FooPage(props) {
+  const flags = useFlags({ initialFlags: { xzibit: true } });
+  return flags.xzibit ? 'Yo dawg' : 'Hello';
+}
+```
+
 ### With server-side rendering
 
 ```js
@@ -174,6 +192,28 @@ export const getStaticProps = () => {
 };
 ```
 
+### With static site generation only
+
+You don't even need to use `useFlags` in case you're regenerating your site on flag changes anyways.
+
+HappyKit can trigger redeployment of your site when you change your flags by calling a [Deploy Hook](https://vercel.com/docs/more/deploy-hooks) you specify.
+
+```js
+// pages/foo.js
+import { getFlags } from '@happykit/flags';
+
+export default function FooPage(props) {
+  return props.flags.xzibit ? 'Yo dawg' : 'Hello';
+}
+
+export const getStaticProps = () => {
+  const initialFlags = getFlags();
+  return { props: { initialFlags } };
+};
+```
+
+_Note that you lose some features like revalidation when you go for this plain approach. This also means visitor will only see the changes once your site is redeployed instead of right away._
+
 ### With disabled revalidation
 
 - `revalidateOnFocus = true`: auto revalidate when window gets focused
@@ -197,13 +237,13 @@ export const getStaticProps = () => {
 
 ### Code splitting
 
-If you have two variants for a page and you only want to render one depending on a feature flag, we can keep the client-side bundle small by using dynamic imports.
+If you have two variants for a page and you only want to render one depending on a feature flag, you're able to keep the client-side bundle small by using dynamic imports.
 
 ```js
 // TODO
 ```
 
-We can even go a step further and preload the flags on the server, so that the client receives a prerenderd page.
+You can even go a step further and preload the flags on the server, so that the client receives a prerenderd page.
 
 ```js
 // TODO
