@@ -31,6 +31,13 @@ const defaultConfig: FlagConfig = {
 
 let config: FlagConfig = defaultConfig;
 
+/**
+ * For testing purposes only
+ */
+export const _resetConfig = () => {
+  config = defaultConfig;
+};
+
 export const configure = (
   nextConfig: Partial<FlagConfig> & { clientId: string }
 ) => {

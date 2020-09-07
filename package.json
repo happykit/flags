@@ -32,13 +32,24 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
+  "jest": {
+    "automock": false,
+    "setupFiles": [
+      "./jest/fetch.js",
+      "./jest/mutation-observer.js"
+    ]
+  },
   "name": "@happykit/flags",
   "author": "Dominik Ferber",
   "module": "dist/flags.esm.js",
   "devDependencies": {
+    "@sheerun/mutationobserver-shim": "0.3.3",
+    "@testing-library/jest-dom": "5.11.4",
+    "@testing-library/react": "11.0.2",
     "@types/react": "16.9.49",
     "@types/react-dom": "16.9.8",
     "husky": "4.2.5",
+    "jest-fetch-mock": "3.0.3",
     "react": "16.13.1",
     "react-dom": "16.13.1",
     "tsdx": "0.13.3",
