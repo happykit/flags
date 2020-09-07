@@ -220,7 +220,7 @@ export function usePrimitiveFlags(options?: FlagOptions): Flags | null {
 }
 
 function addDefaults(flags: Flags | null, defaultFlags: Flags = {}) {
-  return Object.assign({}, { ...defaultFlags }, flags);
+  return Object.assign({}, defaultFlags, flags);
 }
 
 /**
@@ -246,13 +246,10 @@ export function useFlags(options?: FlagOptions): Flags {
 
 export const getFlags =
   typeof window === 'undefined'
-    ? async function getFlags(userAttributes?: FlagUserAttributes | null) {
-        const flags = await fetchFlags(
-          config,
-          userAttributes ? userAttributes : null
-        );
-        // answer with no flags in case the fetch failed
-        return flags ? flags : {};
+    ? async function getFlags(user?: FlagUserAttributes | null) {
+        const flags = await fetchFlags(config, toUserAttributes(user));
+        const defaultFlags = config.defaultFlags || {};
+        return flags ? addDefaults(flags, defaultFlags) : defaultFlags;
       }
     : async () => {
         throw new Error(
