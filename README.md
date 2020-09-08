@@ -240,11 +240,59 @@ export const getStaticProps = () => {
 If you have two variants for a page and you only want to render one depending on a feature flag, you're able to keep the client-side bundle small by using dynamic imports.
 
 ```js
-// TODO
+import * as React from 'react';
+import { useFlags, getFlags } from '@happykit/flags';
+import dynamic from 'next/dynamic';
+
+const ProfileVariantA = dynamic(() => import('../components/profile-a'));
+const ProfileVariantB = dynamic(() => import('../components/profile-b'));
+
+export default function Page(props) {
+  const flags = useFlags({ user: { key: 'user_id_1' } });
+
+  // display nothing while we're loading
+  if (!flags.profileVariant) return null;
+
+  return flags.profileVariant === 'A' ? (
+    <ProfileVariantA user={props.user} />
+  ) : (
+    <ProfileVariantB user={props.user} />
+  );
+}
 ```
 
-You can even go a step further and preload the flags on the server, so that the client receives a prerenderd page.
+You can even go one step further and preload the flags on the server, so that the client receives a prerenderd page.
+
+Notice that the loading state is gone with that as well, since the flags are available upon the first render.
 
 ```js
-// TODO
+// with server-side flag preloading
+import * as React from 'react';
+import { useFlags, getFlags, Flags } from '@happykit/flags';
+import dynamic from 'next/dynamic';
+
+const ProfileVariantA = dynamic(() => import('../components/profile-a'));
+const ProfileVariantB = dynamic(() => import('../components/profile-b'));
+
+export default function Page(props) {
+  const flags = useFlags({
+    user: props.user,
+    initialFlags: props.initialFlags,
+  });
+
+  return flags.profileVariant === 'A' ? (
+    <ProfileVariantA user={props.user} />
+  ) : (
+    <ProfileVariantB user={props.user} />
+  );
+}
+
+export const getServerSideProps = async ({ req, res }) => {
+  // preload your user somehow
+  const user = await getUser(req);
+  // pass the user to getFlags to preload flags for that user
+  const initialFlags = await getFlags(user);
+
+  return { props: { user, initialFlags } };
+};
 ```
