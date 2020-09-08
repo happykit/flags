@@ -185,7 +185,7 @@ export function usePrimitiveFlags(options?: FlagOptions): Flags | null {
     return () => {
       active = false;
     };
-  }, [flags]);
+  }, [flags, userAttributes]);
 
   // revalidate when incoming user changes
   const incomingUser = options?.user;
@@ -256,7 +256,7 @@ export function useFlags(options?: FlagOptions): Flags {
     const nextFlagsWithDefaults = addDefaults(flags, defaultFlags);
     if (shallowEqual(flagsWithDefaults, nextFlagsWithDefaults)) return;
     setFlagsWithDefaults(nextFlagsWithDefaults);
-  }, [flags, flagsWithDefaults]);
+  }, [flags, flagsWithDefaults, defaultFlags]);
 
   return flagsWithDefaults;
 }
