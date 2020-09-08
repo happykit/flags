@@ -145,6 +145,13 @@ async function fetchFlags(
  * @returns null while loading, Flags otherwise
  */
 export function usePrimitiveFlags(options?: FlagOptions): Flags | null {
+  if (
+    typeof config.clientId !== 'string' ||
+    config.clientId.trim().length === 0
+  ) {
+    throw new Error('@happykit/flags: Missing config.clientId');
+  }
+
   // use "null" to indicate that no initial flags were provided, but never
   // return "null" from the hook
   const [flags, setFlags] = React.useState<Flags | null>(
@@ -155,7 +162,7 @@ export function usePrimitiveFlags(options?: FlagOptions): Flags | null {
     userAttributes,
     setUserAttributes,
   ] = React.useState<FlagUserAttributes | null>(
-    typeof options?.user === 'object' ? toUserAttributes(options.user) : null
+    options?.user ? toUserAttributes(options.user) : null
   );
 
   // fetch on mount when no initialFlags were provided

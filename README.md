@@ -140,7 +140,7 @@ import { configure } from '@happykit/flags';
 
 configure({
   clientId: process.env.NEXT_PUBLIC_FLAGS_CLIENT_ID,
-  defaultValues: { xzibit: true },
+  defaultFlags: { xzibit: true },
 });
 ```
 
