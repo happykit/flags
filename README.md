@@ -1,12 +1,27 @@
-## `@happykit/flags`
+<a id="nav">
+  <img src="https://i.imgur.com/MS2Gtkj.png" width="100%" />
+</a>
 
-Feature Flags for Next.js by [happykit.dev](https://happykit.dev/)
+<div align="right">
+  <a href="https://happykit.dev/">Website</a>
+  <span>&nbsp;•&nbsp;</span>
+  <a href="https://twitter.com/happykitdev" target="_blank">Twitter</a>
+</div>
 
-- [`@happykit/flags`](#happykitflags)
-- [Features](#features)
+&nbsp;
+&nbsp;
+
+Add Feature Flags to your Next.js application with a single React Hook. This package integrates your Next.js application with HappyKit Flags. Create a free [happykit.dev](https://happykit.dev/signup) account to get started.
+
+- [Key Features](#key-features)
 - [Installation](#installation)
 - [Setup](#setup)
 - [Basic Usage](#basic-usage)
+- [API](#api)
+  - [`configure`](#configure)
+  - [`useFlags`](#useflags)
+    - [Supported user attributes](#supported-user-attributes)
+  - [`getFlags`](#getflags)
 - [Advanced Usage](#advanced-usage)
   - [With user targeting](#with-user-targeting)
   - [Configuring application-wide default values](#configuring-application-wide-default-values)
@@ -16,16 +31,17 @@ Feature Flags for Next.js by [happykit.dev](https://happykit.dev/)
   - [With static site generation only](#with-static-site-generation-only)
   - [With disabled revalidation](#with-disabled-revalidation)
 - [Examples](#examples)
+  - [Full example](#full-example)
   - [Code splitting](#code-splitting)
 
-## Features
+## Key Features
 
 - written for Next.js
 - integrate using a simple `useFlags` hook
 - only 1 kB in size
-- server-side rendering support
 - extremely fast flag responses (under 100ms on average)
 - target individual users
+- server-side rendering support
 - optional static site generation support: redeploy your website on flag changes
 
 ## Installation
@@ -45,7 +61,9 @@ import { configure } from '@happykit/flags';
 configure({ clientId: process.env.NEXT_PUBLIC_FLAGS_CLIENT_ID });
 ```
 
-Register on [`happykit.dev`](https://happykit.dev/signup) to receive your `clientId`. You'll find it in the **Keys** section of your project settings once you created a project.
+If you don't have a custom `_app.js` yet, see the [Custom `App`](https://nextjs.org/docs/advanced-features/custom-app) section of the Next.js docs for setup instructions.
+
+Create an account on [`happykit.dev`](https://happykit.dev/signup) to receive your `clientId`. You'll find it in the **Keys** section of your project settings once you created a project.
 
 Make sure the environment variable containing the `clientId` starts with `NEXT_PUBLIC_` so the value is available on the client side.
 
@@ -71,6 +89,40 @@ export default function FooPage(props) {
   return flags.xzibit ? 'Yo dawg' : 'Hello';
 }
 ```
+
+## API
+
+### `configure`
+
+- `configure(options)`
+  - `options.clientId` _(string)_ _optional_: Your HappyKit Flags Client Id
+  - `options.defaultFlags` _(object)_: Key-value pairs of flags and their values. These values are used as fallbacks in `useFlags` and `getFlags`. The fallbacks are used while the actual flags are loaded, in case a flag is missing or when the request loading the flags fails for unexpected reasons. If you don't declare `defaultFlags`, then the flag values will be `undefined`.
+
+### `useFlags`
+
+- `useFlag(options)`
+  - `options.user` _(object)_ _optional_: A user to load the flags for. The user you pass here will be stored in HappyKit for future reference. A user must at least have a `key`. See a list of supported user attributes below.
+  - `options.initialFlags` _(object)_ _optional_: In case you preloaded user flags during server-side rendering or static site generation, provide the flags as `initialFlags`. The client will then skip the initial request and use the provided flags instead. This allows you to get rid of loading states on the client.
+  - `options.revalidateOnFocus` _(object)_ _optional_: By default, the client will revalidate all feature flags when the browser window regains focus. Pass `revalidateOnFocus: false` to skip this behaviour.
+
+This function returns an object containing the requested flags.
+
+#### Supported user attributes
+
+Provide any of these attributes to store them in HappyKit. You will be able to use them for targeting specific users based on rules later on (_not yet available in HappyKit Flags_).
+
+- `key` _(string)_: Unique key for this user
+- `email` _(string)_: Email-Address
+- `name` _(string)_: Full name or nickname
+- `avatar` _(string)_: URL to users profile picture
+- `country` _(string)_: Two-letter uppercase country-code of user's county, see [ISO 3166-1](https://en.wikipedia.org/wiki/ISO_3166-1)
+
+### `getFlags`
+
+- `useFlag(user)`
+  - `user` _(object)_ _optional_: A user to load the flags for. The user you pass here will be stored in HappyKit for future reference. A user must at least have a `key`. See a list of supported user attributes [here](#supported-user-attributes).
+
+This function returns a promise resolving to an object containing requested flags.
 
 ## Advanced Usage
 
@@ -114,19 +166,7 @@ export const getServerSideProps = async () => {
 
 </details>
 
-<details>
-
-<summary>See all supported user attributes</summary>
-
-Provide any of these attributes to store them in HappyKit. You will be able to use them for targeting specific users based on rules later on.
-
-- `key` _(string)_: Unique key for this user
-- `email` _(string)_: Email-Address
-- `name` _(string)_: Full name or nickname
-- `avatar` _(string)_: URL to users profile picture
-- `country` _(string)_: Two-letter uppercase country-code of user's county, see [ISO 3166-1](https://en.wikipedia.org/wiki/ISO_3166-1)
-
-</details>
+[See all supported user attributes](#supported-user-attributes)
 
 <br />
 
@@ -234,6 +274,54 @@ export const getStaticProps = () => {
 ```
 
 ## Examples
+
+### Full example
+
+This example shows the full configuration with server-side rendering and code splitting.
+
+```js
+// _app.js
+import App from 'next/app';
+import { configure } from '@happykit/flags';
+
+configure({ clientId: process.env.NEXT_PUBLIC_FLAGS_CLIENT_ID });
+
+export default function MyApp({ Component, pageProps }) {
+  return <Component {...pageProps} />;
+}
+```
+
+```js
+// pages/profile.js
+import * as React from 'react';
+import { useFlags, getFlags, Flags } from '@happykit/flags';
+import dynamic from 'next/dynamic';
+
+const ProfileVariantA = dynamic(() => import('../components/profile-a'));
+const ProfileVariantB = dynamic(() => import('../components/profile-b'));
+
+export default function Page(props) {
+  const flags = useFlags({
+    user: props.user,
+    initialFlags: props.initialFlags,
+  });
+
+  return flags.profileVariant === 'A' ? (
+    <ProfileVariantA user={props.user} />
+  ) : (
+    <ProfileVariantB user={props.user} />
+  );
+}
+
+export const getServerSideProps = async ({ req, res }) => {
+  // preload your user somehow
+  const user = await getUser(req);
+  // pass the user to getFlags to preload flags for that user
+  const initialFlags = await getFlags(user);
+
+  return { props: { user, initialFlags } };
+};
+```
 
 ### Code splitting
 
