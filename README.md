@@ -90,6 +90,23 @@ export default function FooPage(props) {
 }
 ```
 
+Or with server-side rendering
+
+```js
+// pages/foo.js
+import { useFlags, getFlags } from '@happykit/flags';
+
+export default function FooPage(props) {
+  const flags = useFlags({ initialFlags: props.initialFlags });
+  return flags.xzibit ? 'Yo dawg' : 'Hello';
+}
+
+export const getServerSideProps = async () => {
+  const initialFlags = await getFlags();
+  return { props: { initialFlags } };
+};
+```
+
 ## API
 
 ### `configure`
