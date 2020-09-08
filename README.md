@@ -64,7 +64,7 @@ You can load flags on the client with a single `useFlags` call.
 
 ```js
 // pages/foo.js
-import { useFlags, getFlags } from '@happykit/flags';
+import { useFlags } from '@happykit/flags';
 
 export default function FooPage(props) {
   const flags = useFlags();
@@ -80,7 +80,7 @@ You can provide a `user` as the first argument. Use this to enable per-user targ
 
 ```js
 // pages/foo.js
-import { useFlags, getFlags } from '@happykit/flags';
+import { useFlags } from '@happykit/flags';
 
 export default function FooPage(props) {
   const flags = useFlags({ user: { key: 'user-id' } });
@@ -105,9 +105,9 @@ export default function FooPage(props) {
   return flags.xzibit ? 'Yo dawg' : 'Hello';
 }
 
-export const getServerSideProps = () => {
+export const getServerSideProps = async () => {
   const user = { key: 'user-id' };
-  const initialFlags = getFlags(user);
+  const initialFlags = await getFlags(user);
   return { props: { user, initialFlags } };
 };
 ```
@@ -150,7 +150,7 @@ Being able to set initial flag values is the first step towards server-side rend
 
 ```js
 // pages/foo.js
-import { useFlags, getFlags } from '@happykit/flags';
+import { useFlags } from '@happykit/flags';
 
 export default function FooPage(props) {
   const flags = useFlags({ initialFlags: { xzibit: true } });
@@ -169,8 +169,8 @@ export default function FooPage(props) {
   return flags.xzibit ? 'Yo dawg' : 'Hello';
 }
 
-export const getServerSideProps = () => {
-  const initialFlags = getFlags();
+export const getServerSideProps = async () => {
+  const initialFlags = await getFlags();
   return { props: { initialFlags } };
 };
 ```
@@ -187,7 +187,7 @@ export default function FooPage(props) {
 }
 
 export const getStaticProps = () => {
-  const initialFlags = getFlags();
+  const initialFlags = await getFlags();
   return { props: { initialFlags } };
 };
 ```
@@ -207,7 +207,7 @@ export default function FooPage(props) {
 }
 
 export const getStaticProps = () => {
-  const initialFlags = getFlags();
+  const initialFlags = await getFlags();
   return { props: { initialFlags } };
 };
 ```
@@ -228,7 +228,7 @@ export default function FooPage(props) {
 }
 
 export const getStaticProps = () => {
-  const initialFlags = getFlags();
+  const initialFlags = await getFlags();
   return { props: { initialFlags } };
 };
 ```

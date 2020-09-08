@@ -137,6 +137,12 @@ async function fetchFlags(
   }
 }
 
+function hasClientId(config: FlagConfig) {
+  return (
+    typeof config.clientId === 'string' && config.clientId.trim().length > 0
+  );
+}
+
 /**
  * Fetch flags primitive. Use this only if you're interested in the loading
  * state, use useFlag otherwise.
@@ -145,10 +151,7 @@ async function fetchFlags(
  * @returns null while loading, Flags otherwise
  */
 export function usePrimitiveFlags(options?: FlagOptions): Flags | null {
-  if (
-    typeof config.clientId !== 'string' ||
-    config.clientId.trim().length === 0
-  ) {
+  if (!hasClientId(config)) {
     throw new Error('@happykit/flags: Missing config.clientId');
   }
 
@@ -261,6 +264,10 @@ export function useFlags(options?: FlagOptions): Flags {
 export const getFlags =
   typeof window === 'undefined'
     ? async function getFlags(user?: FlagUserAttributes | null) {
+        if (!hasClientId(config)) {
+          throw new Error('@happykit/flags: Missing config.clientId');
+        }
+
         const flags = await fetchFlags(config, toUserAttributes(user));
         const defaultFlags = config.defaultFlags || {};
         return flags ? addDefaults(flags, defaultFlags) : defaultFlags;

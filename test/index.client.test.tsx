@@ -56,12 +56,7 @@ describe('useFlags', () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
     configure({ clientId: 'foo' });
     const { result, waitForNextUpdate } = renderHook(() =>
-      useFlags({
-        user: {
-          key: 'user_key_1',
-          anUnknownAttribute: 'do-not-forward-me',
-        } as any,
-      })
+      useFlags({ user: { key: 'user_key_1' } })
     );
     await waitForNextUpdate();
     expect(result.current).toEqual({ aFlag: true });
