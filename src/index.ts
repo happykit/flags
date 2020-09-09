@@ -2,15 +2,15 @@ import * as React from 'react';
 
 /* global fetch:false */
 
-type Flags = { [key: string]: boolean | number | string };
+type Flags = { [key: string]: boolean | number | string | undefined };
 
-type FlagConfig = {
+export type FlagConfig<F extends Flags = Flags> = {
   clientId?: string;
   endpoint: string;
-  defaultFlags?: Flags;
+  defaultFlags?: F;
 };
 
-type FlagUserAttributes = {
+export type FlagUserAttributes = {
   key: string;
   email?: string;
   name?: string;
@@ -18,9 +18,9 @@ type FlagUserAttributes = {
   country?: string;
 };
 
-type FlagOptions = {
+export type FlagOptions<F extends Flags> = {
   user?: FlagUserAttributes;
-  initialFlags?: Flags;
+  initialFlags?: F;
   revalidateOnFocus?: boolean;
 };
 
@@ -38,9 +38,9 @@ export const _resetConfig = () => {
   config = defaultConfig;
 };
 
-export const configure = (
-  nextConfig: Partial<FlagConfig> & { clientId: string }
-) => {
+export function configure<F extends Flags>(
+  nextConfig: Partial<FlagConfig<F>> & { clientId: string }
+) {
   if (typeof nextConfig !== 'object')
     throw new Error('@happykit/flags: config must be an object');
 
@@ -48,7 +48,7 @@ export const configure = (
     throw new Error('@happykit/flags: Missing clientId');
 
   config = Object.assign({}, defaultConfig, nextConfig);
-};
+}
 
 function toUserAttributes(user: any): FlagUserAttributes | null {
   if (typeof user !== 'object') return null;
@@ -118,10 +118,10 @@ function createBody(
   return body;
 }
 
-async function fetchFlags(
+async function fetchFlags<F extends Flags>(
   config: FlagConfig,
   userAttributes: FlagUserAttributes | null
-): Promise<Flags | null> {
+): Promise<F | null> {
   try {
     const response = await fetch(config.endpoint, {
       method: 'POST',
@@ -129,7 +129,7 @@ async function fetchFlags(
     });
     if (!response.ok) return null;
 
-    const flags: Flags = await response.json();
+    const flags: F = await response.json();
     return flags;
   } catch (error) {
     console.error(error);
@@ -150,14 +150,16 @@ function hasClientId(config: FlagConfig) {
  * @param options flag options
  * @returns null while loading, Flags otherwise
  */
-export function usePrimitiveFlags(options?: FlagOptions): Flags | null {
+export function usePrimitiveFlags<F extends Flags>(
+  options?: FlagOptions<F>
+): F | null {
   if (!hasClientId(config)) {
     throw new Error('@happykit/flags: Missing config.clientId');
   }
 
   // use "null" to indicate that no initial flags were provided, but never
   // return "null" from the hook
-  const [flags, setFlags] = React.useState<Flags | null>(
+  const [flags, setFlags] = React.useState<F | null>(
     options?.initialFlags ? options.initialFlags : null
   );
 
@@ -174,7 +176,7 @@ export function usePrimitiveFlags(options?: FlagOptions): Flags | null {
 
     let active = true;
 
-    fetchFlags(config, userAttributes).then(nextFlags => {
+    fetchFlags<F>(config, userAttributes).then(nextFlags => {
       // skip in case the request failed
       if (!nextFlags) return;
       // skip in case the component unmounted
@@ -213,7 +215,7 @@ export function usePrimitiveFlags(options?: FlagOptions): Flags | null {
         });
         if (!response.ok) return;
 
-        const nextFlags: Flags = await response.json();
+        const nextFlags: F = await response.json();
 
         // skip responses to outdated requests
         if (fetchId !== latestFetchId) return;
@@ -236,7 +238,10 @@ export function usePrimitiveFlags(options?: FlagOptions): Flags | null {
   return flags;
 }
 
-function addDefaults(flags: Flags | null, defaultFlags: Flags = {}) {
+function addDefaults<F extends Flags>(
+  flags: F | null,
+  defaultFlags: Flags = {}
+): F {
   return Object.assign({}, defaultFlags, flags);
 }
 
@@ -244,12 +249,12 @@ function addDefaults(flags: Flags | null, defaultFlags: Flags = {}) {
  * Returns feature flags from HappyKit
  * @param options Options like initial flags or the targeted user.
  */
-export function useFlags(options?: FlagOptions): Flags {
-  const flags = usePrimitiveFlags(options);
+export function useFlags<F extends Flags>(options?: FlagOptions<F>): F {
+  const flags = usePrimitiveFlags<F>(options);
 
   const defaultFlags = config?.defaultFlags;
-  const [flagsWithDefaults, setFlagsWithDefaults] = React.useState<Flags>(
-    addDefaults(flags, defaultFlags)
+  const [flagsWithDefaults, setFlagsWithDefaults] = React.useState<F>(
+    addDefaults<F>(flags, defaultFlags)
   );
 
   React.useEffect(() => {
@@ -263,16 +268,18 @@ export function useFlags(options?: FlagOptions): Flags {
 
 export const getFlags =
   typeof window === 'undefined'
-    ? async function getFlags(user?: FlagUserAttributes | null) {
+    ? async function getFlags<F extends Flags>(
+        user?: FlagUserAttributes | null
+      ): Promise<F> {
         if (!hasClientId(config)) {
           throw new Error('@happykit/flags: Missing config.clientId');
         }
 
-        const flags = await fetchFlags(config, toUserAttributes(user));
-        const defaultFlags = config.defaultFlags || {};
-        return flags ? addDefaults(flags, defaultFlags) : defaultFlags;
+        const flags = await fetchFlags<F>(config, toUserAttributes(user));
+        const defaultFlags = (config.defaultFlags || {}) as F;
+        return flags ? addDefaults<F>(flags, defaultFlags) : defaultFlags;
       }
-    : async () => {
+    : async function getFlags() {
         throw new Error(
           '@happykit/flags: getFlags may not be called on the client'
         );

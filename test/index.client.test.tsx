@@ -157,7 +157,9 @@ describe('useFlags', () => {
     configure({ clientId: 'foo' });
     const initialFlags = { xzibit: true };
     const Page = () => {
-      const flags = useFlags({ initialFlags });
+      const flags = useFlags<{ aFlag?: string; xzibit: boolean }>({
+        initialFlags,
+      });
 
       return <p>{flags.aFlag ? 'hello' : 'waiting'}</p>;
     };
@@ -189,7 +191,10 @@ describe('useFlags', () => {
     configure({ clientId: 'foo' });
     const initialFlags = { xzibit: true };
     const Page = () => {
-      const flags = useFlags({ initialFlags, revalidateOnFocus: false });
+      const flags = useFlags<{ aFlag?: string; xzibit: boolean }>({
+        initialFlags,
+        revalidateOnFocus: false,
+      });
 
       return <p>{flags.aFlag ? 'hello' : 'waiting'}</p>;
     };

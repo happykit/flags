@@ -32,6 +32,9 @@ Add Feature Flags to your Next.js application with a single React Hook. This pac
   - [With disabled revalidation](#with-disabled-revalidation)
 - [Examples](#examples)
   - [Full example](#full-example)
+  - [TypeScript example](#typescript-example)
+    - [Default Types](#default-types)
+    - [Custom Flag Type](#custom-flag-type)
   - [Code splitting](#code-splitting)
 
 ## Key Features
@@ -338,6 +341,77 @@ export const getServerSideProps = async ({ req, res }) => {
 
   return { props: { user, initialFlags } };
 };
+```
+
+### TypeScript example
+
+#### Default Types
+
+`@happykit/flags` includes type definitions. By default, flags returned from `useFlags` and `getFlags` have the following type:
+
+```ts
+type Flags = { [key: string]: boolean | number | string | undefined };
+```
+
+You can use `@happykit/flags` without further configuration and get pretty good types.
+
+#### Custom Flag Type
+
+However, all exported functions accept an optional generic type, so you can harden your flag definitions by defining a custom flag type. This allows you to define flag values explicitily.
+
+```ts
+// _app.tsx
+import { configure } from '@happykit/flags';
+
+type Flags = {
+  booleanFlag: boolean;
+  numericFlag: number;
+  textualFlag: string;
+  // You can lock textual and numeric flag values down even more, since
+  // you know all possible values:
+  // numericFlag: 0 | 10;
+  // textualFlag: 'profileA' | 'profileB';
+};
+
+// the types defined in "configure" are used to check "defaultFlags"
+configure<Flags>({
+  endpoint: 'http://localhost:8787/',
+  clientId: 'flags_pub_272357356657967622',
+  defaultFlags: {
+    booleanFlag: true,
+    numericFlag: 10,
+    textualFlag: 'profileA',
+  },
+});
+```
+
+```ts
+// pages/SomePage.tsx
+import { useFlags, getFlags } from '@happykit/flags';
+
+type Flags = {
+  booleanFlag: boolean;
+  numericFlag: number;
+  textualFlag: string;
+};
+
+export default function SomePage(props) {
+  const flags = useFlags<Flags>({ initialFlags: props.flags });
+  flags.booleanFlag; // has type "boolean"
+  flags.numericFlag; // has type "number"
+  flags.textualFlag; // has type "string"
+  return <div>{JSON.stringify(flags, null, 2)}</div>;
+}
+
+export async function getServerSideProps() {
+  const initialFlags = await getFlags<Flags>();
+
+  initialFlags.booleanFlag; // has type "boolean"
+  initialFlags.numericFlag; // has type "number"
+  initialFlags.textualFlag; // has type "string"
+
+  return { props: { initialFlags } };
+}
 ```
 
 ### Code splitting
