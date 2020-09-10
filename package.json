@@ -15,7 +15,8 @@
     "build": "tsdx build",
     "test": "tsdx test --passWithNoTests",
     "lint": "tsdx lint",
-    "prepare": "tsdx build"
+    "prepare": "tsdx build",
+    "pub": "yarn publish --access=public"
   },
   "peerDependencies": {
     "next": "^9.4.0",
