@@ -246,10 +246,18 @@ function addDefaults<F extends Flags>(
 }
 
 /**
- * Returns feature flags from HappyKit
+ * Same as useFlags, but with more info on the returned value.
+ *
  * @param options Options like initial flags or the targeted user.
  */
-export function useFlags<F extends Flags>(options?: FlagOptions<F>): F {
+export function useFeatureFlags<F extends Flags>(
+  options?: FlagOptions<F>
+): {
+  flags: F;
+  loading: boolean;
+  initialFlags: FlagOptions<F>['initialFlags'];
+  defaultFlags: FlagConfig<F>['defaultFlags'];
+} {
   const flags = usePrimitiveFlags<F>(options);
 
   const defaultFlags = config?.defaultFlags;
@@ -263,7 +271,21 @@ export function useFlags<F extends Flags>(options?: FlagOptions<F>): F {
     setFlagsWithDefaults(nextFlagsWithDefaults);
   }, [flags, flagsWithDefaults, defaultFlags]);
 
-  return flagsWithDefaults;
+  return {
+    flags: flagsWithDefaults,
+    loading: flags === null,
+    initialFlags: options?.initialFlags,
+    defaultFlags: config.defaultFlags as F,
+  };
+}
+
+/**
+ * Returns feature flags from HappyKit
+ * @param options Options like initial flags or the targeted user.
+ */
+export function useFlags<F extends Flags>(options?: FlagOptions<F>): F {
+  const { flags } = useFeatureFlags<F>(options);
+  return flags;
 }
 
 export const getFlags =

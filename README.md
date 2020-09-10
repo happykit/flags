@@ -430,7 +430,7 @@ export default function Page(props) {
   const flags = useFlags({ user: { key: 'user_id_1' } });
 
   // display nothing while we're loading
-  if (!flags.profileVariant) return null;
+  if (flags.profileVariant === undefined) return null;
 
   return flags.profileVariant === 'A' ? (
     <ProfileVariantA user={props.user} />
