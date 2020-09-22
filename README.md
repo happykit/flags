@@ -3,7 +3,9 @@
 </a>
 
 <div align="right">
-  <a href="https://happykit.dev/">Website</a>
+  <a href="https://happykit.dev/solutions/flags">Website</a>
+  <span>&nbsp;•&nbsp;</span>
+  <a href="https://medium.com/frontend-digest/using-feature-flags-in-next-js-c5c8d0795a2?source=friends_link&sk=d846a29f376acf9cfa41e926883923ab">Full Tutorial</a>
   <span>&nbsp;•&nbsp;</span>
   <a href="https://twitter.com/happykitdev" target="_blank">Twitter</a>
 </div>
@@ -78,6 +80,8 @@ NEXT_PUBLIC_FLAGS_CLIENT_ID=flags_pub_development_xxxxxxxxxx
 ```
 
 Later on, don't forget to also provide the environment variable in production.
+
+> There's also [a full walkthrough of the setup](https://medium.com/frontend-digest/using-feature-flags-in-next-js-c5c8d0795a2?source=friends_link&sk=d846a29f376acf9cfa41e926883923ab), which explains the setup in your project and in HappyKit Flags itself.
 
 ## Basic Usage
 
