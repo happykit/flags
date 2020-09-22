@@ -125,7 +125,7 @@ export const getServerSideProps = async () => {
 ### `useFlags`
 
 - `useFlag(options)`
-  - `options.user` _(object)_ _optional_: A user to load the flags for. The user you pass here will be stored in HappyKit for future reference. A user must at least have a `key`. See a list of supported user attributes below.
+  - `options.user` _(object)_ _optional_: A user to load the flags for. The user you pass here will be stored in HappyKit for future reference and [individual targeting](#with-user-targeting). A user must at least have a `key`. See the supported user attributes [here](#supported-user-attributes).
   - `options.initialFlags` _(object)_ _optional_: In case you preloaded user flags during server-side rendering or static site generation, provide the flags as `initialFlags`. The client will then skip the initial request and use the provided flags instead. This allows you to get rid of loading states on the client.
   - `options.revalidateOnFocus` _(object)_ _optional_: By default, the client will revalidate all feature flags when the browser window regains focus. Pass `revalidateOnFocus: false` to skip this behaviour.
 
