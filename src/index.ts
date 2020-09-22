@@ -2,7 +2,7 @@ import * as React from 'react';
 
 /* global fetch:false */
 
-type Flags = { [key: string]: boolean | number | string | undefined };
+export type Flags = { [key: string]: boolean | number | string | undefined };
 
 export type FlagConfig<F extends Flags = Flags> = {
   clientId?: string;
@@ -150,7 +150,7 @@ function hasClientId(config: FlagConfig) {
  * @param options flag options
  * @returns null while loading, Flags otherwise
  */
-export function usePrimitiveFlags<F extends Flags>(
+function usePrimitiveFlags<F extends Flags>(
   options?: FlagOptions<F>
 ): F | null {
   if (!hasClientId(config)) {
