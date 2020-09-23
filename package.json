@@ -41,6 +41,7 @@
     ]
   },
   "name": "@happykit/flags",
+  "description": "Feature Flags for Next.js",
   "author": "Dominik Ferber",
   "module": "dist/flags.esm.js",
   "devDependencies": {
