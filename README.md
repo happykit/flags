@@ -119,8 +119,8 @@ export const getServerSideProps = async () => {
 ### `configure`
 
 - `configure(options)`
-  - `options.clientId` _(string)_ _optional_: Your HappyKit Flags Client Id
-  - `options.defaultFlags` _(object)_: Key-value pairs of flags and their values. These values are used as fallbacks in `useFlags` and `getFlags`. The fallbacks are used while the actual flags are loaded, in case a flag is missing or when the request loading the flags fails for unexpected reasons. If you don't declare `defaultFlags`, then the flag values will be `undefined`.
+  - `options.clientId` _(string)_ _required_: Your HappyKit Flags Client Id
+  - `options.defaultFlags` _(object)_ _optional_: Key-value pairs of flags and their values. These values are used as fallbacks in `useFlags` and `getFlags`. The fallbacks are used while the actual flags are loaded, in case a flag is missing or when the request loading the flags fails for unexpected reasons. If you don't declare `defaultFlags`, then the flag values will be `undefined`.
 
 ### `useFlags`
 
@@ -135,7 +135,7 @@ This function returns an object containing the requested flags.
 
 Provide any of these attributes to store them in HappyKit. You will be able to use them for targeting specific users based on rules later on (_not yet available in HappyKit Flags_).
 
-- `key` _(string)_: Unique key for this user
+- `key` _(string)_ _required_: Unique key for this user
 - `email` _(string)_: Email-Address
 - `name` _(string)_: Full name or nickname
 - `avatar` _(string)_: URL to users profile picture
