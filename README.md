@@ -130,6 +130,7 @@ export const getServerSideProps = async () => {
 - `configure(options)`
   - `options.clientId` _(string)_ _required_: Your HappyKit Flags Client Id
   - `options.defaultFlags` _(object)_ _optional_: Key-value pairs of flags and their values. These values are used as fallbacks in `useFlags` and `getFlags`. The fallbacks are used while the actual flags are loaded, in case a flag is missing or when the request loading the flags fails for unexpected reasons. If you don't declare `defaultFlags`, then the flag values will be `undefined`.
+  - `options.disableCache` _(boolean)_ _optional_: Pass `true` to turn off the client-side cache. The cache is persisted to `localStorage` and persists across page loads. Even with an enabled cache, all flags will get revalidated in [`stale-while-revalidate`](https://tools.ietf.org/html/rfc5861) fashion.
 
 ### `useFlags`
 

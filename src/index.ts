@@ -8,6 +8,7 @@ export type FlagConfig<F extends Flags = Flags> = {
   clientId?: string;
   endpoint: string;
   defaultFlags?: F;
+  disableCache?: boolean;
 };
 
 export type FlagUserAttributes = {
@@ -28,6 +29,8 @@ const defaultConfig: FlagConfig = {
   endpoint: 'https://happykit.dev/api/flags',
   defaultFlags: {},
 };
+
+const localStorageCacheKey = 'happykit_flags';
 
 let config: FlagConfig = defaultConfig;
 
@@ -137,6 +140,62 @@ async function fetchFlags<F extends Flags>(
   }
 }
 
+function storeFlagsInCache(
+  flags: Flags,
+  userAttributesKey: string | undefined
+) {
+  try {
+    localStorage.setItem(
+      localStorageCacheKey,
+      JSON.stringify({
+        endpoint: config.endpoint,
+        clientId: config.clientId,
+        flags,
+        userAttributesKey,
+      })
+    );
+  } catch (e) {
+    // chrome can throw when no permission for localStorage has been granted
+    // https://www.chromium.org/for-testers/bug-reporting-guidelines/uncaught-securityerror-failed-to-read-the-localstorage-property-from-window-access-is-denied-for-this-document
+  }
+}
+
+function loadFlagsFromCache<F extends Flags>(
+  userAttributesKey: string | undefined
+): F | null {
+  try {
+    const cached: {
+      endpoint: string;
+      clientId: string;
+      userAttributesKey?: string;
+      flags: F;
+    } | null = JSON.parse(
+      // putting String() in here is just a nice way to turn null which
+      // getItem() might return into a string ("null"), so that JSON.parse()
+      // succeeds in that case as it ends up being JSON.parse("null") which
+      // returns null.
+      String(localStorage.getItem(localStorageCacheKey))
+    );
+
+    return cached &&
+      cached.endpoint === config.endpoint &&
+      cached.clientId === config.clientId &&
+      // If we received userAttributes, the cached flags must have been loaded
+      // for that specific user.
+      // If we didn't receive a userAttributesKey, the flags may not have
+      // been loaded for a specific user.
+      (userAttributesKey
+        ? userAttributesKey === cached.userAttributesKey
+        : !cached.userAttributesKey)
+      ? cached?.flags
+      : null;
+  } catch (e) {
+    // chrome can throw when no permission for localStorage has been granted
+    // https://www.chromium.org/for-testers/bug-reporting-guidelines/uncaught-securityerror-failed-to-read-the-localstorage-property-from-window-access-is-denied-for-this-document
+    return null;
+  }
+}
+
 function hasClientId(config: FlagConfig) {
   return (
     typeof config.clientId === 'string' && config.clientId.trim().length > 0
@@ -159,16 +218,26 @@ function usePrimitiveFlags<F extends Flags>(
 
   // use "null" to indicate that no initial flags were provided, but never
   // return "null" from the hook
-  const [flags, setFlags] = React.useState<F | null>(
-    options?.initialFlags ? options.initialFlags : null
-  );
+  const initialFlags = options?.initialFlags ? options.initialFlags : null;
+  const [flags, setFlags] = React.useState<F | null>(initialFlags);
 
+  const initialUserAttributes = options?.user
+    ? toUserAttributes(options.user)
+    : null;
   const [
     userAttributes,
     setUserAttributes,
-  ] = React.useState<FlagUserAttributes | null>(
-    options?.user ? toUserAttributes(options.user) : null
-  );
+  ] = React.useState<FlagUserAttributes | null>(initialUserAttributes);
+
+  // populate flags from cache after first render
+  // We need to wait for the initial render to complete so the server-side
+  // markup matches the initial client-side render
+  React.useEffect(() => {
+    if (initialFlags || config.disableCache) return;
+
+    const cachedFlags = loadFlagsFromCache<F>(initialUserAttributes?.key);
+    if (cachedFlags) setFlags(cachedFlags);
+  }, [initialFlags, initialUserAttributes]);
 
   // fetch on mount when no initialFlags were provided
   React.useEffect(() => {
@@ -181,7 +250,12 @@ function usePrimitiveFlags<F extends Flags>(
       if (!nextFlags) return;
       // skip in case the component unmounted
       if (!active) return;
+
       setFlags(nextFlags);
+
+      if (!config.disableCache) {
+        storeFlagsInCache(nextFlags, userAttributes?.key);
+      }
     });
 
     return () => {
@@ -224,6 +298,10 @@ function usePrimitiveFlags<F extends Flags>(
         if (typeof nextFlags !== 'object') return;
 
         setFlags(nextFlags);
+
+        if (!config.disableCache) {
+          storeFlagsInCache(nextFlags, userAttributes?.key);
+        }
       } catch (error) {
         console.error(error);
       }
