@@ -5,9 +5,36 @@ import * as React from 'react';
 export type Flags = { [key: string]: boolean | number | string | undefined };
 
 export type FlagConfig<F extends Flags = Flags> = {
+  /**
+   * Your HappyKit Flags Client Id.
+   *
+   * It should look similar to `flags_pub_277203581177692685`.
+   *
+   * You can use that value if you just want to play around.
+   * You will receive one flag called `dog` which is turned on.
+   */
   clientId?: string;
+  /**
+   * This is internal and you don't need to provide it.
+   *
+   * It defines where the Flags are loaded from.
+   */
   endpoint: string;
+  /**
+   * Key-value pairs of flags and their values. These values are used as
+   * fallbacks in `useFlags` and `getFlags`. The fallbacks are used while the
+   * actual flags are loaded, in case a flag is missing or when the request
+   * loading the flags fails for unexpected reasons. If you don't declare
+   * `defaultFlags`, then the flag values will be `undefined`.
+   */
   defaultFlags?: F;
+  /**
+   * Pass `true` to turn off the client-side cache.
+   * The cache is persisted to `localStorage` and persists across page loads.
+   * Even with an enabled cache, all flags will get revalidated in
+   * [`stale-while-revalidate`](https://tools.ietf.org/html/rfc5861) fashion.
+   */
+  disableCache?: boolean;
 };
 
 export type FlagUserAttributes = {
@@ -19,8 +46,22 @@ export type FlagUserAttributes = {
 };
 
 export type FlagOptions<F extends Flags> = {
+  /**
+   * This is the flag user which the flags will be evaluated for.
+   */
   user?: FlagUserAttributes;
+  /**
+   * In case you preloaded your flags during server-side rendering using
+   * `getFlags()`, provide the flags as `initialFlags`.
+   * The client will then skip the initial request and use the provided flags
+   * instead.
+   * This allows you to get rid of loading states on the client.
+   */
   initialFlags?: F;
+  /**
+   * By default, the client will revalidate all feature flags when the browser
+   * window regains focus. Pass `false` to skip this behaviour.
+   */
   revalidateOnFocus?: boolean;
 };
 
@@ -29,14 +70,20 @@ const defaultConfig: FlagConfig = {
   defaultFlags: {},
 };
 
+const localStorageCacheKey = 'happykit_flags';
+
 let config: FlagConfig = defaultConfig;
 
 /**
  * For testing purposes only
  */
-export const _resetConfig = () => {
-  config = defaultConfig;
-};
+export const _reset =
+  process.env.NODE_ENV === 'production'
+    ? () => {}
+    : () => {
+        config = defaultConfig;
+        map.clear();
+      };
 
 export function configure<F extends Flags>(
   nextConfig: Partial<FlagConfig<F>> & { clientId: string }
@@ -118,21 +165,115 @@ function createBody(
   return body;
 }
 
-async function fetchFlags<F extends Flags>(
-  config: FlagConfig,
-  userAttributes: FlagUserAttributes | null
-): Promise<F | null> {
-  try {
-    const response = await fetch(config.endpoint, {
-      method: 'POST',
-      body: JSON.stringify(createBody(config.clientId, userAttributes)),
-    });
-    if (!response.ok) return null;
+/**
+ * A Map of the currently in-progress requests.
+ */
+const map = new Map<string, Promise<Flags>>();
 
-    const flags: F = await response.json();
+/**
+ * Fetches flags, ...
+ *
+ * ...but only if no other fetch for the same flag with the same endpoint and
+ * request body is in progress.
+ *
+ * Otherwise it returns the promise of the already in-progress request.
+ * @param endpoint The endpoint fetched from
+ * @param body Stringified request body containing the clientId & userAttributes.
+ */
+async function queuedFetchFlags<F extends Flags>(
+  endpoint: string,
+  body: string
+): Promise<F | null> {
+  const queueKey = JSON.stringify({ endpoint, body });
+  const queuedPromise = map.get(queueKey);
+  if (queuedPromise) return queuedPromise as Promise<F>;
+
+  const promise = fetch(endpoint, { method: 'POST', body }).then(
+    response => (response.ok ? response.json() : null),
+    () => null
+  );
+  map.set(queueKey, promise);
+
+  promise.then(() => {
+    map.delete(queueKey);
+  });
+
+  return promise as Promise<F>;
+}
+
+async function fetchFlags<F extends Flags>({
+  config,
+  userAttributes,
+}: {
+  config: FlagConfig;
+  userAttributes: FlagUserAttributes | null;
+  skipQueue?: boolean;
+}): Promise<F | null> {
+  try {
+    const flags = await queuedFetchFlags<F>(
+      config.endpoint,
+      JSON.stringify(createBody(config.clientId, userAttributes))
+    );
+
     return flags;
   } catch (error) {
     console.error(error);
+    return null;
+  }
+}
+
+function storeFlagsInCache(
+  flags: Flags,
+  userAttributesKey: string | undefined
+) {
+  try {
+    localStorage.setItem(
+      localStorageCacheKey,
+      JSON.stringify({
+        endpoint: config.endpoint,
+        clientId: config.clientId,
+        flags,
+        userAttributesKey,
+      })
+    );
+  } catch (e) {
+    // chrome can throw when no permission for localStorage has been granted
+    // https://www.chromium.org/for-testers/bug-reporting-guidelines/uncaught-securityerror-failed-to-read-the-localstorage-property-from-window-access-is-denied-for-this-document
+  }
+}
+
+function loadFlagsFromCache<F extends Flags>(
+  userAttributesKey: string | undefined
+): F | null {
+  try {
+    const cached: {
+      endpoint: string;
+      clientId: string;
+      userAttributesKey?: string;
+      flags: F;
+    } | null = JSON.parse(
+      // putting String() in here is just a nice way to turn null which
+      // getItem() might return into a string ("null"), so that JSON.parse()
+      // succeeds in that case as it ends up being JSON.parse("null") which
+      // returns null.
+      String(localStorage.getItem(localStorageCacheKey))
+    );
+
+    return cached &&
+      cached.endpoint === config.endpoint &&
+      cached.clientId === config.clientId &&
+      // If we received userAttributes, the cached flags must have been loaded
+      // for that specific user.
+      // If we didn't receive a userAttributesKey, the flags may not have
+      // been loaded for a specific user.
+      (userAttributesKey
+        ? userAttributesKey === cached.userAttributesKey
+        : !cached.userAttributesKey)
+      ? cached?.flags
+      : null;
+  } catch (e) {
+    // chrome can throw when no permission for localStorage has been granted
+    // https://www.chromium.org/for-testers/bug-reporting-guidelines/uncaught-securityerror-failed-to-read-the-localstorage-property-from-window-access-is-denied-for-this-document
     return null;
   }
 }
@@ -159,35 +300,52 @@ function usePrimitiveFlags<F extends Flags>(
 
   // use "null" to indicate that no initial flags were provided, but never
   // return "null" from the hook
-  const [flags, setFlags] = React.useState<F | null>(
-    options?.initialFlags ? options.initialFlags : null
-  );
+  const initialFlags = options?.initialFlags ? options.initialFlags : null;
+  const [flags, setFlags] = React.useState<F | null>(initialFlags);
 
+  const initialUserAttributes = options?.user
+    ? toUserAttributes(options.user)
+    : null;
   const [
     userAttributes,
     setUserAttributes,
-  ] = React.useState<FlagUserAttributes | null>(
-    options?.user ? toUserAttributes(options.user) : null
-  );
+  ] = React.useState<FlagUserAttributes | null>(initialUserAttributes);
+
+  // populate flags from cache after first render
+  // We need to wait for the initial render to complete so the server-side
+  // markup matches the initial client-side render
+  React.useEffect(() => {
+    if (initialFlags || config.disableCache) return;
+
+    const cachedFlags = loadFlagsFromCache<F>(initialUserAttributes?.key);
+    if (!shallowEqual(flags, cachedFlags)) {
+      setFlags(cachedFlags);
+    }
+  }, [flags, initialFlags, initialUserAttributes]);
 
   // fetch on mount when no initialFlags were provided
   React.useEffect(() => {
-    if (flags !== null) return;
+    if (initialFlags !== null) return;
 
     let active = true;
 
-    fetchFlags<F>(config, userAttributes).then(nextFlags => {
+    fetchFlags<F>({ config, userAttributes }).then(nextFlags => {
       // skip in case the request failed
       if (!nextFlags) return;
       // skip in case the component unmounted
       if (!active) return;
+
       setFlags(nextFlags);
+
+      if (!config.disableCache) {
+        storeFlagsInCache(nextFlags, userAttributes?.key);
+      }
     });
 
     return () => {
       active = false;
     };
-  }, [flags, userAttributes]);
+  }, [initialFlags, userAttributes]);
 
   // revalidate when incoming user changes
   const incomingUser = options?.user;
@@ -209,13 +367,12 @@ function usePrimitiveFlags<F extends Flags>(
       const fetchId = (latestFetchId = Date.now());
 
       try {
-        const response = await fetch(config.endpoint, {
-          method: 'POST',
-          body: JSON.stringify(createBody(config.clientId, userAttributes)),
-        });
-        if (!response.ok) return;
+        const nextFlags = await queuedFetchFlags<F>(
+          config.endpoint,
+          JSON.stringify(createBody(config.clientId, userAttributes))
+        );
 
-        const nextFlags: F = await response.json();
+        if (!nextFlags) return;
 
         // skip responses to outdated requests
         if (fetchId !== latestFetchId) return;
@@ -224,6 +381,10 @@ function usePrimitiveFlags<F extends Flags>(
         if (typeof nextFlags !== 'object') return;
 
         setFlags(nextFlags);
+
+        if (!config.disableCache) {
+          storeFlagsInCache(nextFlags, userAttributes?.key);
+        }
       } catch (error) {
         console.error(error);
       }
@@ -297,7 +458,10 @@ export const getFlags =
           throw new Error('@happykit/flags: Missing config.clientId');
         }
 
-        const flags = await fetchFlags<F>(config, toUserAttributes(user));
+        const flags = await fetchFlags<F>({
+          config,
+          userAttributes: toUserAttributes(user),
+        });
         const defaultFlags = (config.defaultFlags || {}) as F;
         return flags ? addDefaults<F>(flags, defaultFlags) : defaultFlags;
       }

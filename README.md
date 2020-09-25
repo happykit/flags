@@ -15,6 +15,16 @@
 
 Add Feature Flags to your Next.js application with a single React Hook. This package integrates your Next.js application with HappyKit Flags. Create a free [happykit.dev](https://happykit.dev/signup) account to get started.
 
+**Key Features**
+
+- written for Next.js
+- integrate using a simple `useFlags()` hook
+- only 1 kB in size
+- extremely fast flag responses (~50ms)
+- supports individual user targeting
+- server-side rendering support
+- static site generation support (redeploy your website on flag changes)
+
 <details><br /><br />
   <summary><b>Want to see a demo?</b></summary>
 
@@ -24,7 +34,10 @@ Add Feature Flags to your Next.js application with a single React Hook. This pac
 
 <br />
 
-- [Key Features](#key-features)
+---
+
+<br />
+
 - [Installation](#installation)
 - [Setup](#setup)
 - [Basic Usage](#basic-usage)
@@ -48,15 +61,7 @@ Add Feature Flags to your Next.js application with a single React Hook. This pac
     - [Custom Flag Type](#custom-flag-type)
   - [Code splitting](#code-splitting)
 
-## Key Features
-
-- written for Next.js
-- integrate using a simple `useFlags` hook
-- only 1 kB in size
-- extremely fast flag responses (under 100ms on average)
-- target individual users
-- server-side rendering support
-- static site generation support (redeploy your website on flag changes)
+<br />
 
 ## Installation
 
@@ -130,12 +135,13 @@ export const getServerSideProps = async () => {
 - `configure(options)`
   - `options.clientId` _(string)_ _required_: Your HappyKit Flags Client Id
   - `options.defaultFlags` _(object)_ _optional_: Key-value pairs of flags and their values. These values are used as fallbacks in `useFlags` and `getFlags`. The fallbacks are used while the actual flags are loaded, in case a flag is missing or when the request loading the flags fails for unexpected reasons. If you don't declare `defaultFlags`, then the flag values will be `undefined`.
+  - `options.disableCache` _(boolean)_ _optional_: Pass `true` to turn off the client-side cache. The cache is persisted to `localStorage` and persists across page loads. Even with an enabled cache, all flags will get revalidated in [`stale-while-revalidate`](https://tools.ietf.org/html/rfc5861) fashion.
 
 ### `useFlags`
 
 - `useFlag(options)`
   - `options.user` _(object)_ _optional_: A user to load the flags for. The user you pass here will be stored in HappyKit for future reference and [individual targeting](#with-user-targeting). A user must at least have a `key`. See the supported user attributes [here](#supported-user-attributes).
-  - `options.initialFlags` _(object)_ _optional_: In case you preloaded user flags during server-side rendering or static site generation, provide the flags as `initialFlags`. The client will then skip the initial request and use the provided flags instead. This allows you to get rid of loading states on the client.
+  - `options.initialFlags` _(object)_ _optional_: In case you preloaded your flags during server-side rendering using `getFlags()`, provide the flags as `initialFlags`. The client will then skip the initial request and use the provided flags instead. This allows you to get rid of loading states on the client.
   - `options.revalidateOnFocus` _(object)_ _optional_: By default, the client will revalidate all feature flags when the browser window regains focus. Pass `revalidateOnFocus: false` to skip this behaviour.
 
 This function returns an object containing the requested flags.
