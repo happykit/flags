@@ -37,9 +37,13 @@ let config: FlagConfig = defaultConfig;
 /**
  * For testing purposes only
  */
-export const _resetConfig = () => {
-  config = defaultConfig;
-};
+export const _reset =
+  process.env.NODE_ENV === 'production'
+    ? () => {}
+    : () => {
+        config = defaultConfig;
+        map.clear();
+      };
 
 export function configure<F extends Flags>(
   nextConfig: Partial<FlagConfig<F>> & { clientId: string }
@@ -121,18 +125,56 @@ function createBody(
   return body;
 }
 
-async function fetchFlags<F extends Flags>(
-  config: FlagConfig,
-  userAttributes: FlagUserAttributes | null
-): Promise<F | null> {
-  try {
-    const response = await fetch(config.endpoint, {
-      method: 'POST',
-      body: JSON.stringify(createBody(config.clientId, userAttributes)),
-    });
-    if (!response.ok) return null;
+/**
+ * A Map of the currently in-progress requests.
+ */
+const map = new Map<string, Promise<Flags>>();
 
-    const flags: F = await response.json();
+/**
+ * Fetches flags, ...
+ *
+ * ...but only if no other fetch for the same flag with the same endpoint and
+ * request body is in progress.
+ *
+ * Otherwise it returns the promise of the already in-progress request.
+ * @param endpoint The endpoint fetched from
+ * @param body Stringified request body containing the clientId & userAttributes.
+ */
+async function queuedFetchFlags<F extends Flags>(
+  endpoint: string,
+  body: string
+): Promise<F | null> {
+  const queueKey = JSON.stringify({ endpoint, body });
+  const queuedPromise = map.get(queueKey);
+  if (queuedPromise) return queuedPromise as Promise<F>;
+
+  const promise = fetch(endpoint, { method: 'POST', body }).then(
+    response => (response.ok ? response.json() : null),
+    () => null
+  );
+  map.set(queueKey, promise);
+
+  promise.then(() => {
+    map.delete(queueKey);
+  });
+
+  return promise as Promise<F>;
+}
+
+async function fetchFlags<F extends Flags>({
+  config,
+  userAttributes,
+}: {
+  config: FlagConfig;
+  userAttributes: FlagUserAttributes | null;
+  skipQueue?: boolean;
+}): Promise<F | null> {
+  try {
+    const flags = await queuedFetchFlags<F>(
+      config.endpoint,
+      JSON.stringify(createBody(config.clientId, userAttributes))
+    );
+
     return flags;
   } catch (error) {
     console.error(error);
@@ -236,16 +278,18 @@ function usePrimitiveFlags<F extends Flags>(
     if (initialFlags || config.disableCache) return;
 
     const cachedFlags = loadFlagsFromCache<F>(initialUserAttributes?.key);
-    if (cachedFlags) setFlags(cachedFlags);
-  }, [initialFlags, initialUserAttributes]);
+    if (!shallowEqual(flags, cachedFlags)) {
+      setFlags(cachedFlags);
+    }
+  }, [flags, initialFlags, initialUserAttributes]);
 
   // fetch on mount when no initialFlags were provided
   React.useEffect(() => {
-    if (flags !== null) return;
+    if (initialFlags !== null) return;
 
     let active = true;
 
-    fetchFlags<F>(config, userAttributes).then(nextFlags => {
+    fetchFlags<F>({ config, userAttributes }).then(nextFlags => {
       // skip in case the request failed
       if (!nextFlags) return;
       // skip in case the component unmounted
@@ -261,7 +305,7 @@ function usePrimitiveFlags<F extends Flags>(
     return () => {
       active = false;
     };
-  }, [flags, userAttributes]);
+  }, [initialFlags, userAttributes]);
 
   // revalidate when incoming user changes
   const incomingUser = options?.user;
@@ -283,13 +327,12 @@ function usePrimitiveFlags<F extends Flags>(
       const fetchId = (latestFetchId = Date.now());
 
       try {
-        const response = await fetch(config.endpoint, {
-          method: 'POST',
-          body: JSON.stringify(createBody(config.clientId, userAttributes)),
-        });
-        if (!response.ok) return;
+        const nextFlags = await queuedFetchFlags<F>(
+          config.endpoint,
+          JSON.stringify(createBody(config.clientId, userAttributes))
+        );
 
-        const nextFlags: F = await response.json();
+        if (!nextFlags) return;
 
         // skip responses to outdated requests
         if (fetchId !== latestFetchId) return;
@@ -375,7 +418,10 @@ export const getFlags =
           throw new Error('@happykit/flags: Missing config.clientId');
         }
 
-        const flags = await fetchFlags<F>(config, toUserAttributes(user));
+        const flags = await fetchFlags<F>({
+          config,
+          userAttributes: toUserAttributes(user),
+        });
         const defaultFlags = (config.defaultFlags || {}) as F;
         return flags ? addDefaults<F>(flags, defaultFlags) : defaultFlags;
       }

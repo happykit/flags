@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 import 'jest-fetch-mock';
-import { getFlags, configure, _resetConfig } from '../src';
+import { getFlags, configure, _reset } from '../src';
 
 const fakeResponse = {
   body: JSON.stringify({ aFlag: true }),
@@ -10,7 +10,7 @@ const fakeResponse = {
 };
 
 beforeEach(() => {
-  _resetConfig();
+  _reset();
   fetchMock.resetMocks();
 });
 
