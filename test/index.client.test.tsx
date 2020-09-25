@@ -306,6 +306,35 @@ describe('useFlags', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it('only fetches once when the hook is called with the same params while another fetch for those params is already in progress even when the cache is disabled', async () => {
+    fetchMock.mockOnce(
+      JSON.stringify({ someFlag: true }),
+      fakeResponse.options
+    );
+    configure({ clientId: 'foo', disableCache: true });
+    expect(localStorage.getItem('happykit_flags')).toBeNull();
+    const Page = () => {
+      const flagsA = useFlags<{ someFlag?: string }>();
+      const flagsB = useFlags<{ someFlag?: string }>();
+
+      return (
+        <ul>
+          <li>{flagsA.someFlag ? 'a: hello' : 'a: waiting'}</li>
+          <li>{flagsB.someFlag ? 'b: hello' : 'b: waiting'}</li>
+        </ul>
+      );
+    };
+    render(<Page />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('a: hello')).toBeInTheDocument();
+      expect(screen.queryByText('b: hello')).toBeInTheDocument();
+    });
+
+    // only called once even though the hook is used twice
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it('preloads hooks from cache after initial render and updates cache with new values when no user is set', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
     configure({ clientId: 'foo' });
@@ -481,6 +510,59 @@ describe('useFlags', () => {
         userAttributesKey: 'user_B',
       })
     );
+  });
+
+  it('ignores cached values when disableCache is set', async () => {
+    fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
+    configure({ clientId: 'foo', disableCache: true });
+
+    const cachedFlags = {
+      endpoint: 'https://happykit.dev/api/flags',
+      clientId: 'foo',
+      flags: { aFlag: false, bFlag: false },
+    };
+
+    // prepare localStorage
+    localStorage.setItem('happykit_flags', JSON.stringify(cachedFlags));
+
+    const { result, waitForNextUpdate } = renderHook(() => useFlags());
+    expect(result.current).toEqual({
+      /* no flags since user key did not match */
+    });
+    await waitForNextUpdate();
+    expect(result.current).toEqual({ aFlag: true });
+    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
+      body: JSON.stringify({ envKey: 'foo' }),
+      method: 'POST',
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    // no changes to localStorage
+    expect(localStorage.getItem('happykit_flags')).toEqual(
+      JSON.stringify(cachedFlags)
+    );
+  });
+
+  it('ignores cached values when disableCache is set', async () => {
+    fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
+    configure({ clientId: 'foo', disableCache: true });
+
+    expect(localStorage.getItem('happykit_flags')).toBeNull();
+
+    const { result, waitForNextUpdate } = renderHook(() => useFlags());
+    expect(result.current).toEqual({
+      /* no flags since user key did not match */
+    });
+    await waitForNextUpdate();
+    expect(result.current).toEqual({ aFlag: true });
+    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
+      body: JSON.stringify({ envKey: 'foo' }),
+      method: 'POST',
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    // no changes to localStorage
+    expect(localStorage.getItem('happykit_flags')).toBeNull();
   });
 });
 
