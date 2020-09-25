@@ -5,9 +5,35 @@ import * as React from 'react';
 export type Flags = { [key: string]: boolean | number | string | undefined };
 
 export type FlagConfig<F extends Flags = Flags> = {
+  /**
+   * Your HappyKit Flags Client Id.
+   *
+   * It should look similar to `flags_pub_277203581177692685`.
+   *
+   * You can use that value if you just want to play around.
+   * You will receive one flag called `dog` which is turned on.
+   */
   clientId?: string;
+  /**
+   * This is internal and you don't need to provide it.
+   *
+   * It defines where the Flags are loaded from.
+   */
   endpoint: string;
+  /**
+   * Key-value pairs of flags and their values. These values are used as
+   * fallbacks in `useFlags` and `getFlags`. The fallbacks are used while the
+   * actual flags are loaded, in case a flag is missing or when the request
+   * loading the flags fails for unexpected reasons. If you don't declare
+   * `defaultFlags`, then the flag values will be `undefined`.
+   */
   defaultFlags?: F;
+  /**
+   * Pass `true` to turn off the client-side cache.
+   * The cache is persisted to `localStorage` and persists across page loads.
+   * Even with an enabled cache, all flags will get revalidated in
+   * [`stale-while-revalidate`](https://tools.ietf.org/html/rfc5861) fashion.
+   */
   disableCache?: boolean;
 };
 
@@ -20,8 +46,22 @@ export type FlagUserAttributes = {
 };
 
 export type FlagOptions<F extends Flags> = {
+  /**
+   * This is the flag user which the flags will be evaluated for.
+   */
   user?: FlagUserAttributes;
+  /**
+   * In case you preloaded your flags during server-side rendering using
+   * `getFlags()`, provide the flags as `initialFlags`.
+   * The client will then skip the initial request and use the provided flags
+   * instead.
+   * This allows you to get rid of loading states on the client.
+   */
   initialFlags?: F;
+  /**
+   * By default, the client will revalidate all feature flags when the browser
+   * window regains focus. Pass `false` to skip this behaviour.
+   */
   revalidateOnFocus?: boolean;
 };
 
