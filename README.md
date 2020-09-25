@@ -15,6 +15,16 @@
 
 Add Feature Flags to your Next.js application with a single React Hook. This package integrates your Next.js application with HappyKit Flags. Create a free [happykit.dev](https://happykit.dev/signup) account to get started.
 
+**Key Features**
+
+- written for Next.js
+- integrate using a simple `useFlags` hook
+- only 1 kB in size
+- extremely fast flag responses (under 100ms on average)
+- target individual users
+- server-side rendering support
+- static site generation support (redeploy your website on flag changes)
+
 <details><br /><br />
   <summary><b>Want to see a demo?</b></summary>
 
@@ -24,7 +34,10 @@ Add Feature Flags to your Next.js application with a single React Hook. This pac
 
 <br />
 
-- [Key Features](#key-features)
+---
+
+<br />
+
 - [Installation](#installation)
 - [Setup](#setup)
 - [Basic Usage](#basic-usage)
@@ -48,15 +61,7 @@ Add Feature Flags to your Next.js application with a single React Hook. This pac
     - [Custom Flag Type](#custom-flag-type)
   - [Code splitting](#code-splitting)
 
-## Key Features
-
-- written for Next.js
-- integrate using a simple `useFlags` hook
-- only 1 kB in size
-- extremely fast flag responses (under 100ms on average)
-- target individual users
-- server-side rendering support
-- static site generation support (redeploy your website on flag changes)
+<br />
 
 ## Installation
 
