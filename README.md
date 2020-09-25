@@ -15,6 +15,15 @@
 
 Add Feature Flags to your Next.js application with a single React Hook. This package integrates your Next.js application with HappyKit Flags. Create a free [happykit.dev](https://happykit.dev/signup) account to get started.
 
+<details><br /><br />
+  <summary><b>Want to see a demo?</b></summary>
+
+  <img alt="HappyKit Flags Demo" src="https://user-images.githubusercontent.com/1765075/94278500-90819000-ff53-11ea-912a-a59cfb491406.gif" />
+  <br /><br />
+</details>
+
+<br />
+
 - [Key Features](#key-features)
 - [Installation](#installation)
 - [Setup](#setup)
