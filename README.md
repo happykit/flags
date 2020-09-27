@@ -291,7 +291,11 @@ export const getStaticProps = () => {
 };
 ```
 
-_Note that you lose some features like revalidation when you go for this plain approach. This also means visitor will only see the changes once your site is redeployed instead of right away._
+_The upside of this approach is that `useFlags` isn't even shipped to the client._
+
+_For use with `getStaticProps` the downside is that the new flags are only available once your site is redeployed. You can automate redeployments on flag changes with Deploy Hooks.._
+
+_For use with `getServerSideProps` the downside is that flag changes are only shown when the page is reloaded. You also lose client-side bootstrapping of feature flags, which uses cached flags while requesting the new flags in the background in a stale-while-revaldiate fashion._
 
 ### With disabled revalidation
 
