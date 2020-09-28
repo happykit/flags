@@ -158,7 +158,7 @@ Provide any of these attributes to store them in HappyKit. You will be able to u
 
 ### `getFlags`
 
-- `useFlag(user)`
+- `getFlags(user)`
   - `user` _(object)_ _optional_: A user to load the flags for. The user you pass here will be stored in HappyKit for future reference. A user must at least have a `key`. See a list of supported user attributes [here](#supported-user-attributes).
 
 This function returns a promise resolving to an object containing requested flags.
