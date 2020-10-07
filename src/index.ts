@@ -44,9 +44,9 @@ export type FlagConfig<F extends Flags = Flags> = {
    * This setting only affects whether you see individual users in HappyKit Flags or not.
    * It does not affect Feature Flag evaluation, percentage based rollouts or anything else.
    *
-   * You can overwrite this setting per user by passing `{ persist: true }` to `getFlags` or `useFlags`.
+   * You can overwrite this setting per user by passing `{ persistUser: true }` to `getFlags` or `useFlags`.
    */
-  persist?: boolean;
+  persistUsers?: boolean;
 };
 
 export type FlagUserAttributes = {
@@ -78,9 +78,9 @@ export type FlagOptions<F extends Flags> = {
   /**
    * By default all passed users are stored in HappyKit.
    *
-   * Pass `persist: true` to store this user in HappyKit.
+   * Pass `true` to store this user in HappyKit.
    */
-  persist?: boolean;
+  persistUser?: boolean;
 };
 
 const defaultConfig: FlagConfig = {
@@ -205,26 +205,29 @@ async function dedupedFetch<F extends Flags>(
 
 async function fetchFlags<F extends Flags>({
   config,
-  persist,
+  persistUser,
   userAttributes,
 }: {
   config: FlagConfig;
-  persist?: boolean;
+  persistUser?: boolean;
   userAttributes: FlagUserAttributes | null;
 }): Promise<F | null> {
   const body = (() => {
     const bodyDraft: {
       envKey: FlagConfig['clientId'];
       user?: FlagUserAttributes;
-      persist?: boolean;
+      persistUser?: boolean;
     } = {
       envKey: config.clientId,
     };
 
-    // only set "persist" when userAttributes are provided
+    // only set "persistUser" when userAttributes are provided
     // read from config if no value is set in options
-    if (userAttributes && (persist !== undefined ? persist : config.persist)) {
-      bodyDraft.persist = true;
+    if (
+      userAttributes &&
+      (persistUser !== undefined ? persistUser : config.persistUsers)
+    ) {
+      bodyDraft.persistUser = true;
     }
 
     if (userAttributes) bodyDraft.user = userAttributes;
@@ -325,7 +328,7 @@ function usePrimitiveFlags<F extends Flags>(
     userAttributes,
     setUserAttributes,
   ] = React.useState<FlagUserAttributes | null>(initialUserAttributes);
-  const persist = options?.persist;
+  const persistUser = options?.persistUser;
 
   // populate flags from cache after first render
   // We need to wait for the initial render to complete so the server-side
@@ -345,7 +348,7 @@ function usePrimitiveFlags<F extends Flags>(
 
     let active = true;
 
-    fetchFlags<F>({ config, persist, userAttributes }).then(nextFlags => {
+    fetchFlags<F>({ config, persistUser, userAttributes }).then(nextFlags => {
       // skip in case the request failed
       if (!nextFlags) return;
       // skip in case the component unmounted
@@ -361,7 +364,7 @@ function usePrimitiveFlags<F extends Flags>(
     return () => {
       active = false;
     };
-  }, [initialFlags, persist, userAttributes]);
+  }, [initialFlags, persistUser, userAttributes]);
 
   // revalidate when incoming user changes
   const incomingUser = options?.user;
@@ -384,7 +387,7 @@ function usePrimitiveFlags<F extends Flags>(
 
       const nextFlags = await fetchFlags<F>({
         config,
-        persist,
+        persistUser,
         userAttributes,
       });
 
@@ -407,7 +410,7 @@ function usePrimitiveFlags<F extends Flags>(
     return () => {
       window.removeEventListener('focus', listener);
     };
-  }, [revalidateOnFocus, setFlags, persist, userAttributes]);
+  }, [revalidateOnFocus, setFlags, persistUser, userAttributes]);
 
   return flags;
 }
@@ -466,10 +469,10 @@ export const getFlags =
   typeof window === 'undefined'
     ? async function getFlags<F extends Flags>({
         user,
-        persist,
+        persistUser,
       }: {
         user?: FlagUserAttributes | null;
-        persist?: FlagOptions<F>['persist'];
+        persistUser?: FlagOptions<F>['persistUser'];
       } = {}): Promise<F> {
         if (!hasClientId(config)) {
           throw new Error('@happykit/flags: Missing config.clientId');
@@ -477,7 +480,7 @@ export const getFlags =
 
         const flags = await fetchFlags<F>({
           config,
-          persist,
+          persistUser,
           userAttributes: toUserAttributes(user),
         });
         const defaultFlags = (config.defaultFlags || {}) as F;

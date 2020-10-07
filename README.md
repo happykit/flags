@@ -133,9 +133,13 @@ export const getServerSideProps = async () => {
 ### `configure`
 
 - `configure(options)`
+
   - `options.clientId` _(string)_ _required_: Your HappyKit Flags Client Id
   - `options.defaultFlags` _(object)_ _optional_: Key-value pairs of flags and their values. These values are used as fallbacks in `useFlags` and `getFlags`. The fallbacks are used while the actual flags are loaded, in case a flag is missing or when the request loading the flags fails for unexpected reasons. If you don't declare `defaultFlags`, then the flag values will be `undefined`.
   - `options.disableCache` _(boolean)_ _optional_: Pass `true` to turn off the client-side cache. The cache is persisted to `localStorage` and persists across page loads. Even with an enabled cache, all flags will get revalidated in [`stale-while-revalidate`](https://tools.ietf.org/html/rfc5861) fashion.
+  - `options.persistUsers` _(boolean)_ _optional_: By default, HappyKit will not store the provided user. Pass `true` to store the provided user in HappyKit Flags. This makes the user available in the HappyKit Flags Dashboard. Persisting a user does not affect flag evaluation.
+
+`configure` sets application-wide defaults. Settings can be overwritten for individual calls with the options passed to `useFlags` and `getFlags`.
 
 ### `useFlags`
 
@@ -143,11 +147,9 @@ export const getServerSideProps = async () => {
   - `options.user` _(object)_ _optional_: A user to load the flags for. The user you pass here will be stored in HappyKit for future reference and [individual targeting](#with-user-targeting). A user must at least have a `key`. See the supported user attributes [here](#supported-user-attributes).
   - `options.initialFlags` _(object)_ _optional_: In case you preloaded your flags during server-side rendering using `getFlags()`, provide the flags as `initialFlags`. The client will then skip the initial request and use the provided flags instead. This allows you to get rid of loading states on the client.
   - `options.revalidateOnFocus` _(object)_ _optional_: By default, the client will revalidate all feature flags when the browser window regains focus. Pass `revalidateOnFocus: false` to skip this behaviour.
-  - `options.persist` _(boolean)_ _optional_: By default, HappyKit will not store the provided user. Pass `true` to store the provided user in HappyKit Flags. This makes the user available in the HappyKit Flags Dashboard. Persisting a user does not affect flag evaluation.
+  - `options.persistUser` _(boolean)_ _optional_: By default, HappyKit will not store the provided user. Pass `true` to store the provided user in HappyKit Flags. This makes the user available in the HappyKit Flags Dashboard. Persisting a user does not affect flag evaluation.
 
 This function returns an object containing the requested flags.
-
-`persist` can be provided to `configure` to set application-wide defaults and to `useFlags` to set the value for individual calls. The options provided to `useFlags` always win. When no value is set,
 
 #### Supported user attributes
 
@@ -163,7 +165,7 @@ Provide any of these attributes to store them in HappyKit. You will be able to u
 
 - `getFlags(options)`
   - `options.user` _(object)_ _optional_: A user to load the flags for. The user you pass here will be stored in HappyKit for future reference. A user must at least have a `key`. See a list of supported user attributes [here](#supported-user-attributes).
-  - `options.persist` _(boolean)_ _optional_: By default, HappyKit will not store the provided user. Pass `true` to store the provided user in HappyKit Flags. This makes the user available in the HappyKit Flags Dashboard. Persisting a user does not affect flag evaluation.
+  - `options.persistUser` _(boolean)_ _optional_: By default, HappyKit will not store the provided user. Pass `true` to store the provided user in HappyKit Flags. This makes the user available in the HappyKit Flags Dashboard. Persisting a user does not affect flag evaluation.
 
 This function returns a promise resolving to an object containing requested flags.
 

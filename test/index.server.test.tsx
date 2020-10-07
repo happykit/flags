@@ -124,36 +124,36 @@ describe('getFlags', () => {
     });
   });
 
-  it('sends "persist" when "persist" is set in the global config', async () => {
+  it('sends "persistUser" when "persistUsers" is set in the global config', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
-    configure({ clientId: 'foo', persist: true });
+    configure({ clientId: 'foo', persistUsers: true });
     const user = { key: 'user_key_1' };
     const flags = await getFlags({ user });
     expect(flags).toEqual({ aFlag: true });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
-      body: JSON.stringify({ envKey: 'foo', persist: true, user }),
+      body: JSON.stringify({ envKey: 'foo', persistUser: true, user }),
       method: 'POST',
     });
   });
 
-  it('sends "persist" when "persist" is set in getFlags', async () => {
+  it('sends "persistUser" when "persistUser" is set in getFlags', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
     configure({ clientId: 'foo' });
     const user = { key: 'user_key_1' };
-    const flags = await getFlags({ user, persist: true });
+    const flags = await getFlags({ user, persistUser: true });
     expect(flags).toEqual({ aFlag: true });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
-      body: JSON.stringify({ envKey: 'foo', persist: true, user }),
+      body: JSON.stringify({ envKey: 'foo', persistUser: true, user }),
       method: 'POST',
     });
   });
 
-  it('does not pass "persist" when "persist" is set in getFlags and no user is given', async () => {
+  it('does not pass "persistUser" when "persistUser" is set in getFlags and no user is given', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
     configure({ clientId: 'foo' });
-    const flags = await getFlags({ persist: true });
+    const flags = await getFlags({ persistUser: true });
     expect(flags).toEqual({ aFlag: true });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
@@ -162,10 +162,10 @@ describe('getFlags', () => {
     });
   });
 
-  it('does not send "persist" when "persist" is set in the global config but overwritten by getFlags', async () => {
+  it('does not send "persistUser" when "persistUser" is set in the global config but overwritten by getFlags', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
-    configure({ clientId: 'foo', persist: true });
-    const flags = await getFlags({ persist: false });
+    configure({ clientId: 'foo', persistUsers: true });
+    const flags = await getFlags({ persistUser: false });
     expect(flags).toEqual({ aFlag: true });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
@@ -174,9 +174,9 @@ describe('getFlags', () => {
     });
   });
 
-  it('does not send "persist" when "persist" is set in the global config but no user is provided', async () => {
+  it('does not send "persistUser" when "persistUsers" is set in the global config but no user is provided', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
-    configure({ clientId: 'foo', persist: true });
+    configure({ clientId: 'foo', persistUsers: true });
     const flags = await getFlags();
     expect(flags).toEqual({ aFlag: true });
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -186,10 +186,10 @@ describe('getFlags', () => {
     });
   });
 
-  it('does not send "persist" when "persist" is set in getFlags but no user is provided', async () => {
+  it('does not send "persistUser" when "persistUser" is set in getFlags but no user is provided', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
     configure({ clientId: 'foo' });
-    const flags = await getFlags({ persist: true });
+    const flags = await getFlags({ persistUser: true });
     expect(flags).toEqual({ aFlag: true });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {

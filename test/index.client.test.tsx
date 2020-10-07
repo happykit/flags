@@ -566,12 +566,12 @@ describe('useFlags', () => {
     expect(localStorage.getItem('happykit_flags')).toBeNull();
   });
 
-  it('sends "persist" when "persist" is set in useFlags', async () => {
+  it('sends "persistUser" when "persistUser" is set in useFlags', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
     configure({ clientId: 'foo' });
     expect(localStorage.getItem('happykit_flags')).toBeNull();
     const { result, waitForNextUpdate } = renderHook(() =>
-      useFlags({ persist: true, user: { key: 'test-user-key' } })
+      useFlags({ persistUser: true, user: { key: 'test-user-key' } })
     );
     // flags are an empty object until the first response arrives
     expect(result.current).toEqual({});
@@ -582,7 +582,7 @@ describe('useFlags', () => {
     expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
       body: JSON.stringify({
         envKey: 'foo',
-        persist: true,
+        persistUser: true,
         user: { key: 'test-user-key' },
       }),
       method: 'POST',
@@ -597,9 +597,9 @@ describe('useFlags', () => {
     );
   });
 
-  it('sends "persist" when "persist" is set in the global config', async () => {
+  it('sends "persistUser" when "persistUsers" is set in the global config', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
-    configure({ clientId: 'foo', persist: true });
+    configure({ clientId: 'foo', persistUsers: true });
     expect(localStorage.getItem('happykit_flags')).toBeNull();
     const { result, waitForNextUpdate } = renderHook(() =>
       useFlags({ user: { key: 'test-user-key' } })
@@ -613,7 +613,7 @@ describe('useFlags', () => {
     expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
       body: JSON.stringify({
         envKey: 'foo',
-        persist: true,
+        persistUser: true,
         user: { key: 'test-user-key' },
       }),
       method: 'POST',
@@ -628,12 +628,12 @@ describe('useFlags', () => {
     );
   });
 
-  it('does not send "persist" when "persist" is set in the global config but overwritten by useFlags', async () => {
+  it('does not send "persistUser" when "persistUsers" is set in the global config but overwritten by useFlags', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
-    configure({ clientId: 'foo', persist: true });
+    configure({ clientId: 'foo', persistUsers: true });
     expect(localStorage.getItem('happykit_flags')).toBeNull();
     const { result, waitForNextUpdate } = renderHook(() =>
-      useFlags({ user: { key: 'test-user-key' }, persist: false })
+      useFlags({ user: { key: 'test-user-key' }, persistUser: false })
     );
     // flags are an empty object until the first response arrives
     expect(result.current).toEqual({});
@@ -658,9 +658,9 @@ describe('useFlags', () => {
     );
   });
 
-  it('does not send "persist" when "persist" is set in the global config but no user is provided', async () => {
+  it('does not send "persistUser" when "persistUsers" is set in the global config but no user is provided', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
-    configure({ clientId: 'foo', persist: true });
+    configure({ clientId: 'foo', persistUsers: true });
     expect(localStorage.getItem('happykit_flags')).toBeNull();
     const { result, waitForNextUpdate } = renderHook(() => useFlags());
     // flags are an empty object until the first response arrives
@@ -682,12 +682,12 @@ describe('useFlags', () => {
     );
   });
 
-  it('does not send "persist" when "persist" is set in useFlags but no user is provided', async () => {
+  it('does not send "persistUser" when "persistUser" is set in useFlags but no user is provided', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
     configure({ clientId: 'foo' });
     expect(localStorage.getItem('happykit_flags')).toBeNull();
     const { result, waitForNextUpdate } = renderHook(() =>
-      useFlags({ persist: true })
+      useFlags({ persistUser: true })
     );
     // flags are an empty object until the first response arrives
     expect(result.current).toEqual({});
