@@ -167,25 +167,6 @@ function shallowEqual(objA: any, objB: any) {
   return true;
 }
 
-function createBody(
-  config: Pick<FlagConfig, 'clientId' | 'persist'>,
-  userAttributes: FlagUserAttributes | null
-) {
-  const body: {
-    envKey: FlagConfig['clientId'];
-    user?: FlagUserAttributes;
-    persist?: boolean;
-  } = {
-    envKey: config.clientId,
-  };
-
-  if (config.persist) body.persist = true;
-
-  if (userAttributes) body.user = userAttributes;
-
-  return body;
-}
-
 /**
  * A Map of the currently in-progress requests.
  */
@@ -201,7 +182,7 @@ const map = new Map<string, Promise<Flags>>();
  * @param endpoint The endpoint fetched from
  * @param body Stringified request body containing the clientId & userAttributes.
  */
-async function queuedFetchFlags<F extends Flags>(
+async function dedupedFetch<F extends Flags>(
   endpoint: string,
   body: string
 ): Promise<F | null> {
@@ -224,23 +205,36 @@ async function queuedFetchFlags<F extends Flags>(
 
 async function fetchFlags<F extends Flags>({
   config,
+  persist,
   userAttributes,
 }: {
   config: FlagConfig;
+  persist?: boolean;
   userAttributes: FlagUserAttributes | null;
-  skipQueue?: boolean;
 }): Promise<F | null> {
-  try {
-    const flags = await queuedFetchFlags<F>(
-      config.endpoint,
-      JSON.stringify(createBody(config, userAttributes))
-    );
+  const body = (() => {
+    const bodyDraft: {
+      envKey: FlagConfig['clientId'];
+      user?: FlagUserAttributes;
+      persist?: boolean;
+    } = {
+      envKey: config.clientId,
+    };
 
-    return flags;
-  } catch (error) {
+    // only set "persist" when userAttributes are provided
+    // read from config if no value is set in options
+    if (userAttributes && (persist !== undefined ? persist : config.persist)) {
+      bodyDraft.persist = true;
+    }
+
+    if (userAttributes) bodyDraft.user = userAttributes;
+    return bodyDraft;
+  })();
+
+  return dedupedFetch<F>(config.endpoint, JSON.stringify(body)).catch(error => {
     console.error(error);
     return null;
-  }
+  });
 }
 
 function storeFlagsInCache(
@@ -331,6 +325,7 @@ function usePrimitiveFlags<F extends Flags>(
     userAttributes,
     setUserAttributes,
   ] = React.useState<FlagUserAttributes | null>(initialUserAttributes);
+  const persist = options?.persist;
 
   // populate flags from cache after first render
   // We need to wait for the initial render to complete so the server-side
@@ -350,7 +345,7 @@ function usePrimitiveFlags<F extends Flags>(
 
     let active = true;
 
-    fetchFlags<F>({ config, userAttributes }).then(nextFlags => {
+    fetchFlags<F>({ config, persist, userAttributes }).then(nextFlags => {
       // skip in case the request failed
       if (!nextFlags) return;
       // skip in case the component unmounted
@@ -366,7 +361,7 @@ function usePrimitiveFlags<F extends Flags>(
     return () => {
       active = false;
     };
-  }, [initialFlags, userAttributes]);
+  }, [initialFlags, persist, userAttributes]);
 
   // revalidate when incoming user changes
   const incomingUser = options?.user;
@@ -387,27 +382,24 @@ function usePrimitiveFlags<F extends Flags>(
     const listener = async () => {
       const fetchId = (latestFetchId = Date.now());
 
-      try {
-        const nextFlags = await queuedFetchFlags<F>(
-          config.endpoint,
-          JSON.stringify(createBody(config, userAttributes))
-        );
+      const nextFlags = await fetchFlags<F>({
+        config,
+        persist,
+        userAttributes,
+      });
 
-        if (!nextFlags) return;
+      if (!nextFlags) return;
 
-        // skip responses to outdated requests
-        if (fetchId !== latestFetchId) return;
+      // skip responses to outdated requests
+      if (fetchId !== latestFetchId) return;
 
-        // skip invalid responses
-        if (typeof nextFlags !== 'object') return;
+      // skip invalid responses
+      if (typeof nextFlags !== 'object') return;
 
-        setFlags(nextFlags);
+      setFlags(nextFlags);
 
-        if (!config.disableCache) {
-          storeFlagsInCache(nextFlags, userAttributes?.key);
-        }
-      } catch (error) {
-        console.error(error);
+      if (!config.disableCache) {
+        storeFlagsInCache(nextFlags, userAttributes?.key);
       }
     };
 
@@ -415,7 +407,7 @@ function usePrimitiveFlags<F extends Flags>(
     return () => {
       window.removeEventListener('focus', listener);
     };
-  }, [revalidateOnFocus, setFlags, userAttributes]);
+  }, [revalidateOnFocus, setFlags, persist, userAttributes]);
 
   return flags;
 }
@@ -472,15 +464,20 @@ export function useFlags<F extends Flags>(options?: FlagOptions<F>): F {
 
 export const getFlags =
   typeof window === 'undefined'
-    ? async function getFlags<F extends Flags>(
-        user?: FlagUserAttributes | null
-      ): Promise<F> {
+    ? async function getFlags<F extends Flags>({
+        user,
+        persist,
+      }: {
+        user?: FlagUserAttributes | null;
+        persist?: FlagOptions<F>['persist'];
+      } = {}): Promise<F> {
         if (!hasClientId(config)) {
           throw new Error('@happykit/flags: Missing config.clientId');
         }
 
         const flags = await fetchFlags<F>({
           config,
+          persist,
           userAttributes: toUserAttributes(user),
         });
         const defaultFlags = (config.defaultFlags || {}) as F;

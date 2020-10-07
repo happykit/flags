@@ -49,7 +49,7 @@ describe('getFlags', () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
     configure({ clientId: 'foo' });
     const user = { key: 'user_key_1' };
-    const flags = await getFlags(user);
+    const flags = await getFlags({ user });
     expect(flags).toEqual({ aFlag: true });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
@@ -57,14 +57,17 @@ describe('getFlags', () => {
       method: 'POST',
     });
   });
+
   it('strips unknown user attributes', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
     configure({ clientId: 'foo' });
     const user = { key: 'user_key_1' };
     const flags = await getFlags({
-      ...user,
-      anUnknownAttribute: 'do-not-forward-me',
-    } as any);
+      user: {
+        ...user,
+        anUnknownAttribute: 'do-not-forward-me',
+      } as any,
+    });
     expect(flags).toEqual({ aFlag: true });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
@@ -72,6 +75,7 @@ describe('getFlags', () => {
       method: 'POST',
     });
   });
+
   it('forwards all supported user attributes', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
     configure({ clientId: 'foo' });
@@ -82,7 +86,7 @@ describe('getFlags', () => {
       avatar: 'avatar-url',
       country: 'DE',
     };
-    const flags = await getFlags(user);
+    const flags = await getFlags({ user });
     expect(flags).toEqual({ aFlag: true });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
@@ -113,6 +117,80 @@ describe('getFlags', () => {
     configure({ clientId: 'foo', defaultFlags });
     const flags = await getFlags();
     expect(flags).toEqual({ aFlag: true, xzibit: false });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
+      body: JSON.stringify({ envKey: 'foo' }),
+      method: 'POST',
+    });
+  });
+
+  it('sends "persist" when "persist" is set in the global config', async () => {
+    fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
+    configure({ clientId: 'foo', persist: true });
+    const user = { key: 'user_key_1' };
+    const flags = await getFlags({ user });
+    expect(flags).toEqual({ aFlag: true });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
+      body: JSON.stringify({ envKey: 'foo', persist: true, user }),
+      method: 'POST',
+    });
+  });
+
+  it('sends "persist" when "persist" is set in getFlags', async () => {
+    fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
+    configure({ clientId: 'foo' });
+    const user = { key: 'user_key_1' };
+    const flags = await getFlags({ user, persist: true });
+    expect(flags).toEqual({ aFlag: true });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
+      body: JSON.stringify({ envKey: 'foo', persist: true, user }),
+      method: 'POST',
+    });
+  });
+
+  it('does not pass "persist" when "persist" is set in getFlags and no user is given', async () => {
+    fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
+    configure({ clientId: 'foo' });
+    const flags = await getFlags({ persist: true });
+    expect(flags).toEqual({ aFlag: true });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
+      body: JSON.stringify({ envKey: 'foo' }),
+      method: 'POST',
+    });
+  });
+
+  it('does not send "persist" when "persist" is set in the global config but overwritten by getFlags', async () => {
+    fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
+    configure({ clientId: 'foo', persist: true });
+    const flags = await getFlags({ persist: false });
+    expect(flags).toEqual({ aFlag: true });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
+      body: JSON.stringify({ envKey: 'foo' }),
+      method: 'POST',
+    });
+  });
+
+  it('does not send "persist" when "persist" is set in the global config but no user is provided', async () => {
+    fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
+    configure({ clientId: 'foo', persist: true });
+    const flags = await getFlags();
+    expect(flags).toEqual({ aFlag: true });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
+      body: JSON.stringify({ envKey: 'foo' }),
+      method: 'POST',
+    });
+  });
+
+  it('does not send "persist" when "persist" is set in getFlags but no user is provided', async () => {
+    fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
+    configure({ clientId: 'foo' });
+    const flags = await getFlags({ persist: true });
+    expect(flags).toEqual({ aFlag: true });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
       body: JSON.stringify({ envKey: 'foo' }),
