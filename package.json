@@ -14,7 +14,7 @@
     "start": "tsdx watch",
     "build": "tsdx build",
     "test": "tsdx test",
-    "lint": "tsdx lint",
+    "lint": "tsdx lint src test jest",
     "prepare": "tsdx build",
     "pub": "yarn publish --access=public"
   },
