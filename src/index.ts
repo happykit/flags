@@ -6,14 +6,16 @@ export type Flags = { [key: string]: boolean | number | string | undefined };
 
 export type FlagConfig<F extends Flags = Flags> = {
   /**
-   * Your HappyKit Flags Client Id.
+   * Your HappyKit Flags Key.
    *
    * It should look similar to `flags_pub_277203581177692685`.
    *
    * You can use that value if you just want to play around.
    * You will receive one flag called `dog` which is turned on.
+   *
+   * You can find this key in your Project settings on https://happykit.dev
    */
-  envKey?: string;
+  envKey: string;
   /**
    * This is internal and you don't need to provide it.
    *
@@ -39,6 +41,7 @@ export type FlagConfig<F extends Flags = Flags> = {
 
 export type FlagUserAttributes = {
   key: string;
+  persist?: boolean;
   email?: string;
   name?: string;
   avatar?: string;
@@ -65,14 +68,15 @@ export type FlagOptions<F extends Flags> = {
   revalidateOnFocus?: boolean;
 };
 
-const defaultConfig: FlagConfig = {
+const defaultConfig: Partial<FlagConfig> = {
   endpoint: 'https://happykit.dev/api/flags',
+  envKey: '',
   defaultFlags: {},
 };
 
 const localStorageCacheKey = 'happykit_flags';
 
-let config: FlagConfig = defaultConfig;
+let config: Partial<FlagConfig> = defaultConfig;
 
 /**
  * For testing purposes only
@@ -104,21 +108,11 @@ function toUserAttributes(user: any): FlagUserAttributes | null {
   if (typeof user.key !== 'string' || user.key.trim().length === 0) return null;
   const userAttributes: FlagUserAttributes = { key: user.key.trim() };
 
-  if (typeof user?.email === 'string') {
-    userAttributes['email'] = user.email;
-  }
-
-  if (typeof user?.name === 'string') {
-    userAttributes['name'] = user.name;
-  }
-
-  if (typeof user?.avatar === 'string') {
-    userAttributes['avatar'] = user.avatar;
-  }
-
-  if (typeof user?.country === 'string') {
-    userAttributes['country'] = user.country;
-  }
+  if (user?.persist) userAttributes.persist = true;
+  if (typeof user?.email === 'string') userAttributes.email = user.email;
+  if (typeof user?.name === 'string') userAttributes.name = user.name;
+  if (typeof user?.avatar === 'string') userAttributes.avatar = user.avatar;
+  if (typeof user?.country === 'string') userAttributes.country = user.country;
 
   return userAttributes;
 }
@@ -149,16 +143,8 @@ function shallowEqual(objA: any, objB: any) {
   return true;
 }
 
-function createBody(
-  envKey: FlagConfig['envKey'],
-  userAttributes: FlagUserAttributes | null
-) {
-  const body: {
-    envKey: FlagConfig['envKey'];
-    user?: FlagUserAttributes;
-  } = {
-    envKey: envKey,
-  };
+function createBody(userAttributes: FlagUserAttributes | null) {
+  const body: { user?: FlagUserAttributes } = {};
 
   if (userAttributes) body.user = userAttributes;
 
@@ -182,13 +168,15 @@ const map = new Map<string, Promise<Flags>>();
  */
 async function queuedFetchFlags<F extends Flags>(
   endpoint: string,
+  envKey: string,
   body: string
 ): Promise<F | null> {
-  const queueKey = JSON.stringify({ endpoint, body });
+  const url = [endpoint, envKey].join('/');
+  const queueKey = JSON.stringify({ url, body });
   const queuedPromise = map.get(queueKey);
   if (queuedPromise) return queuedPromise as Promise<F>;
 
-  const promise = fetch(endpoint, { method: 'POST', body }).then(
+  const promise = fetch(url, { method: 'POST', body }).then(
     response => (response.ok ? response.json() : null),
     () => null
   );
@@ -212,7 +200,8 @@ async function fetchFlags<F extends Flags>({
   try {
     const flags = await queuedFetchFlags<F>(
       config.endpoint,
-      JSON.stringify(createBody(config.envKey, userAttributes))
+      config.envKey,
+      JSON.stringify(createBody(userAttributes))
     );
 
     return flags;
@@ -278,8 +267,15 @@ function loadFlagsFromCache<F extends Flags>(
   }
 }
 
-function hasClientId(config: FlagConfig) {
-  return typeof config.envKey === 'string' && config.envKey.trim().length > 0;
+function isFullyConfiguredFlagConfig(
+  config: Partial<FlagConfig>
+): config is FlagConfig {
+  return (
+    typeof config.envKey === 'string' &&
+    config.envKey.trim().length > 0 &&
+    typeof config.endpoint === 'string' &&
+    config.endpoint.trim().length > 0
+  );
 }
 
 /**
@@ -292,7 +288,7 @@ function hasClientId(config: FlagConfig) {
 function usePrimitiveFlags<F extends Flags>(
   options?: FlagOptions<F>
 ): F | null {
-  if (!hasClientId(config)) {
+  if (!isFullyConfiguredFlagConfig(config)) {
     throw new Error('@happykit/flags: Missing config.envKey');
   }
 
@@ -323,15 +319,15 @@ function usePrimitiveFlags<F extends Flags>(
 
   // fetch on mount when no initialFlags were provided
   React.useEffect(() => {
-    if (initialFlags !== null) return;
+    if (initialFlags !== null || !isFullyConfiguredFlagConfig(config)) return;
 
-    let active = true;
+    let mounted = true;
 
     fetchFlags<F>({ config, userAttributes }).then(nextFlags => {
       // skip in case the request failed
       if (!nextFlags) return;
       // skip in case the component unmounted
-      if (!active) return;
+      if (!mounted) return;
 
       setFlags(nextFlags);
 
@@ -341,7 +337,7 @@ function usePrimitiveFlags<F extends Flags>(
     });
 
     return () => {
-      active = false;
+      mounted = false;
     };
   }, [initialFlags, userAttributes]);
 
@@ -363,11 +359,13 @@ function usePrimitiveFlags<F extends Flags>(
     let latestFetchId: number;
     const listener = async () => {
       const fetchId = (latestFetchId = Date.now());
+      if (!isFullyConfiguredFlagConfig(config)) return;
 
       try {
         const nextFlags = await queuedFetchFlags<F>(
           config.endpoint,
-          JSON.stringify(createBody(config.envKey, userAttributes))
+          config.envKey,
+          JSON.stringify(createBody(userAttributes))
         );
 
         if (!nextFlags) return;
@@ -452,7 +450,7 @@ export const getFlags =
     ? async function getFlags<F extends Flags>(
         user?: FlagUserAttributes | null
       ): Promise<F> {
-        if (!hasClientId(config)) {
+        if (!isFullyConfiguredFlagConfig(config)) {
           throw new Error('@happykit/flags: Missing config.envKey');
         }
 
