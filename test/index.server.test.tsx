@@ -19,7 +19,7 @@ describe('getFlags', () => {
     expect(typeof getFlags).toBe('function');
   });
 
-  it('throws when clientId is not set', async () => {
+  it('throws when envKey is not set', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
     let caughtError = null;
     try {
@@ -28,14 +28,14 @@ describe('getFlags', () => {
       caughtError = error;
     }
     expect(caughtError).toEqual(
-      Error('@happykit/flags: Missing config.clientId')
+      Error('@happykit/flags: Missing config.envKey')
     );
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('fetches flags from server', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
-    configure({ clientId: 'foo' });
+    configure({ envKey: 'foo' });
     const flags = await getFlags();
     expect(flags).toEqual({ aFlag: true });
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -47,7 +47,7 @@ describe('getFlags', () => {
 
   it('forwards the given user', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
-    configure({ clientId: 'foo' });
+    configure({ envKey: 'foo' });
     const user = { key: 'user_key_1' };
     const flags = await getFlags(user);
     expect(flags).toEqual({ aFlag: true });
@@ -59,7 +59,7 @@ describe('getFlags', () => {
   });
   it('strips unknown user attributes', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
-    configure({ clientId: 'foo' });
+    configure({ envKey: 'foo' });
     const user = { key: 'user_key_1' };
     const flags = await getFlags({
       ...user,
@@ -74,7 +74,7 @@ describe('getFlags', () => {
   });
   it('forwards all supported user attributes', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
-    configure({ clientId: 'foo' });
+    configure({ envKey: 'foo' });
     const user = {
       key: 'user_key_1',
       email: 'test@mail.com',
@@ -94,7 +94,7 @@ describe('getFlags', () => {
   it('merges application-wide default flag values in', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
     const defaultFlags = { xzibit: true };
-    configure({ clientId: 'foo', defaultFlags });
+    configure({ envKey: 'foo', defaultFlags });
     const flags = await getFlags();
     expect(flags).toEqual({ aFlag: true, ...defaultFlags });
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -110,7 +110,7 @@ describe('getFlags', () => {
       fakeResponse.options
     );
     const defaultFlags = { xzibit: true };
-    configure({ clientId: 'foo', defaultFlags });
+    configure({ envKey: 'foo', defaultFlags });
     const flags = await getFlags();
     expect(flags).toEqual({ aFlag: true, xzibit: false });
     expect(fetchMock).toHaveBeenCalledTimes(1);

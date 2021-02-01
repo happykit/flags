@@ -87,20 +87,20 @@ Configure your application in `_app.js`.
 // _app.js
 import { configure } from '@happykit/flags';
 
-configure({ clientId: process.env.NEXT_PUBLIC_FLAGS_CLIENT_ID });
+configure({ envKey: process.env.NEXT_PUBLIC_FLAGS_ENVIRONMENT_KEY });
 ```
 
 If you don't have a custom `_app.js` yet, see the [Custom `App`](https://nextjs.org/docs/advanced-features/custom-app) section of the Next.js docs for setup instructions.
 
-Create an account on [`happykit.dev`](https://happykit.dev/signup) to receive your `clientId`. You'll find it in the **Keys** section of your project settings once you created a project.
+Create an account on [`happykit.dev`](https://happykit.dev/signup) to receive your `envKey`. You'll find it in the **Keys** section of your project settings once you created a project.
 
-Make sure the environment variable containing the `clientId` starts with `NEXT_PUBLIC_` so the value is available on the client side.
+Make sure the environment variable containing the `envKey` starts with `NEXT_PUBLIC_` so the value is available on the client side.
 
-Store your `clientId` in `.env.local`:
+Store your `envKey` in `.env.local`:
 
 ```bash
 # .env.local
-NEXT_PUBLIC_FLAGS_CLIENT_ID=flags_pub_development_xxxxxxxxxx
+NEXT_PUBLIC_FLAGS_ENVIRONMENT_KEY=flags_pub_development_xxxxxxxxxx
 ```
 
 Later on, don't forget to also provide the environment variable in production.
@@ -143,7 +143,7 @@ export const getServerSideProps = async () => {
 ### `configure`
 
 - `configure(options)`
-  - `options.clientId` _(string)_ _required_: Your HappyKit Flags Client Id
+  - `options.envKey` _(string)_ _required_: Your HappyKit Flags Client Id
   - `options.defaultFlags` _(object)_ _optional_: Key-value pairs of flags and their values. These values are used as fallbacks in `useFlags` and `getFlags`. The fallbacks are used while the actual flags are loaded, in case a flag is missing or when the request loading the flags fails for unexpected reasons. If you don't declare `defaultFlags`, then the flag values will be `undefined`.
   - `options.disableCache` _(boolean)_ _optional_: Pass `true` to turn off the client-side cache. The cache is persisted to `localStorage` and persists across page loads. Even with an enabled cache, all flags will get revalidated in [`stale-while-revalidate`](https://tools.ietf.org/html/rfc5861) fashion.
 
@@ -228,7 +228,7 @@ You can configure application-wide default values for flags. These defaults will
 import { configure } from '@happykit/flags';
 
 configure({
-  clientId: process.env.NEXT_PUBLIC_FLAGS_CLIENT_ID,
+  envKey: process.env.NEXT_PUBLIC_FLAGS_ENVIRONMENT_KEY,
   defaultFlags: { xzibit: true },
 });
 ```
@@ -337,7 +337,7 @@ This example shows the full configuration with server-side rendering and code sp
 import App from 'next/app';
 import { configure } from '@happykit/flags';
 
-configure({ clientId: process.env.NEXT_PUBLIC_FLAGS_CLIENT_ID });
+configure({ envKey: process.env.NEXT_PUBLIC_FLAGS_ENVIRONMENT_KEY });
 
 export default function MyApp({ Component, pageProps }) {
   return <Component {...pageProps} />;
@@ -409,7 +409,7 @@ type Flags = {
 // the types defined in "configure" are used to check "defaultFlags"
 configure<Flags>({
   endpoint: 'http://localhost:8787/',
-  clientId: 'flags_pub_272357356657967622',
+  envKey: 'flags_pub_272357356657967622',
   defaultFlags: {
     booleanFlag: true,
     numericFlag: 10,

@@ -11,7 +11,7 @@ type Flags = {
 
 configure<Partial<Flags>>({
   // endpoint: 'http://localhost:8787/',
-  clientId: 'flags_pub_277203581177692685',
+  envKey: 'flags_pub_277203581177692685',
   defaultFlags: { booleanFlag: true },
 });
 
