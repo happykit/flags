@@ -13,7 +13,7 @@ export type FlagConfig<F extends Flags = Flags> = {
    * You can use that value if you just want to play around.
    * You will receive one flag called `dog` which is turned on.
    */
-  clientId?: string;
+  envKey?: string;
   /**
    * This is internal and you don't need to provide it.
    *
@@ -86,13 +86,13 @@ export const _reset =
       };
 
 export function configure<F extends Flags>(
-  nextConfig: Partial<FlagConfig<F>> & { clientId: string }
+  nextConfig: Partial<FlagConfig<F>> & { envKey: string }
 ) {
   if (typeof nextConfig !== 'object')
     throw new Error('@happykit/flags: config must be an object');
 
-  if (typeof nextConfig.clientId !== 'string')
-    throw new Error('@happykit/flags: Missing clientId');
+  if (typeof nextConfig.envKey !== 'string')
+    throw new Error('@happykit/flags: Missing envKey');
 
   config = Object.assign({}, defaultConfig, nextConfig);
 }
@@ -150,14 +150,14 @@ function shallowEqual(objA: any, objB: any) {
 }
 
 function createBody(
-  clientId: FlagConfig['clientId'],
+  envKey: FlagConfig['envKey'],
   userAttributes: FlagUserAttributes | null
 ) {
   const body: {
-    envKey: FlagConfig['clientId'];
+    envKey: FlagConfig['envKey'];
     user?: FlagUserAttributes;
   } = {
-    envKey: clientId,
+    envKey: envKey,
   };
 
   if (userAttributes) body.user = userAttributes;
@@ -178,7 +178,7 @@ const map = new Map<string, Promise<Flags>>();
  *
  * Otherwise it returns the promise of the already in-progress request.
  * @param endpoint The endpoint fetched from
- * @param body Stringified request body containing the clientId & userAttributes.
+ * @param body Stringified request body containing the envKey & userAttributes.
  */
 async function queuedFetchFlags<F extends Flags>(
   endpoint: string,
@@ -212,7 +212,7 @@ async function fetchFlags<F extends Flags>({
   try {
     const flags = await queuedFetchFlags<F>(
       config.endpoint,
-      JSON.stringify(createBody(config.clientId, userAttributes))
+      JSON.stringify(createBody(config.envKey, userAttributes))
     );
 
     return flags;
@@ -231,7 +231,7 @@ function storeFlagsInCache(
       localStorageCacheKey,
       JSON.stringify({
         endpoint: config.endpoint,
-        clientId: config.clientId,
+        envKey: config.envKey,
         flags,
         userAttributesKey,
       })
@@ -248,7 +248,7 @@ function loadFlagsFromCache<F extends Flags>(
   try {
     const cached: {
       endpoint: string;
-      clientId: string;
+      envKey: string;
       userAttributesKey?: string;
       flags: F;
     } | null = JSON.parse(
@@ -261,7 +261,7 @@ function loadFlagsFromCache<F extends Flags>(
 
     return cached &&
       cached.endpoint === config.endpoint &&
-      cached.clientId === config.clientId &&
+      cached.envKey === config.envKey &&
       // If we received userAttributes, the cached flags must have been loaded
       // for that specific user.
       // If we didn't receive a userAttributesKey, the flags may not have
@@ -279,9 +279,7 @@ function loadFlagsFromCache<F extends Flags>(
 }
 
 function hasClientId(config: FlagConfig) {
-  return (
-    typeof config.clientId === 'string' && config.clientId.trim().length > 0
-  );
+  return typeof config.envKey === 'string' && config.envKey.trim().length > 0;
 }
 
 /**
@@ -295,7 +293,7 @@ function usePrimitiveFlags<F extends Flags>(
   options?: FlagOptions<F>
 ): F | null {
   if (!hasClientId(config)) {
-    throw new Error('@happykit/flags: Missing config.clientId');
+    throw new Error('@happykit/flags: Missing config.envKey');
   }
 
   // use "null" to indicate that no initial flags were provided, but never
@@ -369,7 +367,7 @@ function usePrimitiveFlags<F extends Flags>(
       try {
         const nextFlags = await queuedFetchFlags<F>(
           config.endpoint,
-          JSON.stringify(createBody(config.clientId, userAttributes))
+          JSON.stringify(createBody(config.envKey, userAttributes))
         );
 
         if (!nextFlags) return;
@@ -455,7 +453,7 @@ export const getFlags =
         user?: FlagUserAttributes | null
       ): Promise<F> {
         if (!hasClientId(config)) {
-          throw new Error('@happykit/flags: Missing config.clientId');
+          throw new Error('@happykit/flags: Missing config.envKey');
         }
 
         const flags = await fetchFlags<F>({
