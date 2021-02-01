@@ -366,7 +366,6 @@ describe('useFlags', () => {
       })
     );
   });
-
   it('preloads hooks from cache after initial render and updates cache with new values when a user key is set', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
     configure({ clientId: 'foo' });
@@ -564,56 +563,6 @@ describe('useFlags', () => {
 
     // no changes to localStorage
     expect(localStorage.getItem('happykit_flags')).toBeNull();
-  });
-
-  // it('sends "persist" when "persist" is set in useFlags', async () => {
-  //   fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
-  //   configure({ clientId: 'foo' });
-  //   expect(localStorage.getItem('happykit_flags')).toBeNull();
-  //   const { result, waitForNextUpdate } = renderHook(() =>
-  //     useFlags({ persist: true })
-  //   );
-  //   // flags are an empty object until the first response arrives
-  //   expect(result.current).toEqual({});
-  //   await waitForNextUpdate();
-  //   // flags are defined from then on
-  //   expect(result.current).toEqual({ aFlag: true });
-  //   expect(fetchMock).toHaveBeenCalledTimes(1);
-  //   expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
-  //     body: JSON.stringify({ envKey: 'foo', persist: true }),
-  //     method: 'POST',
-  //   });
-  //   expect(localStorage.getItem('happykit_flags')).toEqual(
-  //     JSON.stringify({
-  //       endpoint: 'https://happykit.dev/api/flags',
-  //       clientId: 'foo',
-  //       flags: { aFlag: true },
-  //     })
-  //   );
-  // });
-
-  it('sends "persist" when "persist" is set in the global config', async () => {
-    fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
-    configure({ clientId: 'foo', persist: true });
-    expect(localStorage.getItem('happykit_flags')).toBeNull();
-    const { result, waitForNextUpdate } = renderHook(() => useFlags());
-    // flags are an empty object until the first response arrives
-    expect(result.current).toEqual({});
-    await waitForNextUpdate();
-    // flags are defined from then on
-    expect(result.current).toEqual({ aFlag: true });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
-      body: JSON.stringify({ envKey: 'foo', persist: true }),
-      method: 'POST',
-    });
-    expect(localStorage.getItem('happykit_flags')).toEqual(
-      JSON.stringify({
-        endpoint: 'https://happykit.dev/api/flags',
-        clientId: 'foo',
-        flags: { aFlag: true },
-      })
-    );
   });
 });
 
