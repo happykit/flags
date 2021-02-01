@@ -35,18 +35,6 @@ export type FlagConfig<F extends Flags = Flags> = {
    * [`stale-while-revalidate`](https://tools.ietf.org/html/rfc5861) fashion.
    */
   disableCache?: boolean;
-  /**
-   * Users are not stored in HappyKit Flags by default.
-   *
-   * If you set this option to `true` all users with a `key` attribute will be stored in HappyKit Flags.
-   * Storing users in HappyKit Flags allows you to see the users in the Dashboard.
-   *
-   * This setting only affects whether you see individual users in HappyKit Flags or not.
-   * It does not affect Feature Flag evaluation, percentage based rollouts or anything else.
-   *
-   * You can overwrite this setting per user by passing `{ persist: true }` to `getFlags` or `useFlags`.
-   */
-  persist?: boolean;
 };
 
 export type FlagUserAttributes = {
@@ -75,12 +63,6 @@ export type FlagOptions<F extends Flags> = {
    * window regains focus. Pass `false` to skip this behaviour.
    */
   revalidateOnFocus?: boolean;
-  /**
-   * By default all passed users are stored in HappyKit.
-   *
-   * Pass `persist: true` to store this user in HappyKit.
-   */
-  persist?: boolean;
 };
 
 const defaultConfig: FlagConfig = {
@@ -123,19 +105,19 @@ function toUserAttributes(user: any): FlagUserAttributes | null {
   const userAttributes: FlagUserAttributes = { key: user.key.trim() };
 
   if (typeof user?.email === 'string') {
-    userAttributes.email = user.email;
+    userAttributes['email'] = user.email;
   }
 
   if (typeof user?.name === 'string') {
-    userAttributes.name = user.name;
+    userAttributes['name'] = user.name;
   }
 
   if (typeof user?.avatar === 'string') {
-    userAttributes.avatar = user.avatar;
+    userAttributes['avatar'] = user.avatar;
   }
 
   if (typeof user?.country === 'string') {
-    userAttributes.country = user.country;
+    userAttributes['country'] = user.country;
   }
 
   return userAttributes;
@@ -168,18 +150,15 @@ function shallowEqual(objA: any, objB: any) {
 }
 
 function createBody(
-  config: Pick<FlagConfig, 'clientId' | 'persist'>,
+  clientId: FlagConfig['clientId'],
   userAttributes: FlagUserAttributes | null
 ) {
   const body: {
     envKey: FlagConfig['clientId'];
     user?: FlagUserAttributes;
-    persist?: boolean;
   } = {
-    envKey: config.clientId,
+    envKey: clientId,
   };
-
-  if (config.persist) body.persist = true;
 
   if (userAttributes) body.user = userAttributes;
 
@@ -233,7 +212,7 @@ async function fetchFlags<F extends Flags>({
   try {
     const flags = await queuedFetchFlags<F>(
       config.endpoint,
-      JSON.stringify(createBody(config, userAttributes))
+      JSON.stringify(createBody(config.clientId, userAttributes))
     );
 
     return flags;
@@ -390,7 +369,7 @@ function usePrimitiveFlags<F extends Flags>(
       try {
         const nextFlags = await queuedFetchFlags<F>(
           config.endpoint,
-          JSON.stringify(createBody(config, userAttributes))
+          JSON.stringify(createBody(config.clientId, userAttributes))
         );
 
         if (!nextFlags) return;
