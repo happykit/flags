@@ -48,10 +48,13 @@ describe('useFlags', () => {
     // flags are defined from then on
     expect(result.current).toEqual({ aFlag: true });
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
-      body: '{"envKey":"foo"}',
-      method: 'POST',
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://happykit.dev/api/flags/foo',
+      {
+        body: '{}',
+        method: 'POST',
+      }
+    );
     expect(localStorage.getItem('happykit_flags')).toEqual(
       JSON.stringify({
         endpoint: 'https://happykit.dev/api/flags',
@@ -70,10 +73,13 @@ describe('useFlags', () => {
     );
     await waitForNextUpdate();
     expect(result.current).toEqual({ aFlag: true });
-    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
-      body: '{"envKey":"foo","user":{"key":"user_key_1"}}',
-      method: 'POST',
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://happykit.dev/api/flags/foo',
+      {
+        body: '{"user":{"key":"user_key_1"}}',
+        method: 'POST',
+      }
+    );
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(localStorage.getItem('happykit_flags')).toEqual(
       JSON.stringify({
@@ -99,10 +105,13 @@ describe('useFlags', () => {
     );
     await waitForNextUpdate();
     expect(result.current).toEqual({ aFlag: true });
-    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
-      body: '{"envKey":"foo","user":{"key":"user_key_1"}}',
-      method: 'POST',
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://happykit.dev/api/flags/foo',
+      {
+        body: '{"user":{"key":"user_key_1"}}',
+        method: 'POST',
+      }
+    );
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(localStorage.getItem('happykit_flags')).toEqual(
       JSON.stringify({
@@ -128,10 +137,13 @@ describe('useFlags', () => {
     const { result, waitForNextUpdate } = renderHook(() => useFlags({ user }));
     await waitForNextUpdate();
     expect(result.current).toEqual({ aFlag: true });
-    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
-      body: JSON.stringify({ envKey: 'foo', user }),
-      method: 'POST',
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://happykit.dev/api/flags/foo',
+      {
+        body: JSON.stringify({ user }),
+        method: 'POST',
+      }
+    );
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(localStorage.getItem('happykit_flags')).toEqual(
       JSON.stringify({
@@ -151,10 +163,13 @@ describe('useFlags', () => {
     const { result, waitForNextUpdate } = renderHook(() => useFlags());
     await waitForNextUpdate();
     expect(result.current).toEqual({ aFlag: true, ...defaultFlags });
-    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
-      body: JSON.stringify({ envKey: 'foo' }),
-      method: 'POST',
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://happykit.dev/api/flags/foo',
+      {
+        body: JSON.stringify({}),
+        method: 'POST',
+      }
+    );
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(localStorage.getItem('happykit_flags')).toEqual(
       JSON.stringify({
@@ -179,10 +194,13 @@ describe('useFlags', () => {
     await waitForNextUpdate();
     // updated value where actual flag overwrites default flag
     expect(result.current).toEqual({ aFlag: true, xzibit: false });
-    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
-      body: JSON.stringify({ envKey: 'foo' }),
-      method: 'POST',
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://happykit.dev/api/flags/foo',
+      {
+        body: JSON.stringify({}),
+        method: 'POST',
+      }
+    );
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(localStorage.getItem('happykit_flags')).toEqual(
       JSON.stringify({
@@ -234,10 +252,13 @@ describe('useFlags', () => {
       expect(screen.queryByText('hello')).toBeInTheDocument();
     });
 
-    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
-      body: JSON.stringify({ envKey: 'foo' }),
-      method: 'POST',
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://happykit.dev/api/flags/foo',
+      {
+        body: JSON.stringify({}),
+        method: 'POST',
+      }
+    );
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(localStorage.getItem('happykit_flags')).toEqual(
       JSON.stringify({
@@ -353,10 +374,13 @@ describe('useFlags', () => {
     expect(result.current).toEqual({ aFlag: false, bFlag: false });
     await waitForNextUpdate();
     expect(result.current).toEqual({ aFlag: true });
-    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
-      body: JSON.stringify({ envKey: 'foo' }),
-      method: 'POST',
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://happykit.dev/api/flags/foo',
+      {
+        body: JSON.stringify({}),
+        method: 'POST',
+      }
+    );
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(localStorage.getItem('happykit_flags')).toEqual(
       JSON.stringify({
@@ -387,10 +411,13 @@ describe('useFlags', () => {
     expect(result.current).toEqual({ aFlag: false, bFlag: false });
     await waitForNextUpdate();
     expect(result.current).toEqual({ aFlag: true });
-    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
-      body: JSON.stringify({ envKey: 'foo', user: { key: 'user_A' } }),
-      method: 'POST',
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://happykit.dev/api/flags/foo',
+      {
+        body: JSON.stringify({ user: { key: 'user_A' } }),
+        method: 'POST',
+      }
+    );
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(localStorage.getItem('happykit_flags')).toEqual(
       JSON.stringify({
@@ -425,10 +452,13 @@ describe('useFlags', () => {
     });
     await waitForNextUpdate();
     expect(result.current).toEqual({ aFlag: true });
-    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
-      body: JSON.stringify({ envKey: 'foo', user: { key: 'user_B' } }),
-      method: 'POST',
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://happykit.dev/api/flags/foo',
+      {
+        body: JSON.stringify({ user: { key: 'user_B' } }),
+        method: 'POST',
+      }
+    );
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(localStorage.getItem('happykit_flags')).toEqual(
       JSON.stringify({
@@ -461,10 +491,13 @@ describe('useFlags', () => {
     });
     await waitForNextUpdate();
     expect(result.current).toEqual({ aFlag: true });
-    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
-      body: JSON.stringify({ envKey: 'foo' }),
-      method: 'POST',
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://happykit.dev/api/flags/foo',
+      {
+        body: JSON.stringify({}),
+        method: 'POST',
+      }
+    );
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(localStorage.getItem('happykit_flags')).toEqual(
       JSON.stringify({
@@ -497,10 +530,13 @@ describe('useFlags', () => {
     });
     await waitForNextUpdate();
     expect(result.current).toEqual({ aFlag: true });
-    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
-      body: JSON.stringify({ envKey: 'foo', user: { key: 'user_B' } }),
-      method: 'POST',
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://happykit.dev/api/flags/foo',
+      {
+        body: JSON.stringify({ user: { key: 'user_B' } }),
+        method: 'POST',
+      }
+    );
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(localStorage.getItem('happykit_flags')).toEqual(
       JSON.stringify({
@@ -531,10 +567,13 @@ describe('useFlags', () => {
     });
     await waitForNextUpdate();
     expect(result.current).toEqual({ aFlag: true });
-    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
-      body: JSON.stringify({ envKey: 'foo' }),
-      method: 'POST',
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://happykit.dev/api/flags/foo',
+      {
+        body: JSON.stringify({}),
+        method: 'POST',
+      }
+    );
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     // no changes to localStorage
@@ -555,10 +594,13 @@ describe('useFlags', () => {
     });
     await waitForNextUpdate();
     expect(result.current).toEqual({ aFlag: true });
-    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
-      body: JSON.stringify({ envKey: 'foo' }),
-      method: 'POST',
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://happykit.dev/api/flags/foo',
+      {
+        body: JSON.stringify({}),
+        method: 'POST',
+      }
+    );
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     // no changes to localStorage

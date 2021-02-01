@@ -39,10 +39,13 @@ describe('getFlags', () => {
     const flags = await getFlags();
     expect(flags).toEqual({ aFlag: true });
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
-      body: '{"envKey":"foo"}',
-      method: 'POST',
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://happykit.dev/api/flags/foo',
+      {
+        body: '{}',
+        method: 'POST',
+      }
+    );
   });
 
   it('forwards the given user', async () => {
@@ -52,10 +55,13 @@ describe('getFlags', () => {
     const flags = await getFlags(user);
     expect(flags).toEqual({ aFlag: true });
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
-      body: JSON.stringify({ envKey: 'foo', user }),
-      method: 'POST',
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://happykit.dev/api/flags/foo',
+      {
+        body: JSON.stringify({ user }),
+        method: 'POST',
+      }
+    );
   });
   it('strips unknown user attributes', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
@@ -67,10 +73,13 @@ describe('getFlags', () => {
     } as any);
     expect(flags).toEqual({ aFlag: true });
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
-      body: JSON.stringify({ envKey: 'foo', user }),
-      method: 'POST',
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://happykit.dev/api/flags/foo',
+      {
+        body: JSON.stringify({ user }),
+        method: 'POST',
+      }
+    );
   });
   it('forwards all supported user attributes', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
@@ -85,10 +94,13 @@ describe('getFlags', () => {
     const flags = await getFlags(user);
     expect(flags).toEqual({ aFlag: true });
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
-      body: JSON.stringify({ envKey: 'foo', user }),
-      method: 'POST',
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://happykit.dev/api/flags/foo',
+      {
+        body: JSON.stringify({ user }),
+        method: 'POST',
+      }
+    );
   });
 
   it('merges application-wide default flag values in', async () => {
@@ -98,10 +110,13 @@ describe('getFlags', () => {
     const flags = await getFlags();
     expect(flags).toEqual({ aFlag: true, ...defaultFlags });
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
-      body: JSON.stringify({ envKey: 'foo' }),
-      method: 'POST',
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://happykit.dev/api/flags/foo',
+      {
+        body: JSON.stringify({}),
+        method: 'POST',
+      }
+    );
   });
 
   it('uses actual values over default values', async () => {
@@ -114,9 +129,12 @@ describe('getFlags', () => {
     const flags = await getFlags();
     expect(flags).toEqual({ aFlag: true, xzibit: false });
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock).toHaveBeenCalledWith('https://happykit.dev/api/flags', {
-      body: JSON.stringify({ envKey: 'foo' }),
-      method: 'POST',
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://happykit.dev/api/flags/foo',
+      {
+        body: JSON.stringify({}),
+        method: 'POST',
+      }
+    );
   });
 });
