@@ -15,7 +15,7 @@
     "build": "tsdx build",
     "test": "tsdx test",
     "lint": "tsdx lint src test jest",
-    "prepare": "tsdx build",
+    "prepare": "tsdx build wow",
     "pub": "yarn publish --access=public"
   },
   "peerDependencies": {
@@ -24,7 +24,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "tsdx lint"
+      "pre-commit": "yarn lint"
     }
   },
   "prettier": {
