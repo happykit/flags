@@ -46,18 +46,18 @@
   "module": "dist/flags.esm.js",
   "devDependencies": {
     "@sheerun/mutationobserver-shim": "0.3.3",
-    "@testing-library/jest-dom": "5.11.4",
-    "@testing-library/react": "11.0.4",
-    "@testing-library/react-hooks": "3.4.1",
-    "@types/react": "16.9.49",
-    "@types/react-dom": "16.9.8",
-    "husky": "4.3.0",
+    "@testing-library/jest-dom": "5.11.9",
+    "@testing-library/react": "11.2.3",
+    "@testing-library/react-hooks": "5.0.3",
+    "@types/react": "17.0.0",
+    "@types/react-dom": "17.0.0",
+    "husky": "4.3.8",
     "jest-fetch-mock": "3.0.3",
-    "react": "16.13.1",
-    "react-dom": "16.13.1",
-    "react-test-renderer": "16.13.1",
-    "tsdx": "0.13.3",
-    "tslib": "2.0.1",
-    "typescript": "4.0.3"
+    "react": "17.0.1",
+    "react-dom": "17.0.1",
+    "react-test-renderer": "17.0.1",
+    "tsdx": "0.14.1",
+    "tslib": "2.1.0",
+    "typescript": "4.1.3"
   }
 }
