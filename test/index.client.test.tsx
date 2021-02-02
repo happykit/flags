@@ -14,7 +14,7 @@ const fakeResponse = {
 beforeEach(() => {
   _reset();
   fetchMock.resetMocks();
-  window.localStorage.removeItem('happykit_flags');
+  window.localStorage.removeItem('happykit_flags_v1');
 });
 
 describe('exports', () => {
@@ -40,7 +40,7 @@ describe('useFlags', () => {
   it('posts to the flags endpoint', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
     configure({ envKey: 'foo' });
-    expect(localStorage.getItem('happykit_flags')).toBeNull();
+    expect(localStorage.getItem('happykit_flags_v1')).toBeNull();
     const { result, waitForNextUpdate } = renderHook(() => useFlags());
     // flags are an empty object until the first response arrives
     expect(result.current).toEqual({});
@@ -55,11 +55,12 @@ describe('useFlags', () => {
         method: 'POST',
       }
     );
-    expect(localStorage.getItem('happykit_flags')).toEqual(
+    expect(localStorage.getItem('happykit_flags_v1')).toEqual(
       JSON.stringify({
         endpoint: 'https://happykit.dev/api/flags',
         envKey: 'foo',
         flags: { aFlag: true },
+        user: null,
       })
     );
   });
@@ -67,7 +68,7 @@ describe('useFlags', () => {
   it('forwards the given user', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
     configure({ envKey: 'foo' });
-    expect(localStorage.getItem('happykit_flags')).toBeNull();
+    expect(localStorage.getItem('happykit_flags_v1')).toBeNull();
     const { result, waitForNextUpdate } = renderHook(() =>
       useFlags({ user: { key: 'user_key_1' } })
     );
@@ -81,12 +82,12 @@ describe('useFlags', () => {
       }
     );
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(localStorage.getItem('happykit_flags')).toEqual(
+    expect(localStorage.getItem('happykit_flags_v1')).toEqual(
       JSON.stringify({
         endpoint: 'https://happykit.dev/api/flags',
         envKey: 'foo',
         flags: { aFlag: true },
-        userAttributesKey: 'user_key_1',
+        user: { key: 'user_key_1' },
       })
     );
   });
@@ -94,7 +95,7 @@ describe('useFlags', () => {
   it('strips unknown attributes before forwarding a given user', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
     configure({ envKey: 'foo' });
-    expect(localStorage.getItem('happykit_flags')).toBeNull();
+    expect(localStorage.getItem('happykit_flags_v1')).toBeNull();
     const { result, waitForNextUpdate } = renderHook(() =>
       useFlags({
         user: {
@@ -113,12 +114,12 @@ describe('useFlags', () => {
       }
     );
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(localStorage.getItem('happykit_flags')).toEqual(
+    expect(localStorage.getItem('happykit_flags_v1')).toEqual(
       JSON.stringify({
         endpoint: 'https://happykit.dev/api/flags',
         envKey: 'foo',
         flags: { aFlag: true },
-        userAttributesKey: 'user_key_1',
+        user: { key: 'user_key_1' },
       })
     );
   });
@@ -126,7 +127,7 @@ describe('useFlags', () => {
   it('forwards all supported user attributes', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
     configure({ envKey: 'foo' });
-    expect(localStorage.getItem('happykit_flags')).toBeNull();
+    expect(localStorage.getItem('happykit_flags_v1')).toBeNull();
     const user = {
       key: 'user_key_1',
       email: 'test@mail.com',
@@ -145,12 +146,18 @@ describe('useFlags', () => {
       }
     );
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(localStorage.getItem('happykit_flags')).toEqual(
+    expect(localStorage.getItem('happykit_flags_v1')).toEqual(
       JSON.stringify({
         endpoint: 'https://happykit.dev/api/flags',
         envKey: 'foo',
         flags: { aFlag: true },
-        userAttributesKey: 'user_key_1',
+        user: {
+          key: 'user_key_1',
+          email: 'test@mail.com',
+          name: 'test name',
+          avatar: 'avatar-url',
+          country: 'DE',
+        },
       })
     );
   });
@@ -159,7 +166,7 @@ describe('useFlags', () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
     const defaultFlags = { xzibit: true };
     configure({ envKey: 'foo', defaultFlags });
-    expect(localStorage.getItem('happykit_flags')).toBeNull();
+    expect(localStorage.getItem('happykit_flags_v1')).toBeNull();
     const { result, waitForNextUpdate } = renderHook(() => useFlags());
     await waitForNextUpdate();
     expect(result.current).toEqual({ aFlag: true, ...defaultFlags });
@@ -171,12 +178,13 @@ describe('useFlags', () => {
       }
     );
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(localStorage.getItem('happykit_flags')).toEqual(
+    expect(localStorage.getItem('happykit_flags_v1')).toEqual(
       JSON.stringify({
         endpoint: 'https://happykit.dev/api/flags',
         envKey: 'foo',
         // the default flags are not persisted, as they'll be added anyways
         flags: { aFlag: true },
+        user: null,
       })
     );
   });
@@ -187,7 +195,7 @@ describe('useFlags', () => {
       fakeResponse.options
     );
     configure({ envKey: 'foo', defaultFlags: { xzibit: true } });
-    expect(localStorage.getItem('happykit_flags')).toBeNull();
+    expect(localStorage.getItem('happykit_flags_v1')).toBeNull();
     const { result, waitForNextUpdate } = renderHook(() => useFlags());
     // default value as no response was given yet
     expect(result.current).toEqual({ xzibit: true });
@@ -202,11 +210,12 @@ describe('useFlags', () => {
       }
     );
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(localStorage.getItem('happykit_flags')).toEqual(
+    expect(localStorage.getItem('happykit_flags_v1')).toEqual(
       JSON.stringify({
         endpoint: 'https://happykit.dev/api/flags',
         envKey: 'foo',
         flags: { aFlag: true, xzibit: false },
+        user: null,
       })
     );
   });
@@ -215,11 +224,11 @@ describe('useFlags', () => {
     fetchMock.mockOnce();
     const initialFlags = { xzibit: true };
     configure({ envKey: 'foo' });
-    expect(localStorage.getItem('happykit_flags')).toBeNull();
+    expect(localStorage.getItem('happykit_flags_v1')).toBeNull();
     const { result } = renderHook(() => useFlags({ initialFlags }));
     expect(result.current).toEqual(initialFlags);
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(localStorage.getItem('happykit_flags')).toBeNull();
+    expect(localStorage.getItem('happykit_flags_v1')).toBeNull();
   });
 
   it('refetches flags and overwrites them when the window regains focus', async () => {
@@ -228,7 +237,7 @@ describe('useFlags', () => {
       fakeResponse.options
     );
     configure({ envKey: 'foo' });
-    expect(localStorage.getItem('happykit_flags')).toBeNull();
+    expect(localStorage.getItem('happykit_flags_v1')).toBeNull();
     const initialFlags = { xzibit: true };
     const Page = () => {
       const flags = useFlags<{ aFlag?: string; xzibit: boolean }>({
@@ -243,7 +252,7 @@ describe('useFlags', () => {
       expect(screen.queryByText('waiting')).toBeInTheDocument();
     });
 
-    expect(localStorage.getItem('happykit_flags')).toBeNull();
+    expect(localStorage.getItem('happykit_flags_v1')).toBeNull();
 
     fireEvent.blur(window);
     fireEvent.focus(window);
@@ -260,11 +269,12 @@ describe('useFlags', () => {
       }
     );
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(localStorage.getItem('happykit_flags')).toEqual(
+    expect(localStorage.getItem('happykit_flags_v1')).toEqual(
       JSON.stringify({
         endpoint: 'https://happykit.dev/api/flags',
         envKey: 'foo',
         flags: { aFlag: true, xzibit: false },
+        user: null,
       })
     );
   });
@@ -275,7 +285,7 @@ describe('useFlags', () => {
       fakeResponse.options
     );
     configure({ envKey: 'foo' });
-    expect(localStorage.getItem('happykit_flags')).toBeNull();
+    expect(localStorage.getItem('happykit_flags_v1')).toBeNull();
     const initialFlags = { xzibit: true };
     const Page = () => {
       const flags = useFlags<{ aFlag?: string; xzibit: boolean }>({
@@ -295,7 +305,7 @@ describe('useFlags', () => {
     fireEvent.focus(window);
 
     expect(fetchMock).toHaveBeenCalledTimes(0);
-    expect(localStorage.getItem('happykit_flags')).toBeNull();
+    expect(localStorage.getItem('happykit_flags_v1')).toBeNull();
   });
 
   it('only fetches once when the hook is called with the same params while another fetch for those params is already in progress', async () => {
@@ -304,7 +314,7 @@ describe('useFlags', () => {
       fakeResponse.options
     );
     configure({ envKey: 'foo' });
-    expect(localStorage.getItem('happykit_flags')).toBeNull();
+    expect(localStorage.getItem('happykit_flags_v1')).toBeNull();
     const Page = () => {
       const flagsA = useFlags<{ someFlag?: string }>();
       const flagsB = useFlags<{ someFlag?: string }>();
@@ -333,7 +343,7 @@ describe('useFlags', () => {
       fakeResponse.options
     );
     configure({ envKey: 'foo', disableCache: true });
-    expect(localStorage.getItem('happykit_flags')).toBeNull();
+    expect(localStorage.getItem('happykit_flags_v1')).toBeNull();
     const Page = () => {
       const flagsA = useFlags<{ someFlag?: string }>();
       const flagsB = useFlags<{ someFlag?: string }>();
@@ -362,11 +372,12 @@ describe('useFlags', () => {
 
     // prepare localStorage
     localStorage.setItem(
-      'happykit_flags',
+      'happykit_flags_v1',
       JSON.stringify({
         endpoint: 'https://happykit.dev/api/flags',
         envKey: 'foo',
         flags: { aFlag: false, bFlag: false },
+        user: null,
       })
     );
 
@@ -382,26 +393,28 @@ describe('useFlags', () => {
       }
     );
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(localStorage.getItem('happykit_flags')).toEqual(
+    expect(localStorage.getItem('happykit_flags_v1')).toEqual(
       JSON.stringify({
         endpoint: 'https://happykit.dev/api/flags',
         envKey: 'foo',
         flags: { aFlag: true },
+        user: null,
       })
     );
   });
+
   it('preloads hooks from cache after initial render and updates cache with new values when a user key is set', async () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
     configure({ envKey: 'foo' });
 
     // prepare localStorage
     localStorage.setItem(
-      'happykit_flags',
+      'happykit_flags_v1',
       JSON.stringify({
         endpoint: 'https://happykit.dev/api/flags',
         envKey: 'foo',
         flags: { aFlag: false, bFlag: false },
-        userAttributesKey: 'user_A',
+        user: { key: 'user_A' },
       })
     );
 
@@ -419,12 +432,12 @@ describe('useFlags', () => {
       }
     );
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(localStorage.getItem('happykit_flags')).toEqual(
+    expect(localStorage.getItem('happykit_flags_v1')).toEqual(
       JSON.stringify({
         endpoint: 'https://happykit.dev/api/flags',
         envKey: 'foo',
         flags: { aFlag: true },
-        userAttributesKey: 'user_A',
+        user: { key: 'user_A' },
       })
     );
   });
@@ -435,12 +448,12 @@ describe('useFlags', () => {
 
     // prepare localStorage
     localStorage.setItem(
-      'happykit_flags',
+      'happykit_flags_v1',
       JSON.stringify({
         endpoint: 'https://happykit.dev/api/flags',
         envKey: 'foo',
         flags: { aFlag: false, bFlag: false },
-        userAttributesKey: 'user_A',
+        user: { key: 'user_A' },
       })
     );
 
@@ -460,12 +473,12 @@ describe('useFlags', () => {
       }
     );
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(localStorage.getItem('happykit_flags')).toEqual(
+    expect(localStorage.getItem('happykit_flags_v1')).toEqual(
       JSON.stringify({
         endpoint: 'https://happykit.dev/api/flags',
         envKey: 'foo',
         flags: { aFlag: true },
-        userAttributesKey: 'user_B',
+        user: { key: 'user_B' },
       })
     );
   });
@@ -476,12 +489,12 @@ describe('useFlags', () => {
 
     // prepare localStorage
     localStorage.setItem(
-      'happykit_flags',
+      'happykit_flags_v1',
       JSON.stringify({
         endpoint: 'https://happykit.dev/api/flags',
         envKey: 'foo',
         flags: { aFlag: false, bFlag: false },
-        userAttributesKey: 'user_A',
+        user: { key: 'user_A' },
       })
     );
 
@@ -499,11 +512,12 @@ describe('useFlags', () => {
       }
     );
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(localStorage.getItem('happykit_flags')).toEqual(
+    expect(localStorage.getItem('happykit_flags_v1')).toEqual(
       JSON.stringify({
         endpoint: 'https://happykit.dev/api/flags',
         envKey: 'foo',
         flags: { aFlag: true },
+        user: null,
       })
     );
   });
@@ -514,7 +528,7 @@ describe('useFlags', () => {
 
     // prepare localStorage
     localStorage.setItem(
-      'happykit_flags',
+      'happykit_flags_v1',
       JSON.stringify({
         endpoint: 'https://happykit.dev/api/flags',
         envKey: 'foo',
@@ -538,12 +552,12 @@ describe('useFlags', () => {
       }
     );
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(localStorage.getItem('happykit_flags')).toEqual(
+    expect(localStorage.getItem('happykit_flags_v1')).toEqual(
       JSON.stringify({
         endpoint: 'https://happykit.dev/api/flags',
         envKey: 'foo',
         flags: { aFlag: true },
-        userAttributesKey: 'user_B',
+        user: { key: 'user_B' },
       })
     );
   });
@@ -559,7 +573,7 @@ describe('useFlags', () => {
     };
 
     // prepare localStorage
-    localStorage.setItem('happykit_flags', JSON.stringify(cachedFlags));
+    localStorage.setItem('happykit_flags_v1', JSON.stringify(cachedFlags));
 
     const { result, waitForNextUpdate } = renderHook(() => useFlags());
     expect(result.current).toEqual({
@@ -577,7 +591,7 @@ describe('useFlags', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     // no changes to localStorage
-    expect(localStorage.getItem('happykit_flags')).toEqual(
+    expect(localStorage.getItem('happykit_flags_v1')).toEqual(
       JSON.stringify(cachedFlags)
     );
   });
@@ -586,7 +600,7 @@ describe('useFlags', () => {
     fetchMock.mockOnce(fakeResponse.body, fakeResponse.options);
     configure({ envKey: 'foo', disableCache: true });
 
-    expect(localStorage.getItem('happykit_flags')).toBeNull();
+    expect(localStorage.getItem('happykit_flags_v1')).toBeNull();
 
     const { result, waitForNextUpdate } = renderHook(() => useFlags());
     expect(result.current).toEqual({
@@ -604,7 +618,7 @@ describe('useFlags', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     // no changes to localStorage
-    expect(localStorage.getItem('happykit_flags')).toBeNull();
+    expect(localStorage.getItem('happykit_flags_v1')).toBeNull();
   });
 });
 
