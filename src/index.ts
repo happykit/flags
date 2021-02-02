@@ -74,7 +74,7 @@ const defaultConfig: Partial<FlagConfig> = {
   defaultFlags: {},
 };
 
-const localStorageCacheKey = 'happykit_flags';
+const localStorageCacheKey = 'happykit_flags_v1';
 
 let config: Partial<FlagConfig> = defaultConfig;
 
@@ -123,14 +123,14 @@ function shallowEqual(objA: any, objB: any) {
 
   if (!objA || !objB) return false;
 
-  var aKeys = Object.keys(objA);
-  var bKeys = Object.keys(objB);
-  var len = aKeys.length;
+  let aKeys = Object.keys(objA);
+  let bKeys = Object.keys(objB);
+  let len = aKeys.length;
 
   if (bKeys.length !== len) return false;
 
-  for (var i = 0; i < len; i++) {
-    var key = aKeys[i];
+  for (let i = 0; i < len; i++) {
+    let key = aKeys[i];
 
     if (
       objA[key] !== objB[key] ||
@@ -211,10 +211,7 @@ async function fetchFlags<F extends Flags>({
   }
 }
 
-function storeFlagsInCache(
-  flags: Flags,
-  userAttributesKey: string | undefined
-) {
+function storeFlagsInCache(flags: Flags, user: FlagUserAttributes | null) {
   try {
     localStorage.setItem(
       localStorageCacheKey,
@@ -222,7 +219,7 @@ function storeFlagsInCache(
         endpoint: config.endpoint,
         envKey: config.envKey,
         flags,
-        userAttributesKey,
+        user,
       })
     );
   } catch (e) {
@@ -231,14 +228,14 @@ function storeFlagsInCache(
   }
 }
 
-function loadFlagsFromCache<F extends Flags>(
-  userAttributesKey: string | undefined
-): F | null {
+function loadFlagsFromCache<F extends Flags>(options: {
+  userAttributes: FlagUserAttributes | null;
+}): F | null {
   try {
     const cached: {
       endpoint: string;
       envKey: string;
-      userAttributesKey?: string;
+      user?: FlagUserAttributes;
       flags: F;
     } | null = JSON.parse(
       // putting String() in here is just a nice way to turn null which
@@ -251,14 +248,10 @@ function loadFlagsFromCache<F extends Flags>(
     return cached &&
       cached.endpoint === config.endpoint &&
       cached.envKey === config.envKey &&
-      // If we received userAttributes, the cached flags must have been loaded
-      // for that specific user.
-      // If we didn't receive a userAttributesKey, the flags may not have
-      // been loaded for a specific user.
-      (userAttributesKey
-        ? userAttributesKey === cached.userAttributesKey
-        : !cached.userAttributesKey)
-      ? cached?.flags
+      // userAttributes could be undefined or null, so we have to make sure that
+      // we treat falsy values as being equal.
+      shallowEqual(options.userAttributes, cached.user)
+      ? cached.flags
       : null;
   } catch (e) {
     // chrome can throw when no permission for localStorage has been granted
@@ -311,7 +304,9 @@ function usePrimitiveFlags<F extends Flags>(
   React.useEffect(() => {
     if (initialFlags || config.disableCache) return;
 
-    const cachedFlags = loadFlagsFromCache<F>(initialUserAttributes?.key);
+    const cachedFlags = loadFlagsFromCache<F>({
+      userAttributes: initialUserAttributes,
+    });
     if (!shallowEqual(flags, cachedFlags)) {
       setFlags(cachedFlags);
     }
@@ -332,7 +327,7 @@ function usePrimitiveFlags<F extends Flags>(
       setFlags(nextFlags);
 
       if (!config.disableCache) {
-        storeFlagsInCache(nextFlags, userAttributes?.key);
+        storeFlagsInCache(nextFlags, userAttributes);
       }
     });
 
@@ -379,7 +374,7 @@ function usePrimitiveFlags<F extends Flags>(
         setFlags(nextFlags);
 
         if (!config.disableCache) {
-          storeFlagsInCache(nextFlags, userAttributes?.key);
+          storeFlagsInCache(nextFlags, userAttributes);
         }
       } catch (error) {
         console.error(error);
