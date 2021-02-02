@@ -39,7 +39,7 @@ export type FlagConfig<F extends Flags = Flags> = {
   disableCache?: boolean;
 };
 
-export type FlagUserAttributes = {
+export type FlagUser = {
   key: string;
   persist?: boolean;
   email?: string;
@@ -52,7 +52,7 @@ export type FlagOptions<F extends Flags> = {
   /**
    * This is the flag user which the flags will be evaluated for.
    */
-  user?: FlagUserAttributes;
+  user?: FlagUser;
   /**
    * In case you preloaded your flags during server-side rendering using
    * `getFlags()`, provide the flags as `initialFlags`.
@@ -101,20 +101,26 @@ export function configure<F extends Flags>(
   config = Object.assign({}, defaultConfig, nextConfig);
 }
 
-function toUserAttributes(user: any): FlagUserAttributes | null {
-  if (typeof user !== 'object') return null;
+function isString(object: any): object is string {
+  return typeof object === 'string';
+}
+
+function toUser(incomingUser: any): FlagUser | null {
+  if (typeof incomingUser !== 'object') return null;
 
   // users must have a key
-  if (typeof user.key !== 'string' || user.key.trim().length === 0) return null;
-  const userAttributes: FlagUserAttributes = { key: user.key.trim() };
+  if (!isString(incomingUser.key) || incomingUser.key.trim().length === 0)
+    return null;
 
-  if (user?.persist) userAttributes.persist = true;
-  if (typeof user?.email === 'string') userAttributes.email = user.email;
-  if (typeof user?.name === 'string') userAttributes.name = user.name;
-  if (typeof user?.avatar === 'string') userAttributes.avatar = user.avatar;
-  if (typeof user?.country === 'string') userAttributes.country = user.country;
+  const user: FlagUser = { key: incomingUser.key.trim() };
 
-  return userAttributes;
+  if (incomingUser?.persist) user.persist = true;
+  if (isString(incomingUser?.email)) user.email = incomingUser.email;
+  if (isString(incomingUser?.name)) user.name = incomingUser.name;
+  if (isString(incomingUser?.avatar)) user.avatar = incomingUser.avatar;
+  if (isString(incomingUser?.country)) user.country = incomingUser.country;
+
+  return user;
 }
 
 // copied from https://github.com/moroshko/shallow-equal/blob/1a6bf512cf896b44f3b7bb3d493411a7c5339a25/src/objects.js
@@ -143,8 +149,8 @@ function shallowEqual(objA: any, objB: any) {
   return true;
 }
 
-function createBody(userAttributes: FlagUserAttributes | null) {
-  const body: { user?: FlagUserAttributes } = {};
+function createBody(userAttributes: FlagUser | null) {
+  const body: { user?: FlagUser } = {};
 
   if (userAttributes) body.user = userAttributes;
 
@@ -194,7 +200,7 @@ async function fetchFlags<F extends Flags>({
   userAttributes,
 }: {
   config: FlagConfig;
-  userAttributes: FlagUserAttributes | null;
+  userAttributes: FlagUser | null;
   skipQueue?: boolean;
 }): Promise<F | null> {
   try {
@@ -211,7 +217,7 @@ async function fetchFlags<F extends Flags>({
   }
 }
 
-function storeFlagsInCache(flags: Flags, user: FlagUserAttributes | null) {
+function storeFlagsInCache(flags: Flags, user: FlagUser | null) {
   try {
     localStorage.setItem(
       localStorageCacheKey,
@@ -229,13 +235,13 @@ function storeFlagsInCache(flags: Flags, user: FlagUserAttributes | null) {
 }
 
 function loadFlagsFromCache<F extends Flags>(options: {
-  userAttributes: FlagUserAttributes | null;
+  userAttributes: FlagUser | null;
 }): F | null {
   try {
     const cached: {
       endpoint: string;
       envKey: string;
-      user?: FlagUserAttributes;
+      user?: FlagUser;
       flags: F;
     } | null = JSON.parse(
       // putting String() in here is just a nice way to turn null which
@@ -290,13 +296,10 @@ function usePrimitiveFlags<F extends Flags>(
   const initialFlags = options?.initialFlags ? options.initialFlags : null;
   const [flags, setFlags] = React.useState<F | null>(initialFlags);
 
-  const initialUserAttributes = options?.user
-    ? toUserAttributes(options.user)
-    : null;
-  const [
-    userAttributes,
-    setUserAttributes,
-  ] = React.useState<FlagUserAttributes | null>(initialUserAttributes);
+  const initialUserAttributes = options?.user ? toUser(options.user) : null;
+  const [userAttributes, setUserAttributes] = React.useState<FlagUser | null>(
+    initialUserAttributes
+  );
 
   // populate flags from cache after first render
   // We need to wait for the initial render to complete so the server-side
@@ -339,7 +342,7 @@ function usePrimitiveFlags<F extends Flags>(
   // revalidate when incoming user changes
   const incomingUser = options?.user;
   React.useEffect(() => {
-    const incomingUserAttributes = toUserAttributes(incomingUser);
+    const incomingUserAttributes = toUser(incomingUser);
     if (shallowEqual(userAttributes, incomingUserAttributes)) return;
     setUserAttributes(incomingUserAttributes);
   }, [userAttributes, setUserAttributes, incomingUser]);
@@ -443,7 +446,7 @@ export function useFlags<F extends Flags>(options?: FlagOptions<F>): F {
 export const getFlags =
   typeof window === 'undefined'
     ? async function getFlags<F extends Flags>(
-        user?: FlagUserAttributes | null
+        user?: FlagUser | null
       ): Promise<F> {
         if (!isFullyConfiguredFlagConfig(config)) {
           throw new Error('@happykit/flags: Missing config.envKey');
@@ -451,7 +454,7 @@ export const getFlags =
 
         const flags = await fetchFlags<F>({
           config,
-          userAttributes: toUserAttributes(user),
+          userAttributes: toUser(user),
         });
         const defaultFlags = (config.defaultFlags || {}) as F;
         return flags ? addDefaults<F>(flags, defaultFlags) : defaultFlags;
