@@ -1,8 +1,14 @@
 import * as React from 'react';
+import { nanoid } from 'nanoid';
 
 /* global fetch:false */
 
 export type Flags = { [key: string]: boolean | number | string | undefined };
+
+/**
+ * The response the Service Worker at /api/flags/xx makes
+ */
+type FlagsResponse<F extends Flags> = { flags: F; visitor: { key: string } };
 
 export type FlagConfig<F extends Flags = Flags> = {
   /**
@@ -160,7 +166,7 @@ function createBody(userAttributes: FlagUser | null) {
 /**
  * A Map of the currently in-progress requests.
  */
-const map = new Map<string, Promise<Flags>>();
+const map = new Map<string, Promise<FlagsResponse<Flags>>>();
 
 /**
  * Fetches flags, ...
@@ -176,11 +182,14 @@ async function queuedFetchFlags<F extends Flags>(
   endpoint: string,
   envKey: string,
   body: string
-): Promise<F | null> {
+): Promise<FlagsResponse<F> | null> {
   const url = [endpoint, envKey].join('/');
   const queueKey = JSON.stringify({ url, body });
-  const queuedPromise = map.get(queueKey);
-  if (queuedPromise) return queuedPromise as Promise<F>;
+  const queuedPromise = map.get(queueKey) as
+    | Promise<FlagsResponse<F>>
+    | undefined;
+
+  if (queuedPromise) return queuedPromise;
 
   const promise = fetch(url, { method: 'POST', body }).then(
     response => (response.ok ? response.json() : null),
@@ -192,7 +201,7 @@ async function queuedFetchFlags<F extends Flags>(
     map.delete(queueKey);
   });
 
-  return promise as Promise<F>;
+  return promise;
 }
 
 async function fetchFlags<F extends Flags>({
@@ -202,29 +211,32 @@ async function fetchFlags<F extends Flags>({
   config: FlagConfig;
   userAttributes: FlagUser | null;
   skipQueue?: boolean;
-}): Promise<F | null> {
+}): Promise<FlagsResponse<F> | null> {
   try {
-    const flags = await queuedFetchFlags<F>(
+    const flagsResponse = await queuedFetchFlags<F>(
       config.endpoint,
       config.envKey,
       JSON.stringify(createBody(userAttributes))
     );
 
-    return flags;
+    return flagsResponse;
   } catch (error) {
     console.error(error);
     return null;
   }
 }
 
-function storeFlagsInCache(flags: Flags, user: FlagUser | null) {
+function storeFlagsResponseInCache<F extends Flags>(
+  flagsResponse: FlagsResponse<F>,
+  user: FlagUser | null
+) {
   try {
     localStorage.setItem(
       localStorageCacheKey,
       JSON.stringify({
         endpoint: config.endpoint,
         envKey: config.envKey,
-        flags,
+        flagsResponse,
         user,
       })
     );
@@ -234,15 +246,15 @@ function storeFlagsInCache(flags: Flags, user: FlagUser | null) {
   }
 }
 
-function loadFlagsFromCache<F extends Flags>(options: {
-  userAttributes: FlagUser | null;
-}): F | null {
+function loadFlagsResponseFromCache<F extends Flags>(options: {
+  user: FlagUser | null;
+}): FlagsResponse<F> | null {
   try {
     const cached: {
       endpoint: string;
       envKey: string;
       user?: FlagUser;
-      flags: F;
+      flagsResponse: FlagsResponse<F>;
     } | null = JSON.parse(
       // putting String() in here is just a nice way to turn null which
       // getItem() might return into a string ("null"), so that JSON.parse()
@@ -256,8 +268,8 @@ function loadFlagsFromCache<F extends Flags>(options: {
       cached.envKey === config.envKey &&
       // userAttributes could be undefined or null, so we have to make sure that
       // we treat falsy values as being equal.
-      shallowEqual(options.userAttributes, cached.user)
-      ? cached.flags
+      shallowEqual(options.user, cached.user)
+      ? cached.flagsResponse
       : null;
   } catch (e) {
     // chrome can throw when no permission for localStorage has been granted
@@ -278,6 +290,32 @@ function isFullyConfiguredFlagConfig(
 }
 
 /**
+ * Gets the cookie with by name
+ */
+function getCookie(name: string): string | null {
+  let cookieString: string;
+  try {
+    cookieString = document.cookie;
+  } catch (e) {
+    return null;
+  }
+
+  if (cookieString) {
+    const cookies = cookieString.split(';');
+    for (let cookie of cookies) {
+      const cookiePair = cookie.split('=', 2);
+      const cookieName = cookiePair[0].trim();
+      if (cookieName === name) {
+        const cookieVal = cookiePair[1];
+        return cookieVal;
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
  * Fetch flags primitive. Use this only if you're interested in the loading
  * state, use useFlag otherwise.
  *
@@ -286,7 +324,7 @@ function isFullyConfiguredFlagConfig(
  */
 function usePrimitiveFlags<F extends Flags>(
   options?: FlagOptions<F>
-): F | null {
+): FlagsResponse<F> | null {
   if (!isFullyConfiguredFlagConfig(config)) {
     throw new Error('@happykit/flags: Missing config.envKey');
   }
@@ -294,26 +332,38 @@ function usePrimitiveFlags<F extends Flags>(
   // use "null" to indicate that no initial flags were provided, but never
   // return "null" from the hook
   const initialFlags = options?.initialFlags ? options.initialFlags : null;
-  const [flags, setFlags] = React.useState<F | null>(initialFlags);
-
-  const initialUserAttributes = options?.user ? toUser(options.user) : null;
-  const [userAttributes, setUserAttributes] = React.useState<FlagUser | null>(
-    initialUserAttributes
+  const [flagsResponse, setFlagsResponse] = React.useState<FlagsResponse<
+    F
+  > | null>(
+    initialFlags
+      ? {
+          flags: initialFlags,
+          // use existing visitor key or generate a fresh one
+          visitor: { key: getCookie('hkvk') || nanoid() },
+        }
+      : null
   );
 
-  // populate flags from cache after first render
+  const initialUser = options?.user ? toUser(options.user) : null;
+  const [userAttributes, setUserAttributes] = React.useState<FlagUser | null>(
+    initialUser
+  );
+
+  // populate flags from cache after first render, unless they already match
+  // the cached version.
+  //
   // We need to wait for the initial render to complete so the server-side
   // markup matches the initial client-side render
   React.useEffect(() => {
     if (initialFlags || config.disableCache) return;
 
-    const cachedFlags = loadFlagsFromCache<F>({
-      userAttributes: initialUserAttributes,
+    const cachedFlagsResponse = loadFlagsResponseFromCache<F>({
+      user: initialUser,
     });
-    if (!shallowEqual(flags, cachedFlags)) {
-      setFlags(cachedFlags);
+    if (!shallowEqual(flagsResponse?.flags, cachedFlagsResponse?.flags)) {
+      setFlagsResponse(cachedFlagsResponse || null);
     }
-  }, [flags, initialFlags, initialUserAttributes]);
+  }, [flagsResponse, initialFlags, initialUser]);
 
   // fetch on mount when no initialFlags were provided
   React.useEffect(() => {
@@ -321,16 +371,16 @@ function usePrimitiveFlags<F extends Flags>(
 
     let mounted = true;
 
-    fetchFlags<F>({ config, userAttributes }).then(nextFlags => {
+    fetchFlags<F>({ config, userAttributes }).then(nextFlagsResponse => {
       // skip in case the request failed
-      if (!nextFlags) return;
+      if (!nextFlagsResponse) return;
       // skip in case the component unmounted
       if (!mounted) return;
 
-      setFlags(nextFlags);
+      setFlagsResponse(nextFlagsResponse);
 
       if (!config.disableCache) {
-        storeFlagsInCache(nextFlags, userAttributes);
+        storeFlagsResponseInCache(nextFlagsResponse, userAttributes);
       }
     });
 
@@ -360,24 +410,24 @@ function usePrimitiveFlags<F extends Flags>(
       if (!isFullyConfiguredFlagConfig(config)) return;
 
       try {
-        const nextFlags = await queuedFetchFlags<F>(
+        const nextFlagsResponse = await queuedFetchFlags<F>(
           config.endpoint,
           config.envKey,
           JSON.stringify(createBody(userAttributes))
         );
 
-        if (!nextFlags) return;
+        if (!nextFlagsResponse) return;
 
         // skip responses to outdated requests
         if (fetchId !== latestFetchId) return;
 
         // skip invalid responses
-        if (typeof nextFlags !== 'object') return;
+        if (typeof nextFlagsResponse !== 'object') return;
 
-        setFlags(nextFlags);
+        setFlagsResponse(nextFlagsResponse);
 
         if (!config.disableCache) {
-          storeFlagsInCache(nextFlags, userAttributes);
+          storeFlagsResponseInCache(nextFlagsResponse, userAttributes);
         }
       } catch (error) {
         console.error(error);
@@ -388,16 +438,32 @@ function usePrimitiveFlags<F extends Flags>(
     return () => {
       window.removeEventListener('focus', listener);
     };
-  }, [revalidateOnFocus, setFlags, userAttributes]);
+  }, [revalidateOnFocus, setFlagsResponse, userAttributes]);
 
-  return flags;
+  return flagsResponse;
 }
 
 function addDefaults<F extends Flags>(
-  flags: F | null,
+  flagsResponse: FlagsResponse<F> | null,
   defaultFlags: Flags = {}
-): F {
-  return Object.assign({}, defaultFlags, flags);
+): FlagsResponse<F> {
+  if (!flagsResponse) {
+    return {
+      flags: defaultFlags as F,
+      visitor: { key: nanoid() },
+    };
+  }
+
+  if (
+    flagsResponse.flags &&
+    Object.keys(defaultFlags).every(key => flagsResponse.hasOwnProperty(key))
+  )
+    return flagsResponse;
+
+  return {
+    ...flagsResponse,
+    flags: Object.assign({}, defaultFlags, flagsResponse.flags) as F,
+  };
 }
 
 /**
@@ -416,18 +482,20 @@ export function useFeatureFlags<F extends Flags>(
   const flags = usePrimitiveFlags<F>(options);
 
   const defaultFlags = config?.defaultFlags;
-  const [flagsWithDefaults, setFlagsWithDefaults] = React.useState<F>(
-    addDefaults<F>(flags, defaultFlags)
-  );
+  const [
+    flagsResponseWithDefaults,
+    setFlagsResponseWithDefaults,
+  ] = React.useState<FlagsResponse<F>>(addDefaults<F>(flags, defaultFlags));
 
   React.useEffect(() => {
-    const nextFlagsWithDefaults = addDefaults(flags, defaultFlags);
-    if (shallowEqual(flagsWithDefaults, nextFlagsWithDefaults)) return;
-    setFlagsWithDefaults(nextFlagsWithDefaults);
-  }, [flags, flagsWithDefaults, defaultFlags]);
+    const nextFlagsResponseWithDefaults = addDefaults(flags, defaultFlags);
+    if (shallowEqual(flagsResponseWithDefaults, nextFlagsResponseWithDefaults))
+      return;
+    setFlagsResponseWithDefaults(nextFlagsResponseWithDefaults);
+  }, [flags, flagsResponseWithDefaults, defaultFlags]);
 
   return {
-    flags: flagsWithDefaults,
+    flags: flagsResponseWithDefaults.flags,
     loading: flags === null,
     initialFlags: options?.initialFlags,
     defaultFlags: config.defaultFlags as F,
@@ -447,17 +515,17 @@ export const getFlags =
   typeof window === 'undefined'
     ? async function getFlags<F extends Flags>(
         user?: FlagUser | null
-      ): Promise<F> {
+      ): Promise<FlagsResponse<F>> {
         if (!isFullyConfiguredFlagConfig(config)) {
           throw new Error('@happykit/flags: Missing config.envKey');
         }
 
-        const flags = await fetchFlags<F>({
+        const flagsResponse = await fetchFlags<F>({
           config,
           userAttributes: toUser(user),
         });
         const defaultFlags = (config.defaultFlags || {}) as F;
-        return flags ? addDefaults<F>(flags, defaultFlags) : defaultFlags;
+        return addDefaults<F>(flagsResponse, defaultFlags);
       }
     : async function getFlags() {
         throw new Error(
