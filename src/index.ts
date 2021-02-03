@@ -10,7 +10,7 @@ export type Flags = { [key: string]: boolean | number | string | undefined };
  */
 type FlagsResponse<F extends Flags> = { flags: F; visitor: { key: string } };
 
-export type FlagConfig<F extends Flags = Flags> = {
+type FlagConfig<F extends Flags = Flags> = {
   /**
    * Your HappyKit Flags Key.
    *
@@ -43,7 +43,18 @@ export type FlagConfig<F extends Flags = Flags> = {
    * [`stale-while-revalidate`](https://tools.ietf.org/html/rfc5861) fashion.
    */
   disableCache?: boolean;
+  /**
+   * The key under which cached responses will be saved locally
+   */
+  localStorageCacheKey: string;
 };
+
+const defaultConfig: Partial<FlagConfig> = {
+  endpoint: 'https://happykit.dev/api/flags',
+  localStorageCacheKey: 'happykit_flags_v1',
+};
+
+let config: FlagConfig | null = null;
 
 export type FlagUser = {
   key: string;
@@ -74,29 +85,19 @@ export type FlagOptions<F extends Flags> = {
   revalidateOnFocus?: boolean;
 };
 
-const defaultConfig: Partial<FlagConfig> = {
-  endpoint: 'https://happykit.dev/api/flags',
-  envKey: '',
-  defaultFlags: {},
-};
-
-const localStorageCacheKey = 'happykit_flags_v1';
-
-let config: Partial<FlagConfig> = defaultConfig;
-
 /**
  * For testing purposes only
  */
 export const _reset =
   process.env.NODE_ENV === 'production'
     ? () => {}
-    : () => {
-        config = defaultConfig;
+    : function _reset<F extends Flags>(nextConfig: FlagConfig<F> | null) {
+        config = nextConfig;
         map.clear();
       };
 
 export function configure<F extends Flags>(
-  nextConfig: Partial<FlagConfig<F>> & { envKey: string }
+  nextConfig: { envKey: string } & Partial<FlagConfig<F>>
 ) {
   if (typeof nextConfig !== 'object')
     throw new Error('@happykit/flags: config must be an object');
@@ -104,7 +105,7 @@ export function configure<F extends Flags>(
   if (typeof nextConfig.envKey !== 'string')
     throw new Error('@happykit/flags: Missing envKey');
 
-  config = Object.assign({}, defaultConfig, nextConfig);
+  config = Object.assign({}, defaultConfig, nextConfig) as FlagConfig<F>;
 }
 
 function isString(object: any): object is string {
@@ -227,12 +228,13 @@ async function fetchFlags<F extends Flags>({
 }
 
 function storeFlagsResponseInCache<F extends Flags>(
+  config: FlagConfig<F>,
   flagsResponse: FlagsResponse<F>,
   user: FlagUser | null
 ) {
   try {
     localStorage.setItem(
-      localStorageCacheKey,
+      config.localStorageCacheKey,
       JSON.stringify({
         endpoint: config.endpoint,
         envKey: config.envKey,
@@ -247,6 +249,7 @@ function storeFlagsResponseInCache<F extends Flags>(
 }
 
 function loadFlagsResponseFromCache<F extends Flags>(options: {
+  config: FlagConfig;
   user: FlagUser | null;
 }): FlagsResponse<F> | null {
   try {
@@ -260,12 +263,12 @@ function loadFlagsResponseFromCache<F extends Flags>(options: {
       // getItem() might return into a string ("null"), so that JSON.parse()
       // succeeds in that case as it ends up being JSON.parse("null") which
       // returns null.
-      String(localStorage.getItem(localStorageCacheKey))
+      String(localStorage.getItem(options.config.localStorageCacheKey))
     );
 
     return cached &&
-      cached.endpoint === config.endpoint &&
-      cached.envKey === config.envKey &&
+      cached.endpoint === options.config.endpoint &&
+      cached.envKey === options.config.envKey &&
       // userAttributes could be undefined or null, so we have to make sure that
       // we treat falsy values as being equal.
       shallowEqual(options.user, cached.user)
@@ -279,9 +282,10 @@ function loadFlagsResponseFromCache<F extends Flags>(options: {
 }
 
 function isFullyConfiguredFlagConfig(
-  config: Partial<FlagConfig>
-): config is FlagConfig {
+  config: Partial<FlagConfig> | null
+): config is FlagConfig & { envKey: string } {
   return (
+    config !== null &&
     typeof config.envKey === 'string' &&
     config.envKey.trim().length > 0 &&
     typeof config.endpoint === 'string' &&
@@ -355,11 +359,17 @@ function usePrimitiveFlags<F extends Flags>(
   // We need to wait for the initial render to complete so the server-side
   // markup matches the initial client-side render
   React.useEffect(() => {
+    if (!isFullyConfiguredFlagConfig(config)) {
+      throw new Error('@happykit/flags: Missing config.envKey');
+    }
+
     if (initialFlags || config.disableCache) return;
 
     const cachedFlagsResponse = loadFlagsResponseFromCache<F>({
+      config: config as FlagConfig<F>,
       user: initialUser,
     });
+
     if (!shallowEqual(flagsResponse?.flags, cachedFlagsResponse?.flags)) {
       setFlagsResponse(cachedFlagsResponse || null);
     }
@@ -372,6 +382,10 @@ function usePrimitiveFlags<F extends Flags>(
     let mounted = true;
 
     fetchFlags<F>({ config, userAttributes }).then(nextFlagsResponse => {
+      if (!isFullyConfiguredFlagConfig(config)) {
+        throw new Error('@happykit/flags: Missing config.envKey');
+      }
+
       // skip in case the request failed
       if (!nextFlagsResponse) return;
       // skip in case the component unmounted
@@ -380,7 +394,7 @@ function usePrimitiveFlags<F extends Flags>(
       setFlagsResponse(nextFlagsResponse);
 
       if (!config.disableCache) {
-        storeFlagsResponseInCache(nextFlagsResponse, userAttributes);
+        storeFlagsResponseInCache(config, nextFlagsResponse, userAttributes);
       }
     });
 
@@ -416,6 +430,10 @@ function usePrimitiveFlags<F extends Flags>(
           JSON.stringify(createBody(userAttributes))
         );
 
+        if (!isFullyConfiguredFlagConfig(config)) {
+          throw new Error('@happykit/flags: Missing config.envKey');
+        }
+
         if (!nextFlagsResponse) return;
 
         // skip responses to outdated requests
@@ -427,7 +445,7 @@ function usePrimitiveFlags<F extends Flags>(
         setFlagsResponse(nextFlagsResponse);
 
         if (!config.disableCache) {
-          storeFlagsResponseInCache(nextFlagsResponse, userAttributes);
+          storeFlagsResponseInCache(config, nextFlagsResponse, userAttributes);
         }
       } catch (error) {
         console.error(error);
@@ -479,9 +497,16 @@ export function useFeatureFlags<F extends Flags>(
   initialFlags: FlagOptions<F>['initialFlags'];
   defaultFlags: FlagConfig<F>['defaultFlags'];
 } {
+  if (!isFullyConfiguredFlagConfig(config)) {
+    console.warn(
+      '@happykit/flags: Make sure to call configure({ envKey: "<your env key>" }) in _app before using useFeatureFlags.'
+    );
+    throw new Error('@happykit/flags: Incomplete config');
+  }
+
   const flags = usePrimitiveFlags<F>(options);
 
-  const defaultFlags = config?.defaultFlags;
+  const defaultFlags = config.defaultFlags;
   const [
     flagsResponseWithDefaults,
     setFlagsResponseWithDefaults,
@@ -500,15 +525,6 @@ export function useFeatureFlags<F extends Flags>(
     initialFlags: options?.initialFlags,
     defaultFlags: config.defaultFlags as F,
   };
-}
-
-/**
- * Returns feature flags from HappyKit
- * @param options Options like initial flags or the targeted user.
- */
-export function useFlags<F extends Flags>(options?: FlagOptions<F>): F {
-  const { flags } = useFeatureFlags<F>(options);
-  return flags;
 }
 
 export const getFlags =
