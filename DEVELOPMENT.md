@@ -1,22 +1,14 @@
-## Development
+# Development
 
-### Commands
+We are using [`preconstruct`](https://preconstruct.tools/) so you don't need to start any compilation.
 
-#### Run tsdx
+This project uses two yarn workspaces: `package` and `example`.
 
-```
-yarn start
-```
+## `package`
 
-#### Run playground (in another tab)
+The `@happykit/flags` library lives inside `package`.
 
-```
-cd example
-yarn start
-```
+## `example`
 
-#### Run tests
+A Next.js example project lives inside `example`. The Next.js example project uses `@preconstruct/next`, which is only necessary for development of `@happykit/flags` but not required in a real Next.js project.
 
-```
-yarn test --watch
-```

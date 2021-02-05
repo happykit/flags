@@ -1,66 +1,21 @@
 {
-  "version": "0.3.0",
+  "name": "happykit",
+  "private": true,
   "license": "MIT",
-  "main": "dist/index.js",
-  "typings": "dist/index.d.ts",
-  "files": [
-    "dist",
-    "src"
-  ],
-  "engines": {
-    "node": ">=10"
-  },
-  "scripts": {
-    "start": "tsdx watch",
-    "build": "tsdx build",
-    "test": "tsdx test",
-    "lint": "tsdx lint src test jest",
-    "prepare": "tsdx build",
-    "pub": "yarn publish --access=public"
-  },
-  "peerDependencies": {
-    "next": ">=9.4.0",
-    "react": ">=16.13.1"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "yarn lint"
-    }
-  },
-  "prettier": {
-    "printWidth": 80,
-    "semi": true,
-    "singleQuote": true,
-    "trailingComma": "es5"
-  },
-  "jest": {
-    "automock": false,
-    "setupFiles": [
-      "./jest/fetch.js",
-      "./jest/mutation-observer.js"
-    ]
-  },
-  "name": "@happykit/flags",
-  "description": "Feature Flags for Next.js",
   "author": "Dominik Ferber",
-  "module": "dist/flags.esm.js",
-  "devDependencies": {
-    "@sheerun/mutationobserver-shim": "0.3.3",
-    "@testing-library/jest-dom": "5.11.9",
-    "@testing-library/react": "11.2.3",
-    "@testing-library/react-hooks": "5.0.3",
-    "@types/react": "17.0.0",
-    "@types/react-dom": "17.0.0",
-    "husky": "4.3.8",
-    "jest-fetch-mock": "3.0.3",
-    "react": "17.0.1",
-    "react-dom": "17.0.1",
-    "react-test-renderer": "17.0.1",
-    "tsdx": "0.14.1",
-    "tslib": "2.1.0",
-    "typescript": "4.1.3"
+  "scripts": {
+    "postinstall": "preconstruct dev"
   },
-  "dependencies": {
-    "use-effect-reducer": "0.7.0"
+  "workspaces": [
+    "package",
+    "example"
+  ],
+  "devDependencies": {
+    "@preconstruct/cli": "2.0.3"
+  },
+  "preconstruct": {
+    "packages": [
+      "package"
+    ]
   }
 }

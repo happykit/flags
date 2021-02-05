@@ -1,0 +1,20 @@
+{
+  "name": "@happykit/flags",
+  "version": "1.0.0-alpha.0",
+  "author": "Dominik Ferber <dominik.ferber+npm@gmail.com> (http://dferber.de/)",
+  "license": "MIT",
+  "dependencies": {
+    "@babel/core": "7.12.13",
+    "@babel/preset-env": "7.12.13",
+    "@babel/preset-typescript": "7.12.13",
+    "typescript": "4.1.3",
+    "use-effect-reducer": "0.7.0"
+  },
+  "preconstruct": {
+    "entrypoints": [
+      "./config.ts",
+      "./server.ts",
+      "./client.ts"
+    ]
+  }
+}
