@@ -29,14 +29,14 @@ export type EvaluationRequestBody = {
   traits: Traits | null;
 };
 
-export type EvaluationResponseBody = {
+export type EvaluationResponseBody<F extends Flags> = {
   visitor: { key: string };
-  flags: { [key: string]: number | boolean | string };
+  flags: F;
 };
 
-export type InitialFlagStateWithResponse = {
+export type InitialFlagStateWithResponse<F extends Flags> = {
   requestBody: EvaluationRequestBody;
-  responseBody: EvaluationResponseBody;
+  responseBody: EvaluationResponseBody<F>;
 };
 
 export type InitialFlagStateWithoutResponse = {
@@ -44,8 +44,8 @@ export type InitialFlagStateWithoutResponse = {
   responseBody: null;
 };
 
-export type InitialFlagState =
-  | InitialFlagStateWithResponse
+export type InitialFlagState<F extends Flags> =
+  | InitialFlagStateWithResponse<F>
   | InitialFlagStateWithoutResponse;
 
 export class InvalidConfigurationError extends Error {
@@ -54,10 +54,10 @@ export class InvalidConfigurationError extends Error {
   }
 }
 
-type IncomingConfiguration = {
+type IncomingConfiguration<F extends Flags> = {
   envKey: string;
   endpoint?: string;
-  defaultFlags?: Flags;
+  defaultFlags?: F;
   revalidateOnFocus?: boolean;
   disableCache?: boolean;
 };
@@ -65,16 +65,17 @@ type IncomingConfiguration = {
 type DefaultConfiguration = {
   endpoint: string;
   fetch: typeof fetch;
-  defaultFlags: {};
+  defaultFlags: Flags;
   revalidateOnFocus: boolean;
   disableCache: boolean;
 };
 
-export type Configuration = DefaultConfiguration & IncomingConfiguration;
-export let config: Configuration | null = null;
+export type Configuration<F extends Flags> = DefaultConfiguration &
+  IncomingConfiguration<F>;
+export let config: Configuration<Flags> | null = null;
 
-export function configure(
-  options: IncomingConfiguration & Partial<DefaultConfiguration>
+export function configure<F extends Flags = Flags>(
+  options: IncomingConfiguration<F> & Partial<DefaultConfiguration>
 ) {
   const defaults: DefaultConfiguration = {
     endpoint: "https://happykit.dev/api/flags",
@@ -94,7 +95,9 @@ export function configure(
   config = Object.assign({}, defaults, options);
 }
 
-export function isConfigured(c: Configuration | null): c is Configuration {
+export function isConfigured<F extends Flags, C = Configuration<F>>(
+  c: C | null
+): c is C {
   return c !== null;
 }
 
