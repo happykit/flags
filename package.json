@@ -15,7 +15,7 @@
     "build": "tsdx build",
     "test": "tsdx test",
     "lint": "tsdx lint src test jest",
-    "prepare": "tsdx build wow",
+    "prepare": "tsdx build",
     "pub": "yarn publish --access=public"
   },
   "peerDependencies": {
@@ -61,6 +61,6 @@
     "typescript": "4.1.3"
   },
   "dependencies": {
-    "nanoid": "3.1.20"
+    "use-effect-reducer": "0.7.0"
   }
 }
