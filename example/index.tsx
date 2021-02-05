@@ -1,7 +1,7 @@
 import 'react-app-polyfill/ie11';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { useFlags, useFeatureFlags, configure } from '../.';
+import { useFlags, configure } from '../.';
 
 type Flags = {
   booleanFlag: boolean;
@@ -11,12 +11,12 @@ type Flags = {
 
 const useProd = false;
 
-configure<Partial<Flags>>({
+configure({
   endpoint: useProd ? undefined : 'http://localhost:8787/api/flags',
   envKey: useProd
     ? 'flags_pub_277203581177692685'
     : 'flags_pub_272357356657967622',
-  defaultFlags: {},
+  // defaultFlags: {},
 });
 
 // const App = () => {
@@ -28,7 +28,8 @@ configure<Partial<Flags>>({
 // };
 
 const App = () => {
-  const response = useFeatureFlags<Flags>();
+  // const response = useFlags<Flags>();
+  const response = useFlags();
   return <pre>{JSON.stringify(response, null, 2)}</pre>;
 };
 
