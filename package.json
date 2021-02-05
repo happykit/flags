@@ -19,8 +19,8 @@
     "pub": "yarn publish --access=public"
   },
   "peerDependencies": {
-    "next": "^9.4.0",
-    "react": "^16.13.1"
+    "next": ">=9.4.0",
+    "react": ">=16.13.1"
   },
   "husky": {
     "hooks": {
