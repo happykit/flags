@@ -9,6 +9,8 @@ import {
   MissingConfigurationError,
   Flags,
   InitialFlagState,
+  EvaluationResponseBody,
+  Configuration,
 } from "./config";
 
 function serializeVisitorKeyCookie(visitorKey: string) {
@@ -29,7 +31,7 @@ function getXForwardedFor(context: {
   return {};
 }
 
-export async function getFlags(options: {
+export async function getFlags<F extends Flags = Flags>(options: {
   context: { req: IncomingMessage; res: ServerResponse };
   user?: User;
   traits?: Traits;
@@ -43,11 +45,11 @@ export async function getFlags(options: {
    * In case the default flags contain flags not present in the loaded
    * flags, the missing flags will get added to the returned flags.
    */
-  flags: Flags;
+  flags: F;
   /**
    * The initial flag state that you can use to initialize useFlags()
    */
-  initialFlagState: InitialFlagState;
+  initialFlagState: InitialFlagState<F>;
 }> {
   if (!isConfigured(config)) throw new MissingConfigurationError();
 
@@ -76,17 +78,17 @@ export async function getFlags(options: {
 
   if (!response || response.status !== 200)
     return {
-      flags: config.defaultFlags,
+      flags: config.defaultFlags as F,
       initialFlagState: { requestBody, responseBody: null },
     };
 
-  const responseBody = (await response.json().catch(() => null)) as {
-    flags: Flags;
-    visitor: { key: string };
-  } | null;
+  const responseBody: EvaluationResponseBody<F> | null = await response
+    .json()
+    .catch(() => null);
+
   if (!responseBody)
     return {
-      flags: config.defaultFlags,
+      flags: config.defaultFlags as F,
       initialFlagState: { requestBody, responseBody: null },
     };
 
@@ -98,7 +100,7 @@ export async function getFlags(options: {
 
   // add defaults to flags here, but not in initialFlagState
   const flags = responseBody.flags ? responseBody.flags : null;
-  const flagsWithDefaults = { ...config.defaultFlags, ...flags };
+  const flagsWithDefaults = { ...config.defaultFlags, ...flags } as F;
 
   return {
     flags: flagsWithDefaults,
