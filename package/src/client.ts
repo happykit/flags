@@ -3,7 +3,7 @@ import {
   shallowEqual,
   isConfigured,
   EvaluationRequestBody,
-  User,
+  FlagUser,
   Traits,
   EvaluationResponseBody,
   Configuration,
@@ -125,7 +125,7 @@ type State<F extends Flags> =
 
 type Action<F extends Flags> =
   | { type: "mount"; readCache: boolean; config: Configuration<F> }
-  | { type: "changed"; user?: User | null; traits?: Traits | null }
+  | { type: "changed" }
   | { type: "focus" }
   | {
       type: "settle";
@@ -234,7 +234,7 @@ const reducer: EffectReducer<State<Flags>, Action<Flags>, Effect<Flags>> = (
 
 export function useFlags<F extends Flags = Flags>(
   options: {
-    user?: User | null;
+    user?: FlagUser | null;
     traits?: Traits | null;
     initialState?: InitialFlagState<F>;
     revalidateOnFocus?: boolean;

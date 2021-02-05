@@ -1,4 +1,4 @@
-export type User = {
+export type FlagUser = {
   key: string;
   persist?: boolean;
   email?: string;
@@ -18,10 +18,6 @@ export class MissingConfigurationError extends Error {
     super("@happykit/flags: Missing configuration. Call configure() first.");
   }
 }
-
-export type FeatureFlagUser = User;
-export type FeatureFlagTraits = Traits;
-export type FeatureFlags = Flags;
 
 export type EvaluationRequestBody = {
   visitorKey: string | null;
@@ -108,9 +104,17 @@ export function hasOwnProperty<X extends {}, Y extends PropertyKey>(
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
 
-// copied from https://github.com/moroshko/shallow-equal/blob/1a6bf512cf896b44f3b7bb3d493411a7c5339a25/src/objects.js
+/**
+ * A modified version of shallowEqual which also returns true when both
+ * inputs are falsy.
+ *
+ * source https://github.com/moroshko/shallow-equal/blob/1a6bf512cf896b44f3b7bb3d493411a7c5339a25/src/objects.js
+ */
 export function shallowEqual(objA: any, objB: any) {
   if (objA === objB) return true;
+
+  // this
+  if (!objA && !objB) return true;
 
   if (!objA || !objB) return false;
 
