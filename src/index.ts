@@ -1,62 +1,50 @@
+/** global: fetch */
+
+// TODO this should be moved to @happykit/flags
 import * as React from 'react';
-import { nanoid } from 'nanoid';
+import { IncomingMessage, ServerResponse } from 'http';
+import { useEffectReducer, EffectReducer } from 'use-effect-reducer';
 
-/* global fetch:false */
+// resolved by cache (while fetching)
+// resolved by fallback (when cache was empty) (even if there is no explicit fallback provided) (fallback set through global config or options)
+// resolved by service worker => leads to "settled: true"
 
-export type Flags = { [key: string]: boolean | number | string | undefined };
+// settled: true means it has been loaded by the service worker,
+//          or loading has failed and a fallback is being used
+//          -> never goes back to false after it is true
+// fetching: true means a request is currently in flight (initial or refetching)
+//          -> can switch between true and false
 
-/**
- * The response the Service Worker at /api/flags/xx makes
- */
-type FlagsResponse<F extends Flags> = { flags: F; visitor: { key: string } };
+// loaded on server (swaps to "client" once revalidates)
+// loaded on client (never swaps back to server)
 
-type FlagConfig<F extends Flags = Flags> = {
-  /**
-   * Your HappyKit Flags Key.
-   *
-   * It should look similar to `flags_pub_277203581177692685`.
-   *
-   * You can use that value if you just want to play around.
-   * You will receive one flag called `dog` which is turned on.
-   *
-   * You can find this key in your Project settings on https://happykit.dev
-   */
-  envKey: string;
-  /**
-   * This is internal and you don't need to provide it.
-   *
-   * It defines where the Flags are loaded from.
-   */
-  endpoint: string;
-  /**
-   * Key-value pairs of flags and their values. These values are used as
-   * fallbacks in `useFlags` and `getFlags`. The fallbacks are used while the
-   * actual flags are loaded, in case a flag is missing or when the request
-   * loading the flags fails for unexpected reasons. If you don't declare
-   * `defaultFlags`, then the flag values will be `undefined`.
-   */
-  defaultFlags?: F;
-  /**
-   * Pass `true` to turn off the client-side cache.
-   * The cache is persisted to `localStorage` and persists across page loads.
-   * Even with an enabled cache, all flags will get revalidated in
-   * [`stale-while-revalidate`](https://tools.ietf.org/html/rfc5861) fashion.
-   */
-  disableCache?: boolean;
-  /**
-   * The key under which cached responses will be saved locally
-   */
-  localStorageCacheKey: string;
-};
+// -------
 
-const defaultConfig: Partial<FlagConfig> = {
-  endpoint: 'https://happykit.dev/api/flags',
-  localStorageCacheKey: 'happykit_flags_v1',
-};
+// resolvedBy: "api" | "cache" | "fallback"
+// settled: boolean
+// loadedOn: "server" | "client"
 
-let config: FlagConfig | null = null;
+let queue: {
+  input: RequestInfo;
+  init?: RequestInit | undefined;
+  promise: Promise<Response>;
+}[] = [];
+function dedupeFetch(input: RequestInfo, init?: RequestInit | undefined) {
+  const queued = queue.find(
+    item => input === item.input && shallowEqual(init, item.init)
+  );
+  if (queued) return queued.promise;
+  const promise = fetch(input, init);
+  queue.push({ input, init, promise });
+  return promise.then(result => {
+    queue = queue.filter(
+      item => input !== item.input || !shallowEqual(init, item.init)
+    );
+    return result;
+  });
+}
 
-export type FlagUser = {
+type User = {
   key: string;
   persist?: boolean;
   email?: string;
@@ -65,69 +53,105 @@ export type FlagUser = {
   country?: string;
 };
 
-export type FlagOptions<F extends Flags> = {
-  /**
-   * This is the flag user which the flags will be evaluated for.
-   */
-  user?: FlagUser;
-  /**
-   * In case you preloaded your flags during server-side rendering using
-   * `getFlags()`, provide the flags as `initialFlags`.
-   * The client will then skip the initial request and use the provided flags
-   * instead.
-   * This allows you to get rid of loading states on the client.
-   */
-  initialFlags?: F;
-  /**
-   * By default, the client will revalidate all feature flags when the browser
-   * window regains focus. Pass `false` to skip this behaviour.
-   */
-  revalidateOnFocus?: boolean;
+type Traits = { [key: string]: any };
+
+type Flags = {
+  [key: string]: boolean | number | string;
 };
 
-/**
- * For testing purposes only
- */
-export const _reset =
-  process.env.NODE_ENV === 'production'
-    ? () => {}
-    : function _reset<F extends Flags>(nextConfig: FlagConfig<F> | null) {
-        config = nextConfig;
-        map.clear();
-      };
+export type FeatureFlagUser = User;
+export type FeatureFlagTraits = Traits;
+export type FeatureFlags = Flags;
 
-export function configure<F extends Flags>(
-  nextConfig: { envKey: string } & Partial<FlagConfig<F>>
+type IncomingConfiguration = {
+  envKey: string;
+  endpoint?: string;
+  defaultFlags?: Flags;
+  revalidateOnFocus?: boolean;
+  disableCache?: boolean;
+};
+
+type DefaultConfiguration = {
+  endpoint: string;
+  fetch: typeof fetch;
+  defaultFlags: {};
+  revalidateOnFocus: boolean;
+  disableCache: boolean;
+};
+
+type Configuration = DefaultConfiguration & IncomingConfiguration;
+let config: Configuration | null = null;
+
+export function configure(
+  options: IncomingConfiguration & Partial<DefaultConfiguration>
 ) {
-  if (typeof nextConfig !== 'object')
-    throw new Error('@happykit/flags: config must be an object');
+  const defaults: DefaultConfiguration = {
+    endpoint: 'https://happykit.dev/api/flags',
+    fetch,
+    defaultFlags: {},
+    revalidateOnFocus: true,
+    disableCache: false,
+  };
 
-  if (typeof nextConfig.envKey !== 'string')
-    throw new Error('@happykit/flags: Missing envKey');
+  if (
+    !options ||
+    typeof options.envKey !== 'string' ||
+    options.envKey.length === 0
+  )
+    throw new InvalidConfigurationError();
 
-  config = Object.assign({}, defaultConfig, nextConfig) as FlagConfig<F>;
+  config = Object.assign({}, defaults, options);
 }
 
-function isString(object: any): object is string {
-  return typeof object === 'string';
+function isConfigured(c: Configuration | null): c is Configuration {
+  return c !== null;
 }
 
-function toUser(incomingUser: any): FlagUser | null {
-  if (typeof incomingUser !== 'object') return null;
+class MissingConfigurationError extends Error {
+  constructor() {
+    super('@happykit/flags: Missing configuration. Call configure() first.');
+  }
+}
 
-  // users must have a key
-  if (!isString(incomingUser.key) || incomingUser.key.trim().length === 0)
-    return null;
+class InvalidConfigurationError extends Error {
+  constructor() {
+    super('@happykit/flags: Invalid configuration');
+  }
+}
 
-  const user: FlagUser = { key: incomingUser.key.trim() };
+/**
+ * Gets the cookie by the name
+ *
+ * From: https://developers.cloudflare.com/workers/examples/extract-cookie-value
+ */
+function getCookie(cookieString: string | null | undefined, name: string) {
+  if (cookieString) {
+    const cookies = cookieString.split(';');
+    for (let cookie of cookies) {
+      const cookiePair = cookie.split('=', 2);
+      const cookieName = cookiePair[0].trim();
+      if (cookieName === name) return cookiePair[1];
+    }
+  }
+  return null;
+}
 
-  if (incomingUser?.persist) user.persist = true;
-  if (isString(incomingUser?.email)) user.email = incomingUser.email;
-  if (isString(incomingUser?.name)) user.name = incomingUser.name;
-  if (isString(incomingUser?.avatar)) user.avatar = incomingUser.avatar;
-  if (isString(incomingUser?.country)) user.country = incomingUser.country;
+function serializeVisitorKeyCookie(visitorKey: string) {
+  const seconds = 60 * 60 * 24 * 180;
+  const value = encodeURIComponent(visitorKey);
+  return `hkvk=${value}; Max-Age=${seconds}; SameSite=Lax`;
+}
 
-  return user;
+function getXForwardedFor(context: {
+  req: IncomingMessage;
+  res: ServerResponse;
+}): {} | { 'x-forwarded-for': string } {
+  const key = 'x-forwarded-for' as const;
+  const xForwardedFor = context.req.headers[key];
+  if (typeof xForwardedFor === 'string') return { [key]: xForwardedFor };
+  const remoteAddress = context.req.socket.remoteAddress;
+  if (remoteAddress) return { [key]: remoteAddress };
+  return {};
 }
 
 // copied from https://github.com/moroshko/shallow-equal/blob/1a6bf512cf896b44f3b7bb3d493411a7c5339a25/src/objects.js
@@ -156,395 +180,473 @@ function shallowEqual(objA: any, objB: any) {
   return true;
 }
 
-function createBody(userAttributes: FlagUser | null) {
-  const body: { user?: FlagUser } = {};
-
-  if (userAttributes) body.user = userAttributes;
-
-  return body;
+function hasOwnProperty<X extends {}, Y extends PropertyKey>(
+  obj: X,
+  prop: Y
+): obj is X & Record<Y, unknown> {
+  return obj.hasOwnProperty(prop);
 }
 
-/**
- * A Map of the currently in-progress requests.
- */
-const map = new Map<string, Promise<FlagsResponse<Flags>>>();
-
-/**
- * Fetches flags, ...
- *
- * ...but only if no other fetch for the same flag with the same endpoint and
- * request body is in progress.
- *
- * Otherwise it returns the promise of the already in-progress request.
- * @param endpoint The endpoint fetched from
- * @param body Stringified request body containing the envKey & userAttributes.
- */
-async function queuedFetchFlags<F extends Flags>(
-  endpoint: string,
-  envKey: string,
-  body: string
-): Promise<FlagsResponse<F> | null> {
-  const url = [endpoint, envKey].join('/');
-  const queueKey = JSON.stringify({ url, body });
-  const queuedPromise = map.get(queueKey) as
-    | Promise<FlagsResponse<F>>
-    | undefined;
-
-  if (queuedPromise) return queuedPromise;
-
-  const promise = fetch(url, { method: 'POST', body }).then(
-    response => (response.ok ? response.json() : null),
-    () => null
-  );
-  map.set(queueKey, promise);
-
-  promise.then(() => {
-    map.delete(queueKey);
-  });
-
-  return promise;
-}
-
-async function fetchFlags<F extends Flags>({
-  config,
-  userAttributes,
-}: {
-  config: FlagConfig;
-  userAttributes: FlagUser | null;
-  skipQueue?: boolean;
-}): Promise<FlagsResponse<F> | null> {
+function getCachedState(
+  config: Configuration,
+  visitorKey: string | null
+): {
+  requestBody: EvaluationRequestBody;
+  responseBody: EvaluationResponseBody;
+} | null {
   try {
-    const flagsResponse = await queuedFetchFlags<F>(
-      config.endpoint,
-      config.envKey,
-      JSON.stringify(createBody(userAttributes))
-    );
-
-    return flagsResponse;
-  } catch (error) {
-    console.error(error);
-    return null;
-  }
-}
-
-function storeFlagsResponseInCache<F extends Flags>(
-  config: FlagConfig<F>,
-  flagsResponse: FlagsResponse<F>,
-  user: FlagUser | null
-) {
-  try {
-    localStorage.setItem(
-      config.localStorageCacheKey,
-      JSON.stringify({
-        endpoint: config.endpoint,
-        envKey: config.envKey,
-        flagsResponse,
-        user,
-      })
-    );
-  } catch (e) {
-    // chrome can throw when no permission for localStorage has been granted
-    // https://www.chromium.org/for-testers/bug-reporting-guidelines/uncaught-securityerror-failed-to-read-the-localstorage-property-from-window-access-is-denied-for-this-document
-  }
-}
-
-function loadFlagsResponseFromCache<F extends Flags>(options: {
-  config: FlagConfig;
-  user: FlagUser | null;
-}): FlagsResponse<F> | null {
-  try {
-    const cached: {
-      endpoint: string;
-      envKey: string;
-      user?: FlagUser;
-      flagsResponse: FlagsResponse<F>;
-    } | null = JSON.parse(
-      // putting String() in here is just a nice way to turn null which
-      // getItem() might return into a string ("null"), so that JSON.parse()
-      // succeeds in that case as it ends up being JSON.parse("null") which
-      // returns null.
-      String(localStorage.getItem(options.config.localStorageCacheKey))
-    );
-
-    return cached &&
-      cached.endpoint === options.config.endpoint &&
-      cached.envKey === options.config.envKey &&
-      // userAttributes could be undefined or null, so we have to make sure that
-      // we treat falsy values as being equal.
-      shallowEqual(options.user, cached.user)
-      ? cached.flagsResponse
-      : null;
-  } catch (e) {
-    // chrome can throw when no permission for localStorage has been granted
-    // https://www.chromium.org/for-testers/bug-reporting-guidelines/uncaught-securityerror-failed-to-read-the-localstorage-property-from-window-access-is-denied-for-this-document
-    return null;
-  }
-}
-
-function isFullyConfiguredFlagConfig(
-  config: Partial<FlagConfig> | null
-): config is FlagConfig & { envKey: string } {
-  return (
-    config !== null &&
-    typeof config.envKey === 'string' &&
-    config.envKey.trim().length > 0 &&
-    typeof config.endpoint === 'string' &&
-    config.endpoint.trim().length > 0
-  );
-}
-
-/**
- * Gets the cookie with by name
- */
-function getCookie(name: string): string | null {
-  let cookieString: string;
-  try {
-    cookieString = document.cookie;
-  } catch (e) {
-    return null;
-  }
-
-  if (cookieString) {
-    const cookies = cookieString.split(';');
-    for (let cookie of cookies) {
-      const cookiePair = cookie.split('=', 2);
-      const cookieName = cookiePair[0].trim();
-      if (cookieName === name) {
-        const cookieVal = cookiePair[1];
-        return cookieVal;
-      }
-    }
-  }
-
+    const cached = JSON.parse(String(localStorage.getItem('hk-cache')));
+    if (
+      typeof cached === 'object' &&
+      hasOwnProperty(cached, 'requestBody') &&
+      hasOwnProperty(cached, 'responseBody') &&
+      hasOwnProperty(cached, 'envKey') &&
+      hasOwnProperty(cached, 'endpoint') &&
+      hasOwnProperty(cached.responseBody, 'visitor') &&
+      hasOwnProperty(cached.responseBody.visitor, 'key') &&
+      cached.responseBody.visitor.key === visitorKey &&
+      cached.envKey === config.envKey &&
+      cached.endpoint === config.endpoint
+    )
+      return {
+        requestBody: cached.requestBody,
+        responseBody: cached.responseBody,
+      };
+  } catch (e) {}
   return null;
 }
 
-/**
- * Fetch flags primitive. Use this only if you're interested in the loading
- * state, use useFlag otherwise.
- *
- * @param options flag options
- * @returns null while loading, Flags otherwise
- */
-function usePrimitiveFlags<F extends Flags>(
-  options?: FlagOptions<F>
-): FlagsResponse<F> | null {
-  if (!isFullyConfiguredFlagConfig(config)) {
-    throw new Error('@happykit/flags: Missing config.envKey');
-  }
+type EvaluationRequestBody = {
+  visitorKey: string | null;
+  user: User | null;
+  traits: Traits | null;
+};
 
-  // use "null" to indicate that no initial flags were provided, but never
-  // return "null" from the hook
-  const initialFlags = options?.initialFlags ? options.initialFlags : null;
-  const [flagsResponse, setFlagsResponse] = React.useState<FlagsResponse<
-    F
-  > | null>(
-    initialFlags
-      ? {
-          flags: initialFlags,
-          // use existing visitor key or generate a fresh one
-          visitor: { key: getCookie('hkvk') || nanoid() },
-        }
-      : null
-  );
+type EvaluationResponseBody = {
+  visitor: { key: string };
+  flags: { [key: string]: number | boolean | string };
+};
 
-  const initialUser = options?.user ? toUser(options.user) : null;
-  const [userAttributes, setUserAttributes] = React.useState<FlagUser | null>(
-    initialUser
-  );
-
-  // populate flags from cache after first render, unless they already match
-  // the cached version.
-  //
-  // We need to wait for the initial render to complete so the server-side
-  // markup matches the initial client-side render
-  React.useEffect(() => {
-    if (!isFullyConfiguredFlagConfig(config)) {
-      throw new Error('@happykit/flags: Missing config.envKey');
+type State =
+  // useFlags() used without initialState (without getFlags())
+  | {
+      mounted: boolean;
+      settled: false;
+      fetching: true;
+      visitorKey: string | null;
+      requestBody: null;
+      responseBody: null;
     }
-
-    if (initialFlags || config.disableCache) return;
-
-    const cachedFlagsResponse = loadFlagsResponseFromCache<F>({
-      config: config as FlagConfig<F>,
-      user: initialUser,
-    });
-
-    if (!shallowEqual(flagsResponse?.flags, cachedFlagsResponse?.flags)) {
-      setFlagsResponse(cachedFlagsResponse || null);
+  // useFlags() used with getFlags(), but getFlags() failed
+  // or getFlags() and useFlags() failed both
+  | {
+      mounted: boolean;
+      settled: boolean;
+      fetching: boolean;
+      visitorKey: string | null;
+      requestBody: EvaluationRequestBody;
+      responseBody: null;
     }
-  }, [flagsResponse, initialFlags, initialUser]);
-
-  // fetch on mount when no initialFlags were provided
-  React.useEffect(() => {
-    if (initialFlags !== null || !isFullyConfiguredFlagConfig(config)) return;
-
-    let mounted = true;
-
-    fetchFlags<F>({ config, userAttributes }).then(nextFlagsResponse => {
-      if (!isFullyConfiguredFlagConfig(config)) {
-        throw new Error('@happykit/flags: Missing config.envKey');
-      }
-
-      // skip in case the request failed
-      if (!nextFlagsResponse) return;
-      // skip in case the component unmounted
-      if (!mounted) return;
-
-      setFlagsResponse(nextFlagsResponse);
-
-      if (!config.disableCache) {
-        storeFlagsResponseInCache(config, nextFlagsResponse, userAttributes);
-      }
-    });
-
-    return () => {
-      mounted = false;
-    };
-  }, [initialFlags, userAttributes]);
-
-  // revalidate when incoming user changes
-  const incomingUser = options?.user;
-  React.useEffect(() => {
-    const incomingUserAttributes = toUser(incomingUser);
-    if (shallowEqual(userAttributes, incomingUserAttributes)) return;
-    setUserAttributes(incomingUserAttributes);
-  }, [userAttributes, setUserAttributes, incomingUser]);
-
-  // revalidate on focus
-  const revalidateOnFocus = options?.revalidateOnFocus;
-  React.useEffect(() => {
-    if (typeof window === 'undefined') return;
-    // undefined is treated as truthy since revalidateOnFocus defaults to true
-    if (revalidateOnFocus === false) return;
-
-    let latestFetchId: number;
-    const listener = async () => {
-      const fetchId = (latestFetchId = Date.now());
-      if (!isFullyConfiguredFlagConfig(config)) return;
-
-      try {
-        const nextFlagsResponse = await queuedFetchFlags<F>(
-          config.endpoint,
-          config.envKey,
-          JSON.stringify(createBody(userAttributes))
-        );
-
-        if (!isFullyConfiguredFlagConfig(config)) {
-          throw new Error('@happykit/flags: Missing config.envKey');
-        }
-
-        if (!nextFlagsResponse) return;
-
-        // skip responses to outdated requests
-        if (fetchId !== latestFetchId) return;
-
-        // skip invalid responses
-        if (typeof nextFlagsResponse !== 'object') return;
-
-        setFlagsResponse(nextFlagsResponse);
-
-        if (!config.disableCache) {
-          storeFlagsResponseInCache(config, nextFlagsResponse, userAttributes);
-        }
-      } catch (error) {
-        console.error(error);
-      }
+  // useFlags() used with getFlags(), and getFlags() was successful
+  | {
+      mounted: true;
+      settled: true;
+      fetching: boolean;
+      visitorKey: string | null;
+      requestBody: EvaluationRequestBody;
+      responseBody: EvaluationResponseBody;
+    }
+  // useFlags() resolves with cache while revalidating
+  | {
+      mounted: true;
+      settled: false;
+      fetching: boolean;
+      visitorKey: string | null;
+      requestBody: EvaluationRequestBody;
+      responseBody: EvaluationResponseBody;
     };
 
-    window.addEventListener('focus', listener);
-    return () => {
-      window.removeEventListener('focus', listener);
+type Action =
+  | { type: 'mount'; readCache: boolean; config: Configuration }
+  | { type: 'changed'; user?: User | null; traits?: Traits | null }
+  | { type: 'focus' }
+  | {
+      type: 'settle';
+      endpoint: string;
+      envKey: string;
+      requestBody: EvaluationRequestBody;
+      responseBody: EvaluationResponseBody;
+    }
+  | { type: 'fail'; requestBody: EvaluationRequestBody };
+
+type Effect =
+  | { type: 'revalidate' }
+  | { type: 'cache/clear' }
+  | {
+      type: 'cache/save';
+      requestBody: EvaluationRequestBody;
+      responseBody: EvaluationResponseBody;
+      envKey: string;
+      endpoint: string;
     };
-  }, [revalidateOnFocus, setFlagsResponse, userAttributes]);
 
-  return flagsResponse;
-}
+const reducer: EffectReducer<State, Action, Effect> = (
+  state,
+  action,
+  effect
+) => {
+  switch (action.type) {
+    case 'mount': {
+      if (state.settled) return state;
+      effect({ type: 'revalidate' });
 
-function addDefaults<F extends Flags>(
-  flagsResponse: FlagsResponse<F> | null,
-  defaultFlags: Flags = {}
-): FlagsResponse<F> {
-  if (!flagsResponse) {
-    return {
-      flags: defaultFlags as F,
-      visitor: { key: nanoid() },
-    };
-  }
+      const visitorKey = state.requestBody?.visitorKey
+        ? state.requestBody.visitorKey
+        : typeof document !== 'undefined'
+        ? getCookie(document.cookie, 'hkvk')
+        : null;
 
-  if (
-    flagsResponse.flags &&
-    Object.keys(defaultFlags).every(key => flagsResponse.hasOwnProperty(key))
-  )
-    return flagsResponse;
+      if (!action.readCache)
+        return {
+          ...state,
+          visitorKey,
+          fetching: true,
+          mounted: true,
+        };
 
-  return {
-    ...flagsResponse,
-    flags: Object.assign({}, defaultFlags, flagsResponse.flags) as F,
-  };
-}
+      const cachedState = getCachedState(action.config, state.visitorKey);
 
-/**
- * Same as useFlags, but with more info on the returned value.
- *
- * @param options Options like initial flags or the targeted user.
- */
-export function useFeatureFlags<F extends Flags>(
-  options?: FlagOptions<F>
-): {
-  flags: F;
-  loading: boolean;
-  initialFlags: FlagOptions<F>['initialFlags'];
-  defaultFlags: FlagConfig<F>['defaultFlags'];
-} {
-  if (!isFullyConfiguredFlagConfig(config)) {
-    console.warn(
-      '@happykit/flags: Make sure to call configure({ envKey: "<your env key>" }) in _app before using useFeatureFlags.'
-    );
-    throw new Error('@happykit/flags: Incomplete config');
-  }
+      if (!cachedState)
+        return {
+          ...state,
+          visitorKey,
+          fetching: true,
+          mounted: true,
+        };
 
-  const flags = usePrimitiveFlags<F>(options);
-
-  const defaultFlags = config.defaultFlags;
-  const [
-    flagsResponseWithDefaults,
-    setFlagsResponseWithDefaults,
-  ] = React.useState<FlagsResponse<F>>(addDefaults<F>(flags, defaultFlags));
-
-  React.useEffect(() => {
-    const nextFlagsResponseWithDefaults = addDefaults(flags, defaultFlags);
-    if (shallowEqual(flagsResponseWithDefaults, nextFlagsResponseWithDefaults))
-      return;
-    setFlagsResponseWithDefaults(nextFlagsResponseWithDefaults);
-  }, [flags, flagsResponseWithDefaults, defaultFlags]);
-
-  return {
-    flags: flagsResponseWithDefaults.flags,
-    loading: flags === null,
-    initialFlags: options?.initialFlags,
-    defaultFlags: config.defaultFlags as F,
-  };
-}
-
-export const getFlags =
-  typeof window === 'undefined'
-    ? async function getFlags<F extends Flags>(
-        user?: FlagUser | null
-      ): Promise<FlagsResponse<F>> {
-        if (!isFullyConfiguredFlagConfig(config)) {
-          throw new Error('@happykit/flags: Missing config.envKey');
-        }
-
-        const flagsResponse = await fetchFlags<F>({
-          config,
-          userAttributes: toUser(user),
-        });
-        const defaultFlags = (config.defaultFlags || {}) as F;
-        return addDefaults<F>(flagsResponse, defaultFlags);
-      }
-    : async function getFlags() {
-        throw new Error(
-          '@happykit/flags: getFlags may not be called on the client'
-        );
+      return {
+        ...state,
+        mounted: true,
+        settled: false,
+        visitorKey: cachedState.responseBody.visitor.key,
+        requestBody: cachedState.requestBody,
+        responseBody: cachedState.responseBody,
+        fetching: true,
       };
+    }
+    case 'changed':
+    case 'focus': {
+      effect({ type: 'revalidate' });
+      return state.fetching && state.mounted
+        ? state
+        : { ...state, fetching: true, mounted: true };
+    }
+    case 'settle': {
+      effect({
+        type: 'cache/save',
+        endpoint: action.endpoint,
+        envKey: action.envKey,
+        requestBody: action.requestBody,
+        responseBody: action.responseBody,
+      });
+      return {
+        mounted: true,
+        settled: true,
+        fetching: false,
+        visitorKey: action.responseBody.visitor.key,
+        requestBody: action.requestBody,
+        responseBody: action.responseBody,
+      };
+    }
+    case 'fail': {
+      effect({ type: 'cache/clear' });
+      return {
+        mounted: true,
+        settled: true,
+        fetching: false,
+        loadedOn: 'client',
+        visitorKey: action.requestBody.visitorKey,
+        requestBody: action.requestBody,
+        responseBody: null,
+      };
+    }
+    default:
+      return state;
+  }
+};
+
+export function useFlags(
+  options: {
+    user?: User | null;
+    traits?: Traits | null;
+    initialState?: InitialFlagState;
+    revalidateOnFocus?: boolean;
+    disableCache?: boolean;
+  } = {}
+):
+  | {
+      flags: Flags;
+      visitorKey: string;
+      settled: true;
+      fetching: boolean;
+    }
+  | {
+      flags: Flags;
+      visitorKey: string | null;
+      settled: boolean;
+      fetching: boolean;
+    } {
+  if (!isConfigured(config)) throw new MissingConfigurationError();
+
+  const initialState = React.useMemo<State>(() => {
+    // useFlags() used without initialState (without getFlags())
+    if (!options.initialState)
+      return {
+        mounted: false,
+        settled: false,
+        fetching: true,
+        visitorKey: null,
+        requestBody: null,
+        responseBody: null,
+      };
+
+    // useFlags() used with getFlags(), but getFlags() failed
+    if (!options.initialState.responseBody)
+      return {
+        mounted: false,
+        settled: false,
+        fetching: true,
+        visitorKey: options.initialState.requestBody.visitorKey,
+        requestBody: options.initialState.requestBody,
+        responseBody: null,
+      };
+
+    // useFlags() used with getFlags(), and getFlags() was successful
+    return {
+      mounted: true,
+      settled: true,
+      fetching: false,
+      visitorKey: options.initialState.responseBody.visitor.key,
+      requestBody: options.initialState.requestBody,
+      responseBody: options.initialState.responseBody,
+    };
+  }, [options.initialState]);
+
+  const [state, dispatch] = useEffectReducer(reducer, initialState, {
+    'cache/clear': () => {
+      localStorage.removeItem('hk-cache');
+    },
+    'cache/save': (state, action) => {
+      localStorage.setItem(
+        'hk-cache',
+        JSON.stringify({
+          endpoint: action.endpoint,
+          envKey: action.envKey,
+          requestBody: state.requestBody,
+          responseBody: state.responseBody,
+        })
+      );
+    },
+
+    revalidate: (state, _, dispatch) => {
+      if (!isConfigured(config)) throw new MissingConfigurationError();
+
+      const requestBody = {
+        visitorKey: state.visitorKey,
+        user: options.user || null,
+        traits: options.traits || null,
+      };
+
+      const { endpoint, envKey } = config;
+      dedupeFetch([endpoint, envKey].join('/'), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      }).then(
+        async response => {
+          const responseBody: EvaluationResponseBody = await response.json();
+          dispatch({
+            type: 'settle',
+            requestBody,
+            responseBody,
+            endpoint,
+            envKey,
+          });
+        },
+        () => {
+          dispatch({ type: 'fail', requestBody });
+        }
+      );
+    },
+  });
+
+  React.useEffect(() => {
+    if (!isConfigured(config)) throw new MissingConfigurationError();
+
+    const shouldUseCachedState =
+      options.disableCache === undefined
+        ? !config.disableCache
+        : !options.disableCache;
+
+    if (!state.mounted) {
+      dispatch({
+        type: 'mount',
+        readCache: shouldUseCachedState,
+        config,
+      });
+    }
+
+    const shouldRevalidateOnFocus =
+      options.revalidateOnFocus === undefined
+        ? config.revalidateOnFocus
+        : !options.revalidateOnFocus;
+
+    if (!shouldRevalidateOnFocus) return;
+
+    function handleFocus() {
+      dispatch({ type: 'focus' });
+    }
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [dispatch, options.disableCache, options.revalidateOnFocus]);
+
+  React.useEffect(() => dispatch({ type: 'changed' }), [
+    options.user,
+    options.traits,
+    dispatch,
+  ]);
+
+  // add defaults to flags here, but not in initialFlagState
+  // memoize this to avoid unnecessarily returning new object references
+  const flags = state.responseBody ? state.responseBody.flags : null;
+
+  const flagsWithDefaults = React.useMemo(() => {
+    if (!isConfigured(config)) throw new MissingConfigurationError();
+
+    return flags &&
+      Object.keys(config.defaultFlags).every(key => hasOwnProperty(flags, key))
+      ? flags
+      : { ...config.defaultFlags, ...flags };
+  }, [config, flags]);
+
+  const flagBag = React.useMemo(() => {
+    if (!isConfigured(config)) throw new MissingConfigurationError();
+
+    if (state.responseBody === null) {
+      return {
+        flags: config.defaultFlags,
+        visitorKey: null,
+        fetching: state.fetching,
+        settled: state.settled,
+      };
+    }
+
+    return {
+      flags: flagsWithDefaults,
+      visitorKey: state.responseBody.visitor.key,
+      fetching: state.fetching,
+      settled: state.settled,
+    };
+  }, [
+    config.defaultFlags,
+    state.fetching,
+    state.settled,
+    flagsWithDefaults,
+    state.responseBody?.visitor.key,
+  ]);
+
+  return flagBag;
+}
+
+type InitialFlagStateWithResponse = {
+  requestBody: EvaluationRequestBody;
+  responseBody: EvaluationResponseBody;
+};
+
+type InitialFlagStateWithoutResponse = {
+  requestBody: EvaluationRequestBody;
+  responseBody: null;
+};
+
+export type InitialFlagState =
+  | InitialFlagStateWithResponse
+  | InitialFlagStateWithoutResponse;
+
+export async function getFlags(options: {
+  context: { req: IncomingMessage; res: ServerResponse };
+  user?: User;
+  traits?: Traits;
+}): Promise<{
+  /**
+   * The resolved flags
+   *
+   * In case the flags could not be loaded, you will see the default
+   * flags here (from config.defaultFlags)
+   *
+   * In case the default flags contain flags not present in the loaded
+   * flags, the missing flags will get added to the returned flags.
+   */
+  flags: Flags;
+  /**
+   * The initial flag state that you can use to initialize useFlags()
+   */
+  initialFlagState: InitialFlagState;
+}> {
+  if (!isConfigured(config)) throw new MissingConfigurationError();
+
+  // determine visitor key
+  const visitorKeyFromCookie = getCookie(
+    options.context.req.headers.cookie,
+    'hkvk'
+  );
+
+  const requestBody = {
+    visitorKey: visitorKeyFromCookie,
+    user: options.user || null,
+    traits: options.traits || null,
+  };
+
+  const response = await fetch([config.endpoint, config.envKey].join('/'), {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      // add x-forwarded-for header so the service worker gets
+      // access to the real client ip
+      ...getXForwardedFor(options.context),
+    },
+    body: JSON.stringify(requestBody),
+  }).catch(() => null);
+
+  if (!response || response.status !== 200)
+    return {
+      flags: config.defaultFlags,
+      initialFlagState: { requestBody, responseBody: null },
+    };
+
+  const responseBody = (await response.json().catch(() => null)) as {
+    flags: Flags;
+    visitor: { key: string };
+  } | null;
+  if (!responseBody)
+    return {
+      flags: config.defaultFlags,
+      initialFlagState: { requestBody, responseBody: null },
+    };
+
+  // always set the cookie so its max age refreshes
+  options.context.res.setHeader(
+    'Set-Cookie',
+    serializeVisitorKeyCookie(responseBody.visitor.key)
+  );
+
+  // add defaults to flags here, but not in initialFlagState
+  const flags = responseBody.flags ? responseBody.flags : null;
+  const flagsWithDefaults = { ...config.defaultFlags, ...flags };
+
+  return {
+    flags: flagsWithDefaults,
+    initialFlagState: { requestBody, responseBody },
+  };
+}
