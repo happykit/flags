@@ -510,7 +510,12 @@ export function useFlags(
     return () => {
       window.removeEventListener('focus', handleFocus);
     };
-  }, [dispatch, options.disableCache, options.revalidateOnFocus]);
+  }, [
+    dispatch,
+    state.mounted,
+    options.disableCache,
+    options.revalidateOnFocus,
+  ]);
 
   React.useEffect(() => dispatch({ type: 'changed' }), [
     options.user,
@@ -529,7 +534,7 @@ export function useFlags(
       Object.keys(config.defaultFlags).every(key => hasOwnProperty(flags, key))
       ? flags
       : { ...config.defaultFlags, ...flags };
-  }, [config, flags]);
+  }, [flags]);
 
   const flagBag = React.useMemo(() => {
     if (!isConfigured(config)) throw new MissingConfigurationError();
@@ -549,13 +554,7 @@ export function useFlags(
       fetching: state.fetching,
       settled: state.settled,
     };
-  }, [
-    config.defaultFlags,
-    state.fetching,
-    state.settled,
-    flagsWithDefaults,
-    state.responseBody?.visitor.key,
-  ]);
+  }, [state.fetching, state.settled, flagsWithDefaults, state.responseBody]);
 
   return flagBag;
 }
