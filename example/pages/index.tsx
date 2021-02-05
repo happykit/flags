@@ -1,9 +1,33 @@
 import Head from "next/head";
 import { useFlags } from "@happykit/flags/client";
 import { getFlags } from "@happykit/flags/server";
+import { GetServerSideProps } from "next";
+import { InitialFlagState } from "@happykit/flags/config";
 
-export default function Home() {
-  const flagBag = useFlags();
+type Flags = {
+  "baby-koalas": boolean;
+  meal: "small" | "medium" | "large";
+  dopestflagonearth: boolean;
+  "numbered-koalas": number;
+};
+
+type ServerSideProps = {
+  initialFlagState: InitialFlagState<Flags>;
+};
+
+export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
+  context
+) => {
+  const { initialFlagState } = await getFlags<Flags>({ context });
+  return {
+    props: {
+      initialFlagState,
+    },
+  };
+};
+
+export default function Home(props: ServerSideProps) {
+  const flagBag = useFlags<Flags>({ initialState: props.initialFlagState });
   console.log(flagBag);
   return (
     <div>

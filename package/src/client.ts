@@ -55,12 +55,12 @@ function dedupeFetch(input: RequestInfo, init?: RequestInit | undefined) {
   });
 }
 
-function getCachedState(
-  config: Configuration,
+function getCachedState<F extends Flags>(
+  config: Configuration<F>,
   visitorKey: string | null
 ): {
   requestBody: EvaluationRequestBody;
-  responseBody: EvaluationResponseBody;
+  responseBody: EvaluationResponseBody<F>;
 } | null {
   try {
     const cached = JSON.parse(String(localStorage.getItem("hk-cache")));
@@ -84,7 +84,7 @@ function getCachedState(
   return null;
 }
 
-type State =
+type State<F extends Flags> =
   // useFlags() used without initialState (without getFlags())
   | {
       mounted: boolean;
@@ -111,7 +111,7 @@ type State =
       fetching: boolean;
       visitorKey: string | null;
       requestBody: EvaluationRequestBody;
-      responseBody: EvaluationResponseBody;
+      responseBody: EvaluationResponseBody<F>;
     }
   // useFlags() resolves with cache while revalidating
   | {
@@ -120,11 +120,11 @@ type State =
       fetching: boolean;
       visitorKey: string | null;
       requestBody: EvaluationRequestBody;
-      responseBody: EvaluationResponseBody;
+      responseBody: EvaluationResponseBody<F>;
     };
 
-type Action =
-  | { type: "mount"; readCache: boolean; config: Configuration }
+type Action<F extends Flags> =
+  | { type: "mount"; readCache: boolean; config: Configuration<F> }
   | { type: "changed"; user?: User | null; traits?: Traits | null }
   | { type: "focus" }
   | {
@@ -132,22 +132,22 @@ type Action =
       endpoint: string;
       envKey: string;
       requestBody: EvaluationRequestBody;
-      responseBody: EvaluationResponseBody;
+      responseBody: EvaluationResponseBody<F>;
     }
   | { type: "fail"; requestBody: EvaluationRequestBody };
 
-type Effect =
+type Effect<F extends Flags> =
   | { type: "revalidate" }
   | { type: "cache/clear" }
   | {
       type: "cache/save";
       requestBody: EvaluationRequestBody;
-      responseBody: EvaluationResponseBody;
+      responseBody: EvaluationResponseBody<F>;
       envKey: string;
       endpoint: string;
     };
 
-const reducer: EffectReducer<State, Action, Effect> = (
+const reducer: EffectReducer<State<Flags>, Action<Flags>, Effect<Flags>> = (
   state,
   action,
   effect
@@ -232,30 +232,30 @@ const reducer: EffectReducer<State, Action, Effect> = (
   }
 };
 
-export function useFlags(
+export function useFlags<F extends Flags = Flags>(
   options: {
     user?: User | null;
     traits?: Traits | null;
-    initialState?: InitialFlagState;
+    initialState?: InitialFlagState<F>;
     revalidateOnFocus?: boolean;
     disableCache?: boolean;
   } = {}
 ):
   | {
-      flags: Flags;
+      flags: F;
       visitorKey: string;
       settled: true;
       fetching: boolean;
     }
   | {
-      flags: Flags;
+      flags: F;
       visitorKey: string | null;
       settled: boolean;
       fetching: boolean;
     } {
   if (!isConfigured(config)) throw new MissingConfigurationError();
 
-  const initialState = React.useMemo<State>(() => {
+  const initialState = React.useMemo<State<F>>(() => {
     // useFlags() used without initialState (without getFlags())
     if (!options.initialState)
       return {
@@ -289,53 +289,57 @@ export function useFlags(
     };
   }, [options.initialState]);
 
-  const [state, dispatch] = useEffectReducer(reducer, initialState, {
-    "cache/clear": () => {
-      localStorage.removeItem("hk-cache");
-    },
-    "cache/save": (state, action) => {
-      localStorage.setItem(
-        "hk-cache",
-        JSON.stringify({
-          endpoint: action.endpoint,
-          envKey: action.envKey,
-          requestBody: state.requestBody,
-          responseBody: state.responseBody,
-        })
-      );
-    },
+  const [state, dispatch] = useEffectReducer(
+    reducer as EffectReducer<State<F>, Action<F>, Effect<F>>,
+    initialState,
+    {
+      "cache/clear": () => {
+        localStorage.removeItem("hk-cache");
+      },
+      "cache/save": (state, action) => {
+        localStorage.setItem(
+          "hk-cache",
+          JSON.stringify({
+            endpoint: action.endpoint,
+            envKey: action.envKey,
+            requestBody: state.requestBody,
+            responseBody: state.responseBody,
+          })
+        );
+      },
 
-    revalidate: (state, _, dispatch) => {
-      if (!isConfigured(config)) throw new MissingConfigurationError();
+      revalidate: (state, _, dispatch) => {
+        if (!isConfigured(config)) throw new MissingConfigurationError();
 
-      const requestBody = {
-        visitorKey: state.visitorKey,
-        user: options.user || null,
-        traits: options.traits || null,
-      };
+        const requestBody = {
+          visitorKey: state.visitorKey,
+          user: options.user || null,
+          traits: options.traits || null,
+        };
 
-      const { endpoint, envKey } = config;
-      dedupeFetch([endpoint, envKey].join("/"), {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(requestBody),
-      }).then(
-        async (response) => {
-          const responseBody: EvaluationResponseBody = await response.json();
-          dispatch({
-            type: "settle",
-            requestBody,
-            responseBody,
-            endpoint,
-            envKey,
-          });
-        },
-        () => {
-          dispatch({ type: "fail", requestBody });
-        }
-      );
-    },
-  });
+        const { endpoint, envKey } = config;
+        dedupeFetch([endpoint, envKey].join("/"), {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(requestBody),
+        }).then(
+          async (response) => {
+            const responseBody: EvaluationResponseBody<F> = await response.json();
+            dispatch({
+              type: "settle",
+              requestBody,
+              responseBody,
+              endpoint,
+              envKey,
+            });
+          },
+          () => {
+            dispatch({ type: "fail", requestBody });
+          }
+        );
+      },
+    }
+  );
 
   React.useEffect(() => {
     if (!isConfigured(config)) throw new MissingConfigurationError();
@@ -349,7 +353,7 @@ export function useFlags(
       dispatch({
         type: "mount",
         readCache: shouldUseCachedState,
-        config,
+        config: config as Configuration<F>,
       });
     }
 
@@ -387,7 +391,7 @@ export function useFlags(
   // memoize this to avoid unnecessarily returning new object references
   const flags = state.responseBody ? state.responseBody.flags : null;
 
-  const flagsWithDefaults = React.useMemo(() => {
+  const flagsWithDefaults = React.useMemo<F>(() => {
     if (!isConfigured(config)) throw new MissingConfigurationError();
 
     return flags &&
@@ -395,7 +399,7 @@ export function useFlags(
         hasOwnProperty(flags, key)
       )
       ? flags
-      : { ...config.defaultFlags, ...flags };
+      : ({ ...config.defaultFlags, ...flags } as F);
   }, [flags]);
 
   const flagBag = React.useMemo(() => {
@@ -403,7 +407,7 @@ export function useFlags(
 
     if (state.responseBody === null) {
       return {
-        flags: config.defaultFlags,
+        flags: config.defaultFlags as F,
         visitorKey: null,
         fetching: state.fetching,
         settled: state.settled,
