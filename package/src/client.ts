@@ -16,8 +16,6 @@ import {
 } from "./config";
 import { useEffectReducer, EffectReducer } from "use-effect-reducer";
 
-const headers = { "content-type": "application/json" };
-
 // resolved by cache (while fetching)
 // resolved by fallback (when cache was empty) (even if there is no explicit fallback provided) (fallback set through global config or options)
 // resolved by service worker => leads to "settled: true"
@@ -36,26 +34,6 @@ const headers = { "content-type": "application/json" };
 // resolvedBy: "api" | "cache" | "fallback"
 // settled: boolean
 // loadedOn: "server" | "client"
-
-let queue: {
-  input: RequestInfo;
-  init?: RequestInit | undefined;
-  promise: Promise<Response>;
-}[] = [];
-function dedupeFetch(input: RequestInfo, init?: RequestInit | undefined) {
-  const queued = queue.find(
-    (item) => input === item.input && shallowEqual(init, item.init)
-  );
-  if (queued) return queued.promise;
-  const promise = fetch(input, init);
-  queue.push({ input, init, promise });
-  return promise.then((result) => {
-    queue = queue.filter(
-      (item) => input !== item.input || !shallowEqual(init, item.init)
-    );
-    return result;
-  });
-}
 
 function getCachedState<F extends Flags>(
   config: Configuration<F>,
@@ -86,10 +64,10 @@ function getCachedState<F extends Flags>(
   return null;
 }
 
-type Pending<F extends Flags> = {
-  requestBody: EvaluationRequestBody;
-  promise: Promise<EvaluationResponseBody<F>>;
-};
+// type Pending<F extends Flags> = {
+//   requestBody: EvaluationRequestBody;
+//   promise: Promise<EvaluationResponseBody<F>>;
+// };
 
 type State<F extends Flags> =
   // useFlags() used without initialState (without getFlags())
@@ -100,7 +78,7 @@ type State<F extends Flags> =
       visitorKey: string | null;
       requestBody: null;
       responseBody: null;
-      pending: Pending<F> | null;
+      // pending: Pending<F> | null;
     }
   // useFlags() used with getFlags(), but getFlags() failed
   // or getFlags() and useFlags() failed both
@@ -111,7 +89,7 @@ type State<F extends Flags> =
       visitorKey: string | null;
       requestBody: EvaluationRequestBody;
       responseBody: null;
-      pending: Pending<F> | null;
+      // pending: Pending<F> | null;
     }
   // useFlags() used with getFlags(), and getFlags() was successful
   | {
@@ -121,7 +99,7 @@ type State<F extends Flags> =
       visitorKey: string | null;
       requestBody: EvaluationRequestBody;
       responseBody: EvaluationResponseBody<F>;
-      pending: Pending<F> | null;
+      // pending: Pending<F> | null;
     }
   // useFlags() resolves with cache while revalidating
   | {
@@ -131,7 +109,7 @@ type State<F extends Flags> =
       visitorKey: string | null;
       requestBody: EvaluationRequestBody;
       responseBody: EvaluationResponseBody<F>;
-      pending: Pending<F> | null;
+      // pending: Pending<F> | null;
     };
 
 type Action<F extends Flags> =
@@ -344,9 +322,9 @@ export function useFlags<F extends Flags = Flags>(
         // the new thing instead
 
         const { endpoint, envKey } = config;
-        dedupeFetch([endpoint, envKey].join("/"), {
+        fetch([endpoint, envKey].join("/"), {
           method: "POST",
-          headers,
+          headers: { "content-type": "application/json" },
           body: JSON.stringify(requestBody),
         }).then(
           async (response) => {
