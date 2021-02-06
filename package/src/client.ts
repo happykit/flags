@@ -1,16 +1,25 @@
 import * as React from "react";
+import { isConfigured, config } from "./config";
 import {
-  isConfigured,
-  FlagUser,
-  Traits,
-  config,
   InitialFlagState,
   MissingConfigurationError,
   Flags,
   Input,
   Outcome,
-} from "./config";
+  FlagUser,
+  Traits,
+} from "./types";
 import { deepEqual, getCookie, hasOwnProperty } from "./utils";
+
+export type {
+  FlagUser,
+  Traits,
+  Flags,
+  MissingConfigurationError,
+  InitialFlagState,
+  Input,
+  Outcome,
+} from "./types";
 
 type State<F extends Flags> =
   // useFlags() used without initialState (without getFlags())
@@ -37,6 +46,24 @@ type Effect = { type: "fetch"; input: Input };
 // | { type: "cache/clear" }
 // | { type: "cache/write" };
 
+function shouldEvaluateInput<F extends Flags>(input: Input, state: State<F>) {
+  const sameInputIsAlreadyPending =
+    state.pending && deepEqual(state.pending.input, input);
+
+  if (sameInputIsAlreadyPending) return false;
+
+  if (
+    // no pending input
+    !state.pending &&
+    // same input is already current
+    state.current &&
+    deepEqual(state.current.input, input)
+  )
+    return false;
+
+  return true;
+}
+
 function reducer<F extends Flags>(
   allState: [State<F>, Effect[]],
   action: Action<F>
@@ -45,24 +72,9 @@ function reducer<F extends Flags>(
   const effects = [] as Effect[];
   const exec = (effect: Effect) => effects.push(effect);
 
-  console.log("action", action);
   switch (action.type) {
     case "evaluate": {
-      const sameInputIsAlreadyPending =
-        state.pending && deepEqual(state.pending.input, action.input);
-
-      if (sameInputIsAlreadyPending) return [state, effects];
-
-      if (
-        // no pending input
-        !state.pending &&
-        // same input is already current
-        state.current &&
-        deepEqual(state.current.input, action.input)
-      )
-        return [state, effects];
-
-      console.log("not equal", state.current?.input, action.input);
+      // if (!shouldEvaluateInput(action.input, state)) return [state, effects];
       exec({ type: "fetch", input: action.input });
       return [{ ...state, pending: { input: action.input } }, effects];
     }
@@ -77,14 +89,61 @@ function reducer<F extends Flags>(
       ];
     }
     case "fail": {
-      if (state.pending && deepEqual(state.pending.input, action.input)) {
-        return [{ ...state, pending: null }, effects];
-      }
-      return [state, effects];
+      return [
+        // only replace "pending" if the currently pending input failed
+        state.pending && deepEqual(state.pending.input, action.input)
+          ? { ...state, pending: null }
+          : state,
+        effects,
+      ];
     }
     default:
       return [state, effects];
   }
+}
+
+interface FlagBag<F extends Flags> {
+  /**
+   * The resolved feature flags, extended with the defaults.
+   */
+  flags: F;
+  /**
+   * The visitor key the feature flags were fetched for.
+   */
+  visitorKey: string | null;
+  /**
+   * Whether the initial loading of the feature flags has completed or not.
+   *
+   * This is true when the feature flags were loaded for the first time and
+   * stays true from then on. It is also true when the request to load the
+   * feature flags failed.
+   *
+   * If you have a cache or default flags, you might already have flags but
+   * this property will still be set to false until the initial request to load
+   * the feature flags resolves.
+   *
+   * When you pass an `initialFlagState` to useFlags and when that
+   * `initialFlagState` contains resolved flags, then `settled` will be `true`
+   * even on the initial render.
+   */
+  settled: boolean;
+  /**
+   * This is true whenever a flag evaluation request is currently in flight.
+   *
+   * You probably want to use `settled` instead, as `settled` stays truthy
+   * once the initial flags were loaded, while `fetching` can flip multiple times.
+   */
+  fetching: boolean;
+}
+
+interface SettledFlagBag<F extends Flags> extends FlagBag<F> {
+  visitorKey: string;
+  settled: true;
+}
+
+interface UnsettledFlagBag<F extends Flags> extends FlagBag<F> {
+  visitorKey: string | null;
+  settled: false;
 }
 
 export function useFlags<F extends Flags = Flags>(
@@ -95,19 +154,7 @@ export function useFlags<F extends Flags = Flags>(
     revalidateOnFocus?: boolean;
     disableCache?: boolean;
   } = {}
-):
-  | {
-      flags: F;
-      visitorKey: string;
-      settled: true;
-      fetching: boolean;
-    }
-  | {
-      flags: F;
-      visitorKey: string | null;
-      settled: boolean;
-      fetching: boolean;
-    } {
+): SettledFlagBag<F> | UnsettledFlagBag<F> {
   if (!isConfigured(config)) throw new MissingConfigurationError();
 
   const [allState, dispatch] = React.useReducer(
@@ -123,14 +170,16 @@ export function useFlags<F extends Flags = Flags>(
 
   const [state, effects] = allState;
 
-  // see if we need to fetch on mount, or init from local cache
-  // React.useEffect(() => dispatch({ type: "mount" }), []);
-
-  const currentKey = state.current?.outcome?.responseBody.visitor.key;
   const currentUser = options.user || null;
   const currentTraits = options.traits || null;
+  const shouldRevalidateOnFocus =
+    options.revalidateOnFocus === undefined
+      ? config.revalidateOnFocus
+      : options.revalidateOnFocus;
+
   React.useEffect(() => {
     if (!isConfigured(config)) throw new MissingConfigurationError();
+    const currentKey = state.current?.outcome?.responseBody.visitor.key;
 
     const visitorKey = (() => {
       const cookie =
@@ -150,8 +199,21 @@ export function useFlags<F extends Flags = Flags>(
       requestBody: { visitorKey, user: currentUser, traits: currentTraits },
     };
 
-    dispatch({ type: "evaluate", input });
-  }, [currentKey, currentUser, currentTraits]);
+    if (shouldEvaluateInput(input, state)) {
+      dispatch({ type: "evaluate", input });
+    }
+
+    if (!shouldRevalidateOnFocus) return;
+
+    function handleFocus() {
+      dispatch({ type: "evaluate", input });
+    }
+
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [state, currentUser, currentTraits, shouldRevalidateOnFocus]);
 
   React.useEffect(() => {
     effects.forEach((effect) => {
