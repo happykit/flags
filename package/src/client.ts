@@ -1,40 +1,16 @@
 import * as React from "react";
 import {
-  shallowEqual,
   isConfigured,
-  EvaluationRequestBody,
   FlagUser,
   Traits,
-  EvaluationResponseBody,
-  Configuration,
   config,
-  getCookie,
-  hasOwnProperty,
   InitialFlagState,
   MissingConfigurationError,
   Flags,
   Input,
   Outcome,
 } from "./config";
-
-// resolved by cache (while fetching)
-// resolved by fallback (when cache was empty) (even if there is no explicit fallback provided) (fallback set through global config or options)
-// resolved by service worker => leads to "settled: true"
-
-// settled: true means it has been loaded by the service worker,
-//          or loading has failed and a fallback is being used
-//          -> never goes back to false after it is true
-// fetching: true means a request is currently in flight (initial or refetching)
-//          -> can switch between true and false
-
-// loaded on server (swaps to "client" once revalidates)
-// loaded on client (never swaps back to server)
-
-// -------
-
-// resolvedBy: "api" | "cache" | "fallback"
-// settled: boolean
-// loadedOn: "server" | "client"
+import { deepEqual, getCookie, hasOwnProperty } from "./utils";
 
 type State<F extends Flags> =
   // useFlags() used without initialState (without getFlags())
@@ -48,39 +24,64 @@ type State<F extends Flags> =
       input: Input;
       outcome: Outcome<F> | null;
     };
-    pending: null | {
-      input: Input;
-      promise: Promise<EvaluationResponseBody<F>>;
-    };
+    pending: null | { input: Input };
   };
 
 type Action<F extends Flags> =
   | { type: "mount" }
-  | {
-      type: "evaluate";
-      input: Input;
-    }
-  | {
-      type: "settle";
-      input: Input;
-      outcome: Outcome<F>;
-    }
+  | { type: "evaluate"; input: Input }
+  | { type: "settle"; input: Input; outcome: Outcome<F> }
   | { type: "fail"; input: Input };
 
-type Effect<F extends Flags> =
-  | { type: "fetch" }
-  | { type: "cache/clear" }
-  | { type: "cache/write" };
+type Effect = { type: "fetch"; input: Input };
+// | { type: "cache/clear" }
+// | { type: "cache/write" };
 
 function reducer<F extends Flags>(
-  allState: [State<F>, Effect<F>[]],
+  allState: [State<F>, Effect[]],
   action: Action<F>
-): [State<F>, Effect<F>[]] {
+): [State<F>, Effect[]] {
   const [state] = allState;
-  const effects = [] as Effect<F>[];
-  const exec = (effect: Effect<F>) => effects.push(effect);
+  const effects = [] as Effect[];
+  const exec = (effect: Effect) => effects.push(effect);
 
+  console.log("action", action);
   switch (action.type) {
+    case "evaluate": {
+      const sameInputIsAlreadyPending =
+        state.pending && deepEqual(state.pending.input, action.input);
+
+      if (sameInputIsAlreadyPending) return [state, effects];
+
+      if (
+        // no pending input
+        !state.pending &&
+        // same input is already current
+        state.current &&
+        deepEqual(state.current.input, action.input)
+      )
+        return [state, effects];
+
+      console.log("not equal", state.current?.input, action.input);
+      exec({ type: "fetch", input: action.input });
+      return [{ ...state, pending: { input: action.input } }, effects];
+    }
+    case "settle": {
+      return [
+        {
+          ...state,
+          current: { input: action.input, outcome: action.outcome },
+          pending: null,
+        },
+        effects,
+      ];
+    }
+    case "fail": {
+      if (state.pending && deepEqual(state.pending.input, action.input)) {
+        return [{ ...state, pending: null }, effects];
+      }
+      return [state, effects];
+    }
     default:
       return [state, effects];
   }
@@ -112,25 +113,72 @@ export function useFlags<F extends Flags = Flags>(
   const [allState, dispatch] = React.useReducer(
     reducer,
     options.initialState,
-    (initialFlagState): [State<F>, Effect<F>[]] => {
+    (initialFlagState): [State<F>, Effect[]] => {
       return [
         { current: initialFlagState || null, pending: null },
-        [] as Effect<F>[],
+        [] as Effect[],
       ];
     }
   );
 
   const [state, effects] = allState;
 
+  // see if we need to fetch on mount, or init from local cache
+  // React.useEffect(() => dispatch({ type: "mount" }), []);
+
+  const currentKey = state.current?.outcome?.responseBody.visitor.key;
+  const currentUser = options.user || null;
+  const currentTraits = options.traits || null;
+  React.useEffect(() => {
+    if (!isConfigured(config)) throw new MissingConfigurationError();
+
+    const visitorKey = (() => {
+      const cookie =
+        typeof document !== "undefined"
+          ? getCookie(document.cookie, "hkvk")
+          : null;
+      if (cookie) return cookie;
+
+      if (currentKey) return currentKey;
+
+      return null;
+    })();
+
+    const input: Input = {
+      endpoint: config.endpoint,
+      envKey: config.envKey,
+      requestBody: { visitorKey, user: currentUser, traits: currentTraits },
+    };
+
+    dispatch({ type: "evaluate", input });
+  }, [currentKey, currentUser, currentTraits]);
+
   React.useEffect(() => {
     effects.forEach((effect) => {
       switch (effect.type) {
         // execute the effect
+        case "fetch": {
+          const { input } = effect;
+          console.log("fetching", input);
+          fetch([input.endpoint, input.envKey].join("/"), {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(input.requestBody),
+          })
+            .then(async (response) => {
+              const responseBody = await response.json();
+              dispatch({ type: "settle", input, outcome: { responseBody } });
+            })
+            .catch(() => {
+              dispatch({ type: "fail", input });
+            });
+        }
+
         default:
           return;
       }
     });
-  }, [effects]);
+  }, [effects, dispatch]);
 
   const defaultFlags = config.defaultFlags;
 
