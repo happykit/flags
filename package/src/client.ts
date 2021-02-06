@@ -245,24 +245,30 @@ export function useFlags<F extends Flags = Flags>(
   const defaultFlags = config.defaultFlags;
 
   const flagBag = React.useMemo(() => {
-    const flagsWithoutDefaults = state.current?.outcome?.responseBody.flags;
-    const flagsWithDefaults =
-      flagsWithoutDefaults &&
-      Object.keys(defaultFlags).every((key) =>
-        hasOwnProperty(flagsWithoutDefaults, key)
-      )
-        ? (flagsWithoutDefaults as F)
-        : ({ ...defaultFlags, ...flagsWithoutDefaults } as F);
+    const loadedFlags = state.current?.outcome?.responseBody.flags as F;
+    const flags =
+      loadedFlags &&
+      Object.keys(defaultFlags).every((key) => hasOwnProperty(loadedFlags, key))
+        ? (loadedFlags as F)
+        : ({ ...defaultFlags, ...loadedFlags } as F);
 
-    return {
-      flags: flagsWithDefaults,
-      loadedFlags: flagsWithoutDefaults,
-      // the visitorKey that belongs to the loaded flags,
-      // it is "null" until the response has settled
-      visitorKey: state.current?.outcome?.responseBody.visitor.key || null,
-      settled: Boolean(state.current?.outcome?.responseBody.flags),
-      fetching: Boolean(state.pending),
-    };
+    const outcome = state.current?.outcome;
+    const base = { flags, loadedFlags, fetching: Boolean(state.pending) };
+    return outcome
+      ? {
+          ...base,
+          // the visitorKey that belongs to the loaded flags,
+          // it is "null" until the response has settled
+          visitorKey: outcome.responseBody.visitor.key,
+          settled: true as true,
+        }
+      : {
+          ...base,
+          // the visitorKey that belongs to the loaded flags,
+          // it is "null" until the response has settled
+          visitorKey: null,
+          settled: false as false,
+        };
   }, [state, defaultFlags]);
 
   return flagBag;
