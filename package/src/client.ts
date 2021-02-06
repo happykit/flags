@@ -79,6 +79,12 @@ function reducer<F extends Flags>(
       return [{ ...state, pending: { input: action.input } }, effects];
     }
     case "settle": {
+      // skip outdated responses
+      if (state.pending?.input !== action.input) {
+        console.log("skipped outdated response");
+        return [state, effects];
+      }
+
       return [
         {
           ...state,
@@ -229,6 +235,7 @@ export function useFlags<F extends Flags = Flags>(
           })
             .then(async (response) => {
               const responseBody = await response.json();
+              // outdated responses are skipped in the settle-reducer
               dispatch({ type: "settle", input, outcome: { responseBody } });
             })
             .catch(() => {
