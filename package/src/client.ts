@@ -16,6 +16,8 @@ import {
 } from "./config";
 import { useEffectReducer, EffectReducer } from "use-effect-reducer";
 
+const headers = { "content-type": "application/json" };
+
 // resolved by cache (while fetching)
 // resolved by fallback (when cache was empty) (even if there is no explicit fallback provided) (fallback set through global config or options)
 // resolved by service worker => leads to "settled: true"
@@ -84,6 +86,11 @@ function getCachedState<F extends Flags>(
   return null;
 }
 
+type Pending<F extends Flags> = {
+  requestBody: EvaluationRequestBody;
+  promise: Promise<EvaluationResponseBody<F>>;
+};
+
 type State<F extends Flags> =
   // useFlags() used without initialState (without getFlags())
   | {
@@ -93,6 +100,7 @@ type State<F extends Flags> =
       visitorKey: string | null;
       requestBody: null;
       responseBody: null;
+      pending: Pending<F> | null;
     }
   // useFlags() used with getFlags(), but getFlags() failed
   // or getFlags() and useFlags() failed both
@@ -103,6 +111,7 @@ type State<F extends Flags> =
       visitorKey: string | null;
       requestBody: EvaluationRequestBody;
       responseBody: null;
+      pending: Pending<F> | null;
     }
   // useFlags() used with getFlags(), and getFlags() was successful
   | {
@@ -112,6 +121,7 @@ type State<F extends Flags> =
       visitorKey: string | null;
       requestBody: EvaluationRequestBody;
       responseBody: EvaluationResponseBody<F>;
+      pending: Pending<F> | null;
     }
   // useFlags() resolves with cache while revalidating
   | {
@@ -121,6 +131,7 @@ type State<F extends Flags> =
       visitorKey: string | null;
       requestBody: EvaluationRequestBody;
       responseBody: EvaluationResponseBody<F>;
+      pending: Pending<F> | null;
     };
 
 type Action<F extends Flags> =
@@ -152,6 +163,7 @@ const reducer: EffectReducer<State<Flags>, Action<Flags>, Effect<Flags>> = (
   action,
   effect
 ) => {
+  console.log(action);
   switch (action.type) {
     case "mount": {
       if (state.settled) return state;
@@ -192,6 +204,7 @@ const reducer: EffectReducer<State<Flags>, Action<Flags>, Effect<Flags>> = (
       };
     }
     case "changed":
+    // return state;
     case "focus": {
       effect({ type: "revalidate" });
       return state.fetching && state.mounted
@@ -265,6 +278,7 @@ export function useFlags<F extends Flags = Flags>(
         visitorKey: null,
         requestBody: null,
         responseBody: null,
+        pending: null,
       };
 
     // useFlags() used with getFlags(), but getFlags() failed
@@ -276,6 +290,7 @@ export function useFlags<F extends Flags = Flags>(
         visitorKey: options.initialState.requestBody.visitorKey,
         requestBody: options.initialState.requestBody,
         responseBody: null,
+        pending: null,
       };
 
     // useFlags() used with getFlags(), and getFlags() was successful
@@ -286,6 +301,7 @@ export function useFlags<F extends Flags = Flags>(
       visitorKey: options.initialState.responseBody.visitor.key,
       requestBody: options.initialState.requestBody,
       responseBody: options.initialState.responseBody,
+      pending: null,
     };
   }, [options.initialState]);
 
@@ -308,7 +324,7 @@ export function useFlags<F extends Flags = Flags>(
         );
       },
 
-      revalidate: (state, _, dispatch) => {
+      revalidate: (state, action, dispatch) => {
         if (!isConfigured(config)) throw new MissingConfigurationError();
 
         const requestBody = {
@@ -317,10 +333,20 @@ export function useFlags<F extends Flags = Flags>(
           traits: options.traits || null,
         };
 
+        // TODO the action must contain what we are supposed to fetch,
+        // and if we are already fetching that (as shown in state),
+        // we can simply return
+        // if (shallowEqual(state.pending.requestBody, requestBody)) return;
+
+        // dispatch({ type: "request", requestBody });
+
+        // otherwise we have to cancel/ignore what we've been fetching and fetch
+        // the new thing instead
+
         const { endpoint, envKey } = config;
         dedupeFetch([endpoint, envKey].join("/"), {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          headers,
           body: JSON.stringify(requestBody),
         }).then(
           async (response) => {
@@ -380,11 +406,12 @@ export function useFlags<F extends Flags = Flags>(
 
   React.useEffect(() => {
     if (
-      !shallowEqual(options.user, state.requestBody?.user) ||
-      !shallowEqual(options.traits, state.requestBody?.traits)
-    ) {
-      // dispatch({ type: 'changed' });
-    }
+      shallowEqual(options.user, state.requestBody?.user) &&
+      shallowEqual(options.traits, state.requestBody?.traits)
+    )
+      return;
+
+    dispatch({ type: "changed" });
   }, [options.user, options.traits, dispatch]);
 
   // add defaults to flags here, but not in initialFlagState
