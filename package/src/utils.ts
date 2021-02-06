@@ -25,37 +25,6 @@ export function getCookie(
   return null;
 }
 
-/**
- * A modified version of shallowEqual which also returns true when both
- * inputs are falsy.
- *
- * source https://github.com/moroshko/shallow-equal/blob/1a6bf512cf896b44f3b7bb3d493411a7c5339a25/src/objects.js
- */
-export function shallowEqual(objA: any, objB: any) {
-  if (objA === objB) return true;
-
-  // this
-  if (!objA && !objB) return true;
-
-  if (!objA || !objB) return false;
-
-  let aKeys = Object.keys(objA);
-  let bKeys = Object.keys(objB);
-  let len = aKeys.length;
-
-  if (bKeys.length !== len) return false;
-
-  for (let i = 0; i < len; i++) {
-    let key = aKeys[i];
-
-    if (objA[key] !== objB[key] || !hasOwnProperty(objB, key)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 // source: https://github.com/lukeed/dequal/blob/master/src/lite.js
 export function deepEqual(objA: any, objB: any) {
   var ctor, len;
