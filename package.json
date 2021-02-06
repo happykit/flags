@@ -4,6 +4,7 @@
   "license": "MIT",
   "author": "Dominik Ferber",
   "scripts": {
+    "build": "yarn workspace @happykit/flags build",
     "postinstall": "preconstruct dev"
   },
   "workspaces": [
@@ -11,7 +12,10 @@
     "example"
   ],
   "devDependencies": {
-    "@preconstruct/cli": "2.0.3"
+    "@preconstruct/cli": "2.0.3",
+    "next": "10.0.6",
+    "react": "17.0.1",
+    "react-dom": "17.0.1"
   },
   "preconstruct": {
     "packages": [
