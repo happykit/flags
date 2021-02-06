@@ -5,13 +5,12 @@ import {
   isConfigured,
   FlagUser,
   Traits,
-  getCookie,
   MissingConfigurationError,
   Flags,
   InitialFlagState,
   EvaluationResponseBody,
-  Configuration,
 } from "./config";
+import { getCookie } from "./utils";
 
 function serializeVisitorKeyCookie(visitorKey: string) {
   const seconds = 60 * 60 * 24 * 180;
@@ -85,7 +84,7 @@ export async function getFlags<F extends Flags = Flags>(options: {
   if (!response || response.status !== 200)
     return {
       flags: config.defaultFlags as F,
-      initialFlagState: { input },
+      initialFlagState: { input, outcome: null },
     };
 
   const responseBody: EvaluationResponseBody<F> | null = await response
@@ -93,7 +92,10 @@ export async function getFlags<F extends Flags = Flags>(options: {
     .catch(() => null);
 
   if (!responseBody) {
-    return { flags: config.defaultFlags as F, initialFlagState: { input } };
+    return {
+      flags: config.defaultFlags as F,
+      initialFlagState: { input, outcome: null },
+    };
   }
 
   // always set the cookie so its max age refreshes
