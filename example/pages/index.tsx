@@ -1,9 +1,13 @@
 import Head from "next/head";
 import * as React from "react";
-import { useFlags } from "@happykit/flags/client";
+import {
+  useFlags,
+  FlagUser,
+  InitialFlagState,
+  Traits,
+} from "@happykit/flags/client";
 import { getFlags } from "@happykit/flags/server";
 import { GetServerSideProps } from "next";
-import { FlagUser, InitialFlagState } from "@happykit/flags/config";
 
 type Flags = {
   "baby-koalas": boolean;
@@ -22,6 +26,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
   const { initialFlagState } = await getFlags<Flags>({
     context,
     user: { key: "jennyc" },
+    traits: { employee: true },
   });
   return { props: { initialFlagState } };
 };
@@ -30,10 +35,16 @@ export default function Home(props: ServerSideProps) {
   const [user, setUser] = React.useState<null | FlagUser>({
     key: "jennyc",
   });
+  const [traits, setTraits] = React.useState<null | Traits>({
+    employee: true,
+  });
 
   const flagBag = useFlags<Flags>({
     initialState: props.initialFlagState,
-    user: user,
+    // user: { key: "jennyc" },
+    user,
+    traits,
+    revalidateOnFocus: false,
     // traits: { random: "r" },
   });
 
@@ -47,11 +58,25 @@ export default function Home(props: ServerSideProps) {
       <main>
         <button
           type="button"
-          onClick={() => setUser((prev) => (prev ? null : { key: "jon" }))}
+          onClick={() => {
+            console.log("toggle user");
+            setUser((prev) => (prev ? null : { key: "jennyc" }));
+          }}
         >
           toggle user
         </button>{" "}
-        {user ? "has user" : "anonymous"}
+        <button
+          type="button"
+          onClick={() => {
+            console.log("toggle traits");
+            setTraits((prev) => (prev ? null : { employee: true }));
+          }}
+        >
+          toggle traits
+        </button>{" "}
+        <p>
+          {user ? "has user" : "no user"}, {traits ? "has traits" : "no traits"}
+        </p>
         <pre>{JSON.stringify(flagBag, null, 2)}</pre>
       </main>
     </div>

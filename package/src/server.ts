@@ -1,15 +1,14 @@
 /** global: fetch */
 import { IncomingMessage, ServerResponse } from "http";
+import { config, isConfigured } from "./config";
 import {
-  config,
-  isConfigured,
   FlagUser,
   Traits,
   MissingConfigurationError,
   Flags,
   InitialFlagState,
   EvaluationResponseBody,
-} from "./config";
+} from "./types";
 import { getCookie } from "./utils";
 
 function serializeVisitorKeyCookie(visitorKey: string) {
