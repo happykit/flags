@@ -3,6 +3,13 @@
   "version": "1.0.0-alpha.0",
   "author": "Dominik Ferber <dominik.ferber+npm@gmail.com> (http://dferber.de/)",
   "license": "MIT",
+  "scripts": {
+    "build": "preconstruct build"
+  },
+  "peerDependencies": {
+    "next": ">=9.4.0",
+    "react": ">=16.13.1"
+  },
   "dependencies": {
     "@babel/core": "7.12.13",
     "@babel/preset-env": "7.12.13",
