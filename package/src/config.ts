@@ -19,9 +19,19 @@ export class MissingConfigurationError extends Error {
   }
 }
 
+export type Input = {
+  endpoint: string;
+  envKey: string;
+  requestBody: EvaluationRequestBody;
+};
+
+export type Outcome<F extends Flags> = {
+  responseBody: EvaluationResponseBody<F>;
+};
+
 export type EvaluationRequestBody = {
   visitorKey: string | null;
-  user: User | null;
+  user: FlagUser | null;
   traits: Traits | null;
 };
 
@@ -30,19 +40,10 @@ export type EvaluationResponseBody<F extends Flags> = {
   flags: F;
 };
 
-export type InitialFlagStateWithResponse<F extends Flags> = {
-  requestBody: EvaluationRequestBody;
-  responseBody: EvaluationResponseBody<F>;
+export type InitialFlagState<F extends Flags> = {
+  input: Input;
+  outcome: Outcome<F> | null;
 };
-
-export type InitialFlagStateWithoutResponse = {
-  requestBody: EvaluationRequestBody;
-  responseBody: null;
-};
-
-export type InitialFlagState<F extends Flags> =
-  | InitialFlagStateWithResponse<F>
-  | InitialFlagStateWithoutResponse;
 
 export class InvalidConfigurationError extends Error {
   constructor() {
