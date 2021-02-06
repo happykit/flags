@@ -3,7 +3,7 @@ import { IncomingMessage, ServerResponse } from "http";
 import {
   config,
   isConfigured,
-  User,
+  FlagUser,
   Traits,
   getCookie,
   MissingConfigurationError,
@@ -33,7 +33,7 @@ function getXForwardedFor(context: {
 
 export async function getFlags<F extends Flags = Flags>(options: {
   context: { req: IncomingMessage; res: ServerResponse };
-  user?: User;
+  user?: FlagUser;
   traits?: Traits;
 }): Promise<{
   /**
@@ -65,7 +65,13 @@ export async function getFlags<F extends Flags = Flags>(options: {
     traits: options.traits || null,
   };
 
-  const response = await fetch([config.endpoint, config.envKey].join("/"), {
+  const input = {
+    endpoint: config.endpoint,
+    envKey: config.envKey,
+    requestBody,
+  };
+
+  const response = await fetch([input.endpoint, input.envKey].join("/"), {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -73,24 +79,22 @@ export async function getFlags<F extends Flags = Flags>(options: {
       // access to the real client ip
       ...getXForwardedFor(options.context),
     },
-    body: JSON.stringify(requestBody),
+    body: JSON.stringify(input.requestBody),
   }).catch(() => null);
 
   if (!response || response.status !== 200)
     return {
       flags: config.defaultFlags as F,
-      initialFlagState: { requestBody, responseBody: null },
+      initialFlagState: { input },
     };
 
   const responseBody: EvaluationResponseBody<F> | null = await response
     .json()
     .catch(() => null);
 
-  if (!responseBody)
-    return {
-      flags: config.defaultFlags as F,
-      initialFlagState: { requestBody, responseBody: null },
-    };
+  if (!responseBody) {
+    return { flags: config.defaultFlags as F, initialFlagState: { input } };
+  }
 
   // always set the cookie so its max age refreshes
   options.context.res.setHeader(
@@ -104,6 +108,6 @@ export async function getFlags<F extends Flags = Flags>(options: {
 
   return {
     flags: flagsWithDefaults,
-    initialFlagState: { requestBody, responseBody },
+    initialFlagState: { input, outcome: { responseBody } },
   };
 }

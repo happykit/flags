@@ -23,11 +23,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
     context,
     user: { key: "jennyc" },
   });
-  return {
-    props: {
-      initialFlagState,
-    },
-  };
+  return { props: { initialFlagState } };
 };
 
 export default function Home(props: ServerSideProps) {

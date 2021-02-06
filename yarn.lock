@@ -3887,11 +3887,6 @@ url@^0.11.0:
     punycode "1.3.2"
     querystring "0.2.0"
 
-use-effect-reducer@0.7.0:
-  version "0.7.0"
-  resolved "https://registry.yarnpkg.com/use-effect-reducer/-/use-effect-reducer-0.7.0.tgz#7e08714145a44b84c39c101e8898750b400d61de"
-  integrity sha512-TinyyjN4AdKztczq0nG0GuGPWwOLjUw29qWEOSxv/YDc954EbVNFbobQQwnzSAhM4xpE/2zt5rw0t/EZjJ0HSA==
-
 use-subscription@1.5.1:
   version "1.5.1"
   resolved "https://registry.yarnpkg.com/use-subscription/-/use-subscription-1.5.1.tgz#73501107f02fad84c6dd57965beb0b75c68c42d1"
