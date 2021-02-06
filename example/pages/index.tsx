@@ -21,7 +21,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
 ) => {
   const { initialFlagState } = await getFlags<Flags>({
     context,
-    user: { key: "jon" },
+    user: { key: "jennyc" },
   });
   return {
     props: {
@@ -32,7 +32,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
 
 export default function Home(props: ServerSideProps) {
   const [user, setUser] = React.useState<null | FlagUser>({
-    key: "jon",
+    key: "jennyc",
   });
 
   const flagBag = useFlags<Flags>({
