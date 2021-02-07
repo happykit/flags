@@ -4,7 +4,10 @@
   "license": "MIT",
   "author": "Dominik Ferber",
   "scripts": {
-    "build": "yarn workspace @happykit/flags build",
+    "example:dev": "yarn workspace example dev",
+    "example:build": "yarn workspace example build",
+    "package:dev": "yarn workspace @happykit/flags preconstruct dev",
+    "package:build": "yarn workspace @happykit/flags build",
     "postinstall": "preconstruct dev"
   },
   "workspaces": [

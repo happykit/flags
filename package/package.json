@@ -4,6 +4,7 @@
   "author": "Dominik Ferber <dominik.ferber+npm@gmail.com> (http://dferber.de/)",
   "license": "MIT",
   "scripts": {
+    "dev": "preconstruct dev",
     "build": "preconstruct build"
   },
   "repository": {
@@ -24,7 +25,8 @@
     "entrypoints": [
       "./config.ts",
       "./server.ts",
-      "./client.ts"
+      "./client.ts",
+      "./context.ts"
     ]
   }
 }
