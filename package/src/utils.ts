@@ -1,4 +1,4 @@
-export function hasOwnProperty<X extends {}, Y extends PropertyKey>(
+export function has<X extends {}, Y extends PropertyKey>(
   obj: X,
   prop: Y
 ): obj is X & Record<Y, unknown> {
@@ -44,8 +44,7 @@ export function deepEqual(objA: any, objB: any) {
     if (!ctor || typeof objA === "object") {
       len = 0;
       for (ctor in objA) {
-        if (hasOwnProperty(objA, ctor) && ++len && !hasOwnProperty(objB, ctor))
-          return false;
+        if (has(objA, ctor) && ++len && !has(objB, ctor)) return false;
         if (!(ctor in objB) || !deepEqual(objA[ctor], objB[ctor])) return false;
       }
       return Object.keys(objB).length === len;
