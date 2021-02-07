@@ -5,7 +5,8 @@
   "license": "MIT",
   "scripts": {
     "dev": "preconstruct dev",
-    "build": "preconstruct build"
+    "build": "preconstruct build",
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -28,5 +29,15 @@
       "./client.ts",
       "./context.ts"
     ]
+  },
+  "devDependencies": {
+    "@sheerun/mutationobserver-shim": "0.3.3",
+    "@testing-library/jest-dom": "5.11.9",
+    "@testing-library/react": "11.2.5",
+    "@testing-library/react-hooks": "5.0.3",
+    "@types/jest": "26.0.20",
+    "jest": "26.6.3",
+    "jest-fetch-mock": "3.0.3",
+    "ts-jest": "26.5.0"
   }
 }
