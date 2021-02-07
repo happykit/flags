@@ -22,6 +22,8 @@ export type {
   Outcome,
 } from "./types";
 
+const cacheKey = "happykit_flags_cache_v1";
+
 type State<F extends Flags> =
   // useFlags() used without initialState (without getFlags())
   //
@@ -158,9 +160,7 @@ export function useFlags<F extends Flags = Flags>(
     if (shouldDisableCache || state.current) return;
 
     try {
-      const cachedCurrent = JSON.parse(
-        String(localStorage.getItem("happykit_flags_cache_v1"))
-      );
+      const cachedCurrent = JSON.parse(String(localStorage.getItem(cacheKey)));
 
       if (cachedCurrent) {
         dispatch({ type: "rehydrate", current: cachedCurrent });
@@ -234,10 +234,7 @@ export function useFlags<F extends Flags = Flags>(
   // sync to cache in localStorage
   React.useEffect(() => {
     if (shouldDisableCache || !state.current) return;
-    localStorage.setItem(
-      "happykit_flags_cache_v1",
-      JSON.stringify(state.current)
-    );
+    localStorage.setItem(cacheKey, JSON.stringify(state.current));
   }, [shouldDisableCache, state.current]);
 
   const defaultFlags = config.defaultFlags;
