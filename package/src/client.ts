@@ -10,7 +10,7 @@ import {
   Traits,
   FlagBag,
 } from "./types";
-import { deepEqual, getCookie, hasOwnProperty } from "./utils";
+import { deepEqual, getCookie, has } from "./utils";
 
 export type {
   FlagUser,
@@ -239,7 +239,7 @@ export function useFlags<F extends Flags = Flags>(
     const loadedFlags = state.current?.outcome?.responseBody.flags as F;
     const flags =
       loadedFlags &&
-      Object.keys(defaultFlags).every((key) => hasOwnProperty(loadedFlags, key))
+      Object.keys(defaultFlags).every((key) => has(loadedFlags, key))
         ? (loadedFlags as F)
         : ({ ...defaultFlags, ...loadedFlags } as F);
 
