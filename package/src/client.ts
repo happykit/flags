@@ -62,26 +62,35 @@ function isEmergingInput<F extends Flags>(input: Input, state: State<F>) {
   return true;
 }
 
+/**
+ * The reducer returns a tuple of [state, effects].
+ *
+ * effects is an array of effects to execute. The emitted effects are then later
+ * executed in another hook.
+ *
+ * This pattern is basically a hand-rolled version of
+ * https://github.com/davidkpiano/useEffectReducer
+ *
+ * We use a hand-rolled version to keep the size of this package minimal.
+ */
 function reducer<F extends Flags>(
-  allState: [State<F>, Effect[]],
+  [state /* and effects */]: [State<F>, Effect[]],
   action: Action<F>
 ): [State<F>, Effect[]] {
-  const [state] = allState;
-  const effects = [] as Effect[];
-  const exec = (effect: Effect) => effects.push(effect);
-
   switch (action.type) {
     case "rehydrate": {
-      if (state.current) return [state, effects];
-      return [{ ...state, current: action.current, rehydrated: true }, effects];
+      if (state.current) return [state, []];
+      return [{ ...state, current: action.current, rehydrated: true }, []];
     }
     case "evaluate": {
-      exec({ type: "fetch", input: action.input });
-      return [{ ...state, pending: { input: action.input } }, effects];
+      return [
+        { ...state, pending: { input: action.input } },
+        [{ type: "fetch", input: action.input }],
+      ];
     }
     case "settle": {
       // skip outdated responses
-      if (state.pending?.input !== action.input) return [state, effects];
+      if (state.pending?.input !== action.input) return [state, []];
 
       return [
         {
@@ -90,16 +99,16 @@ function reducer<F extends Flags>(
           pending: null,
           rehydrated: false,
         },
-        effects,
+        [],
       ];
     }
     case "fail": {
       return isEmergingInput(action.input, state)
-        ? [{ ...state, pending: null }, effects]
-        : [state, effects];
+        ? [{ ...state, pending: null }, []]
+        : [state, []];
     }
     default:
-      return [state, effects];
+      return [state, []];
   }
 }
 
@@ -138,12 +147,10 @@ export function useFlags<F extends Flags = Flags>(
   const [[state, effects], dispatch] = React.useReducer(
     reducer,
     options.initialState,
-    (initialFlagState): [State<F>, Effect[]] => {
-      return [
-        { current: initialFlagState || null, pending: null, rehydrated: false },
-        [] as Effect[],
-      ];
-    }
+    (initialFlagState): [State<F>, Effect[]] => [
+      { current: initialFlagState || null, pending: null, rehydrated: false },
+      [] as Effect[],
+    ]
   );
 
   // read from cache initially
