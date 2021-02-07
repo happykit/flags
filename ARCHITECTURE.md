@@ -1,4 +1,4 @@
-# Development
+# Architecture
 
 We are using [`preconstruct`](https://preconstruct.tools/) so you don't need to start any compilation.
 
