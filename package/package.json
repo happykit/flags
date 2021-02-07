@@ -6,6 +6,10 @@
   "scripts": {
     "build": "preconstruct build"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/happykit/flags"
+  },
   "peerDependencies": {
     "next": ">=9.4.0",
     "react": ">=16.13.1"
