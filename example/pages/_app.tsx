@@ -1,4 +1,7 @@
+import * as React from "react";
+import Head from "next/head";
 import type { AppProps } from "next/app";
+import "tailwindcss/tailwind.css";
 import { configure } from "@happykit/flags/config";
 
 configure({
@@ -9,7 +12,14 @@ configure({
 });
 
 function MyApp({ Component, pageProps }: AppProps) {
-  return <Component {...pageProps} />;
+  return (
+    <React.Fragment>
+      <Head>
+        <link rel="icon" href="/favicon.png" />
+      </Head>
+      <Component {...pageProps} />
+    </React.Fragment>
+  );
 }
 
 export default MyApp;

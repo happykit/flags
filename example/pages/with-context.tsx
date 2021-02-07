@@ -1,5 +1,8 @@
-import Head from "next/head";
 import * as React from "react";
+import { Layout } from "../components/Layout";
+import { Result } from "../components/Result";
+import { Switch } from "../components/Switch";
+import { Divider } from "../components/Divider";
 import {
   useFlags,
   FlagUser,
@@ -21,9 +24,10 @@ type ServerSideProps = {
   initialFlagState: InitialFlagState<Flags>;
 };
 
-function Code() {
+function SomeNestedComponent() {
+  // The nested component has access to the flagBag using context
   const flagBag = useFlagBag<Flags>();
-  return <pre>{JSON.stringify(flagBag, null, 2)}</pre>;
+  return <Result value={flagBag} />;
 }
 
 export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
@@ -33,7 +37,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
   return { props: { initialFlagState } };
 };
 
-export default function Home(props: ServerSideProps) {
+export default function Page(props: ServerSideProps) {
   const [user, setUser] = React.useState<null | FlagUser>(null);
   const [traits, setTraits] = React.useState<null | Traits>(null);
 
@@ -43,39 +47,44 @@ export default function Home(props: ServerSideProps) {
     traits,
   });
 
-  console.log(flagBag);
-
   return (
     <FlagBagProvider value={flagBag}>
-      <Head>
-        <title>@happykit/flags examples</title>
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+      <Layout
+        title="Example: Context"
+        source="https://github.com/happykit/flags/blob/example/pages/with-context.tsx"
+      >
+        <div className="py-4">
+          <p className="max-w-prose text-gray-600">
+            This example shows how to use @happykit/flags for static pages.
+          </p>
 
-      <main>
-        <button
-          type="button"
-          onClick={() => {
-            console.log("toggle user");
-            setUser((prev) => (prev ? null : { key: "jennyc" }));
-          }}
-        >
-          toggle user
-        </button>{" "}
-        <button
-          type="button"
-          onClick={() => {
-            console.log("toggle traits");
-            setTraits((prev) => (prev ? null : { employee: true }));
-          }}
-        >
-          toggle traits
-        </button>{" "}
-        <p>
-          {user ? "has user" : "no user"}, {traits ? "has traits" : "no traits"}
-        </p>
-        <Code />
-      </main>
+          <div className="mt-4 max-w-prose">
+            <Divider>Input</Divider>
+          </div>
+          <div className="grid gap-2 mt-4">
+            <Switch
+              id="toggle-user"
+              label="User"
+              active={Boolean(user)}
+              onClick={() => {
+                setUser((prev) => (prev ? null : { key: "jennyc" }));
+              }}
+            />
+            <Switch
+              id="toggle-traits"
+              label="Traits"
+              active={Boolean(traits)}
+              onClick={() => {
+                setTraits((prev) => (prev ? null : { employee: true }));
+              }}
+            />
+          </div>
+          <div className="mt-4 max-w-prose">
+            <Divider>Output</Divider>
+          </div>
+          <SomeNestedComponent />
+        </div>
+      </Layout>
     </FlagBagProvider>
   );
 }
