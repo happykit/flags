@@ -46,21 +46,18 @@ type Effect = { type: "fetch"; input: Input };
 // | { type: "cache/clear" }
 // | { type: "cache/write" };
 
-function shouldEvaluateInput<F extends Flags>(input: Input, state: State<F>) {
-  const sameInputIsAlreadyPending =
-    state.pending && deepEqual(state.pending.input, input);
-
-  if (sameInputIsAlreadyPending) return false;
-
-  if (
-    // no pending input
-    !state.pending &&
-    // same input is already current
-    state.current &&
-    deepEqual(state.current.input, input)
-  )
-    return false;
-
+/**
+ * Checks whether input is the upcoming input, or the current input in case
+ * there is no upcoming input.
+ *
+ * Ignores "current" while "pending" is present
+ */
+function isEmergingInput<F extends Flags>(input: Input, state: State<F>) {
+  if (state.pending) {
+    if (deepEqual(state.pending.input, input)) return false;
+  } else if (state.current /* and not state.pending */) {
+    if (deepEqual(state.current.input, input)) return false;
+  }
   return true;
 }
 
@@ -74,16 +71,13 @@ function reducer<F extends Flags>(
 
   switch (action.type) {
     case "evaluate": {
-      // if (!shouldEvaluateInput(action.input, state)) return [state, effects];
+      // if (!isEmergingInput(action.input, state)) return [state, effects];
       exec({ type: "fetch", input: action.input });
       return [{ ...state, pending: { input: action.input } }, effects];
     }
     case "settle": {
       // skip outdated responses
-      if (state.pending?.input !== action.input) {
-        console.log("skipped outdated response");
-        return [state, effects];
-      }
+      if (state.pending?.input !== action.input) return [state, effects];
 
       return [
         {
@@ -95,13 +89,9 @@ function reducer<F extends Flags>(
       ];
     }
     case "fail": {
-      return [
-        // only replace "pending" if the currently pending input failed
-        state.pending && deepEqual(state.pending.input, action.input)
-          ? { ...state, pending: null }
-          : state,
-        effects,
-      ];
+      return isEmergingInput(action.input, state)
+        ? [{ ...state, pending: null }, effects]
+        : [state, effects];
     }
     default:
       return [state, effects];
@@ -205,7 +195,7 @@ export function useFlags<F extends Flags = Flags>(
       requestBody: { visitorKey, user: currentUser, traits: currentTraits },
     };
 
-    if (shouldEvaluateInput(input, state)) {
+    if (isEmergingInput(input, state)) {
       dispatch({ type: "evaluate", input });
     }
 
@@ -227,7 +217,6 @@ export function useFlags<F extends Flags = Flags>(
         // execute the effect
         case "fetch": {
           const { input } = effect;
-          console.log("fetching", input);
           fetch([input.endpoint, input.envKey].join("/"), {
             method: "POST",
             headers: { "content-type": "application/json" },
@@ -235,7 +224,7 @@ export function useFlags<F extends Flags = Flags>(
           })
             .then(async (response) => {
               const responseBody = await response.json();
-              // outdated responses are skipped in the settle-reducer
+              // responses to outdated requests are skipped in the reducer
               dispatch({ type: "settle", input, outcome: { responseBody } });
             })
             .catch(() => {
