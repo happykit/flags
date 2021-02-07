@@ -34,17 +34,17 @@ type State<F extends Flags> =
       outcome: Outcome<F> | null;
     };
     pending: null | { input: Input };
+    rehydrated: boolean;
   };
 
 type Action<F extends Flags> =
   | { type: "mount" }
+  | { type: "rehydrate"; current: State<F>["current"] }
   | { type: "evaluate"; input: Input }
   | { type: "settle"; input: Input; outcome: Outcome<F> }
   | { type: "fail"; input: Input };
 
 type Effect = { type: "fetch"; input: Input };
-// | { type: "cache/clear" }
-// | { type: "cache/write" };
 
 /**
  * Checks whether input is the upcoming input, or the current input in case
@@ -65,11 +65,16 @@ function reducer<F extends Flags>(
   allState: [State<F>, Effect[]],
   action: Action<F>
 ): [State<F>, Effect[]] {
+  console.log(action.type);
   const [state] = allState;
   const effects = [] as Effect[];
   const exec = (effect: Effect) => effects.push(effect);
 
   switch (action.type) {
+    case "rehydrate": {
+      if (state.current) return [state, effects];
+      return [{ ...state, current: action.current, rehydrated: true }, effects];
+    }
     case "evaluate": {
       // if (!isEmergingInput(action.input, state)) return [state, effects];
       exec({ type: "fetch", input: action.input });
@@ -84,6 +89,7 @@ function reducer<F extends Flags>(
           ...state,
           current: { input: action.input, outcome: action.outcome },
           pending: null,
+          rehydrated: false,
         },
         effects,
       ];
@@ -158,7 +164,7 @@ export function useFlags<F extends Flags = Flags>(
     options.initialState,
     (initialFlagState): [State<F>, Effect[]] => {
       return [
-        { current: initialFlagState || null, pending: null },
+        { current: initialFlagState || null, pending: null, rehydrated: false },
         [] as Effect[],
       ];
     }
@@ -172,6 +178,25 @@ export function useFlags<F extends Flags = Flags>(
     options.revalidateOnFocus === undefined
       ? config.revalidateOnFocus
       : options.revalidateOnFocus;
+  const shouldDisableCache =
+    options.disableCache === undefined
+      ? config.disableCache
+      : options.disableCache;
+
+  // read from cache initially
+  React.useEffect(() => {
+    if (shouldDisableCache || state.current) return;
+
+    try {
+      const cachedCurrent = JSON.parse(
+        String(localStorage.getItem("happykit_flags_cache_v1"))
+      );
+
+      if (cachedCurrent) {
+        dispatch({ type: "rehydrate", current: cachedCurrent });
+      }
+    } catch (e) {}
+  }, [shouldDisableCache, state.current]);
 
   React.useEffect(() => {
     if (!isConfigured(config)) throw new MissingConfigurationError();
@@ -238,6 +263,15 @@ export function useFlags<F extends Flags = Flags>(
     });
   }, [effects, dispatch]);
 
+  // sync to cache in localStorage
+  React.useEffect(() => {
+    if (shouldDisableCache || !state.current) return;
+    localStorage.setItem(
+      "happykit_flags_cache_v1",
+      JSON.stringify(state.current)
+    );
+  }, [shouldDisableCache, state.current]);
+
   const defaultFlags = config.defaultFlags;
 
   const flagBag = React.useMemo(() => {
@@ -256,7 +290,7 @@ export function useFlags<F extends Flags = Flags>(
           // the visitorKey that belongs to the loaded flags,
           // it is "null" until the response has settled
           visitorKey: outcome.responseBody.visitor.key,
-          settled: true as true,
+          settled: !state.rehydrated,
         }
       : {
           ...base,
