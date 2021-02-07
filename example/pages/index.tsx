@@ -1,82 +1,57 @@
-import Head from "next/head";
 import * as React from "react";
-import {
-  useFlags,
-  FlagUser,
-  InitialFlagState,
-  Traits,
-} from "@happykit/flags/client";
-import { getFlags } from "@happykit/flags/server";
-import { GetServerSideProps } from "next";
+import { Layout } from "../components/Layout";
+import { useFlags } from "@happykit/flags/client";
+import { Result } from "../components/Result";
 
-type Flags = {
-  "baby-koalas": boolean;
-  meal: "small" | "medium" | "large";
-  dopestflagonearth: boolean;
-  "numbered-koalas": number;
-};
-
-type ServerSideProps = {
-  initialFlagState: InitialFlagState<Flags>;
-  initialUser: FlagUser;
-  initialTraits: Traits;
-};
-
-export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
-  context
-) => {
-  const user: FlagUser = { key: "jennyc" };
-  const traits: Traits = { employee: true };
-  const { initialFlagState } = await getFlags<Flags>({ context, user, traits });
-
-  return {
-    props: { initialFlagState, initialUser: user, initialTraits: traits },
-  };
-};
-
-export default function Home(props: ServerSideProps) {
-  const [user, setUser] = React.useState<null | FlagUser>(props.initialUser);
-  const [traits, setTraits] = React.useState<null | Traits>(
-    props.initialTraits
-  );
-
-  const flagBag = useFlags<Flags>({
-    initialState: props.initialFlagState,
-    user,
-    traits,
-  });
-
+export default function Index() {
+  const flagBag = useFlags();
   return (
-    <div>
-      <Head>
-        <title>@happykit/flags examples</title>
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-
-      <main>
-        <button
-          type="button"
-          onClick={() => {
-            console.log("toggle user");
-            setUser((prev) => (prev ? null : { key: "jennyc" }));
-          }}
-        >
-          toggle user
-        </button>{" "}
-        <button
-          type="button"
-          onClick={() => {
-            console.log("toggle traits");
-            setTraits((prev) => (prev ? null : { employee: true }));
-          }}
-        >
-          toggle traits
-        </button>{" "}
-        <p>
-          {user ? "has user" : "no user"}, {traits ? "has traits" : "no traits"}
+    <Layout title="Index">
+      {/* Replace with your content */}
+      <div className="py-4">
+        <p className="max-w-prose text-gray-600">
+          These examples show how to use{" "}
+          <code className="text-sm font-mono font-thin">@happykit/flags</code>.
         </p>
-        <pre>{JSON.stringify(flagBag, null, 2)}</pre>
-      </main>
-    </div>
+
+        <div className="bg-blue-100 border-l-4 border-blue-400 p-4 md:hidden my-2">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg
+                className="h-5 w-5 text-blue-400"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-blue-700">
+                You can find the examples in the navigation menu.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <p className="max-w-prose text-gray-600 mt-2">
+          The examples are intended as reference implementations for the
+          different ways in which the{" "}
+          <code className="text-sm font-mono font-thin">@happykit/flags</code>{" "}
+          client can be used.
+        </p>
+
+        <p className="max-w-prose text-gray-600 mt-4">
+          You'll see boxes like the one below in each example. These boxes
+          contain the value returned by the{" "}
+          <code className="text-sm font-mono font-thin">useFlags()</code> hook.
+        </p>
+        <Result value={flagBag} />
+      </div>
+    </Layout>
   );
 }
