@@ -13,7 +13,7 @@
     "preserveConstEnums": true,
     "sourceMap": true,
     "lib": ["es2015", "es2016", "dom"],
-    "types": ["node"]
+    "types": ["node", "jest"]
   },
   "include": ["./src"],
   "exclude": ["./config", "./server", "./context", "./dist"]
