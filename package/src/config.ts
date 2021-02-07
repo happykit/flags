@@ -14,7 +14,6 @@ export function configure<F extends Flags = Flags>(
 ) {
   const defaults: DefaultConfiguration = {
     endpoint: "https://happykit.dev/api/flags",
-    fetch,
     defaultFlags: {},
     revalidateOnFocus: true,
     disableCache: false,
