@@ -16,5 +16,5 @@
     "types": ["node"]
   },
   "include": ["./src"],
-  "exclude": ["./config", "./server", "./dist"]
+  "exclude": ["./config", "./server", "./context", "./dist"]
 }
