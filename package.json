@@ -6,6 +6,7 @@
   "scripts": {
     "example:dev": "yarn workspace example dev",
     "example:build": "yarn workspace example build",
+    "example:start": "yarn workspace example next start",
     "package:dev": "yarn workspace @happykit/flags preconstruct dev",
     "package:build": "yarn workspace @happykit/flags build",
     "postinstall": "preconstruct dev"
