@@ -128,3 +128,37 @@ export type DefaultConfiguration = {
   revalidateOnFocus: boolean;
   disableCache: boolean;
 };
+
+export interface FlagBag<F extends Flags> {
+  /**
+   * The resolved feature flags, extended with the defaults.
+   */
+  flags: F;
+  /**
+   * The visitor key the feature flags were fetched for.
+   */
+  visitorKey: string | null;
+  /**
+   * Whether the initial loading of the feature flags has completed or not.
+   *
+   * This is true when the feature flags were loaded for the first time and
+   * stays true from then on. It is also true when the request to load the
+   * feature flags failed.
+   *
+   * If you have a cache or default flags, you might already have flags but
+   * this property will still be set to false until the initial request to load
+   * the feature flags resolves.
+   *
+   * When you pass an `initialFlagState` to useFlags and when that
+   * `initialFlagState` contains resolved flags, then `settled` will be `true`
+   * even on the initial render.
+   */
+  settled: boolean;
+  /**
+   * This is true whenever a flag evaluation request is currently in flight.
+   *
+   * You probably want to use `settled` instead, as `settled` stays truthy
+   * once the initial flags were loaded, while `fetching` can flip multiple times.
+   */
+  fetching: boolean;
+}

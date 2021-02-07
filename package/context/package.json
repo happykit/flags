@@ -1,0 +1,4 @@
+{
+  "main": "dist/happykit-flags-context.cjs.js",
+  "module": "dist/happykit-flags-context.esm.js"
+}
