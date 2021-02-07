@@ -65,7 +65,6 @@ function reducer<F extends Flags>(
   allState: [State<F>, Effect[]],
   action: Action<F>
 ): [State<F>, Effect[]] {
-  console.log(action.type);
   const [state] = allState;
   const effects = [] as Effect[];
   const exec = (effect: Effect) => effects.push(effect);
@@ -76,7 +75,6 @@ function reducer<F extends Flags>(
       return [{ ...state, current: action.current, rehydrated: true }, effects];
     }
     case "evaluate": {
-      // if (!isEmergingInput(action.input, state)) return [state, effects];
       exec({ type: "fetch", input: action.input });
       return [{ ...state, pending: { input: action.input } }, effects];
     }
@@ -159,19 +157,6 @@ export function useFlags<F extends Flags = Flags>(
 ): SettledFlagBag<F> | UnsettledFlagBag<F> {
   if (!isConfigured(config)) throw new MissingConfigurationError();
 
-  const [allState, dispatch] = React.useReducer(
-    reducer,
-    options.initialState,
-    (initialFlagState): [State<F>, Effect[]] => {
-      return [
-        { current: initialFlagState || null, pending: null, rehydrated: false },
-        [] as Effect[],
-      ];
-    }
-  );
-
-  const [state, effects] = allState;
-
   const currentUser = options.user || null;
   const currentTraits = options.traits || null;
   const shouldRevalidateOnFocus =
@@ -182,6 +167,17 @@ export function useFlags<F extends Flags = Flags>(
     options.disableCache === undefined
       ? config.disableCache
       : options.disableCache;
+
+  const [[state, effects], dispatch] = React.useReducer(
+    reducer,
+    options.initialState,
+    (initialFlagState): [State<F>, Effect[]] => {
+      return [
+        { current: initialFlagState || null, pending: null, rehydrated: false },
+        [] as Effect[],
+      ];
+    }
+  );
 
   // read from cache initially
   React.useEffect(() => {
@@ -252,9 +248,7 @@ export function useFlags<F extends Flags = Flags>(
               // responses to outdated requests are skipped in the reducer
               dispatch({ type: "settle", input, outcome: { responseBody } });
             })
-            .catch(() => {
-              dispatch({ type: "fail", input });
-            });
+            .catch(() => dispatch({ type: "fail", input }));
         }
 
         default:
