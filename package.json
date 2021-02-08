@@ -9,8 +9,7 @@
     "example:start": "yarn workspace example next start",
     "package:dev": "yarn workspace @happykit/flags preconstruct dev",
     "package:test": "yarn workspace @happykit/flags test",
-    "package:build": "yarn workspace @happykit/flags build",
-    "postinstall": "preconstruct dev"
+    "package:build": "yarn workspace @happykit/flags build"
   },
   "workspaces": [
     "package",
