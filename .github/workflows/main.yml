@@ -26,17 +26,19 @@ jobs:
         env:
           CI: true
 
-      - name: Lint
-        run: yarn lint
-        env:
-          CI: true
-
       - name: Test
-        run: yarn test --ci --coverage --maxWorkers=2
+        run: yarn package:test --ci --coverage --maxWorkers=2
         env:
           CI: true
 
-      - name: Build
-        run: yarn build
+      - name: Build package
+        run: yarn package:build
         env:
           CI: true
+
+      - name: Build example
+        run: yarn example:build
+        env:
+          CI: true
+          NEXT_PUBLIC_FLAGS_ENDPOINT: https://happykit.dev/api/flags
+          NEXT_PUBLIC_FLAGS_ENV_KEY: flags_pub_development_289861443285680649
