@@ -25,6 +25,12 @@ export function getCookie(
   return null;
 }
 
+export function serializeVisitorKeyCookie(visitorKey: string) {
+  const seconds = 60 * 60 * 24 * 180;
+  const value = encodeURIComponent(visitorKey);
+  return `hkvk=${value}; Max-Age=${seconds}; SameSite=Lax`;
+}
+
 // source: https://github.com/lukeed/dequal/blob/master/src/lite.js
 export function deepEqual(objA: any, objB: any) {
   var ctor, len;

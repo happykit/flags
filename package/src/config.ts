@@ -9,6 +9,10 @@ export type Configuration<F extends Flags> = DefaultConfiguration &
   IncomingConfiguration<F>;
 export let config: Configuration<Flags> | null = null;
 
+export function _resetConfig() {
+  config = null;
+}
+
 export function configure<F extends Flags = Flags>(
   options: IncomingConfiguration<F> & Partial<DefaultConfiguration>
 ) {

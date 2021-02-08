@@ -9,13 +9,8 @@ import {
   InitialFlagState,
   EvaluationResponseBody,
 } from "./types";
-import { getCookie } from "./utils";
+import { getCookie, serializeVisitorKeyCookie } from "./utils";
 
-function serializeVisitorKeyCookie(visitorKey: string) {
-  const seconds = 60 * 60 * 24 * 180;
-  const value = encodeURIComponent(visitorKey);
-  return `hkvk=${value}; Max-Age=${seconds}; SameSite=Lax`;
-}
 
 function getXForwardedFor(context: {
   req: IncomingMessage;
