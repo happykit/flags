@@ -9,8 +9,9 @@ import {
   FlagUser,
   Traits,
   FlagBag,
+  EvaluationResponseBody,
 } from "./types";
-import { deepEqual, getCookie, has } from "./utils";
+import { deepEqual, getCookie, serializeVisitorKeyCookie, has } from "./utils";
 
 export type {
   FlagUser,
@@ -22,7 +23,7 @@ export type {
   Outcome,
 } from "./types";
 
-const cacheKey = "happykit_flags_cache_v1";
+export const cacheKey = "happykit_flags_cache_v1";
 
 type State<F extends Flags> =
   // useFlags() used without initialState (without getFlags())
@@ -62,6 +63,28 @@ function isEmergingInput<F extends Flags>(input: Input, state: State<F>) {
     if (deepEqual(state.current.input, input)) return false;
   }
   return true;
+}
+
+/**
+ * If the initial flag evaluation request contained no visitor key,
+ * a visitor key will be present in the state afterwards, but the
+ * currently resolved input under state.input.requestBody won't have a
+ * visitorKey attached to it.
+ *
+ * That would trigger another validation which we can skip as it would
+ * lead to the same result anyways, since the flag worker already took
+ * that generated visitor key into account when evaluating.
+ */
+function isAddedVisitorKeyTheOnlyDifference<F extends Flags>(
+  input: Input,
+  state: State<F>
+) {
+  if (state.current?.input.requestBody.visitorKey !== null) return false;
+
+  return deepEqual(state.current.input, {
+    ...input,
+    requestBody: { ...input.requestBody, visitorKey: null },
+  } as Input);
 }
 
 /**
@@ -190,7 +213,10 @@ export function useFlags<F extends Flags = Flags>(
       requestBody: { visitorKey, user: currentUser, traits: currentTraits },
     };
 
-    if (isEmergingInput(input, state)) {
+    if (
+      isEmergingInput(input, state) &&
+      !isAddedVisitorKeyTheOnlyDifference(input, state)
+    ) {
       dispatch({ type: "evaluate", input });
     }
 
@@ -218,9 +244,20 @@ export function useFlags<F extends Flags = Flags>(
             body: JSON.stringify(input.requestBody),
           })
             .then(async (response) => {
-              const responseBody = await response.json();
+              const responseBody = (await response.json()) as EvaluationResponseBody<F>;
               // responses to outdated requests are skipped in the reducer
               dispatch({ type: "settle", input, outcome: { responseBody } });
+
+              if (
+                // server hasn't set it
+                !response.headers.get("Set-Cookie")?.includes("hkvk=") &&
+                // response contains visitor key
+                responseBody.visitor.key
+              ) {
+                document.cookie = serializeVisitorKeyCookie(
+                  responseBody.visitor.key
+                );
+              }
             })
             .catch(() => dispatch({ type: "fail", input }));
         }
