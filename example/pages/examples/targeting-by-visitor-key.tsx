@@ -14,7 +14,7 @@ export default function Page() {
         <p className="max-w-prose text-gray-600">
           This example shows how to use @happykit/flags for static pages.
         </p>
-        <Result value={flagBag} />
+        <Result key="targetinb-by-visitor-key" value={flagBag} />
       </div>
     </Layout>
   );

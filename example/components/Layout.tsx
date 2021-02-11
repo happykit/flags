@@ -75,7 +75,7 @@ export function Layout(props: {
                   </div>
                   <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
                     <nav
-                      className="mt-5 flex-1 px-2 space-y-1 bg-white"
+                      className="mt-5 flex-1 pl-2 pr-4 space-y-1 bg-white"
                       aria-label="Sidebar"
                     >
                       <Nav />
@@ -115,7 +115,7 @@ export function Layout(props: {
         )}{" "}
         {/* Static sidebar for desktop */}
         <div className="hidden md:flex md:flex-shrink-0">
-          <div className="flex flex-col w-72">
+          <div className="flex flex-col w-80">
             <div className="flex flex-col h-0 flex-1 border-r border-gray-200 bg-white">
               <div className="flex items-center flex-shrink-0 px-4 pt-5">
                 <img
