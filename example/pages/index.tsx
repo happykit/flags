@@ -50,7 +50,7 @@ export default function Index() {
           contain the value returned by the{" "}
           <code className="text-sm font-mono font-thin">useFlags()</code> hook.
         </p>
-        <Result value={flagBag} />
+        <Result key="index" value={flagBag} />
       </div>
     </Layout>
   );

@@ -2,14 +2,7 @@ import * as React from "react";
 import { GetServerSideProps } from "next";
 import { Layout } from "../../components/Layout";
 import { Result } from "../../components/Result";
-import { Switch } from "../../components/Switch";
-import { Divider } from "../../components/Divider";
-import {
-  useFlags,
-  FlagUser,
-  InitialFlagState,
-  Traits,
-} from "@happykit/flags/client";
+import { useFlags, InitialFlagState } from "@happykit/flags/client";
 import { getFlags } from "@happykit/flags/server";
 import { FlagBagProvider, useFlagBag } from "@happykit/flags/context";
 
@@ -24,7 +17,7 @@ type ServerSideProps = {
 function SomeNestedComponent() {
   // The nested component has access to the flagBag using context
   const flagBag = useFlagBag<Flags>();
-  return <Result value={flagBag} />;
+  return <Result key="context" value={flagBag} />;
 }
 
 export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (

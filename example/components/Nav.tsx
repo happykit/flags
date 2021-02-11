@@ -41,9 +41,6 @@ export function Nav() {
           <NavLink indent href="/examples/basic-usage">
             Basic Usage
           </NavLink>
-          <NavLink indent href="/examples/default-flags">
-            Default Flags
-          </NavLink>
           <NavLink indent href="/examples/disabled-revalidation">
             Disabled Revalidation
           </NavLink>
@@ -53,8 +50,11 @@ export function Nav() {
           <NavLink indent href="/examples/hybrid-static-site-generation">
             Static Site Generation (Hybrid)
           </NavLink>
-          <NavLink indent href="/examples/server-side-rendering">
-            Server-Side Rendering
+          <NavLink indent href="/examples/pure-server-side-rendering">
+            Server-Side Rendering (Pure)
+          </NavLink>
+          <NavLink indent href="/examples/hybrid-server-side-rendering">
+            Server-Side Rendering (Hybrid)
           </NavLink>
           <NavLink indent href="/examples/targeting-by-traits">
             Targeting by Traits
