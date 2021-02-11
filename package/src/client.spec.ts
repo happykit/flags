@@ -50,10 +50,11 @@ describe("useFlags", () => {
     expect(document.cookie).toEqual("");
     const { result, waitForNextUpdate } = renderHook(() => useFlags());
 
-    // flags are an empty object until the first response arrives
+    // flags are an empty object (defaultFlags) until the first response arrives
     expect(result.current).toEqual({
       fetching: true,
       flags: {},
+      // loadedFlags are undefined as no flags were loaded
       loadedFlags: undefined,
       settled: false,
       visitorKey: null,

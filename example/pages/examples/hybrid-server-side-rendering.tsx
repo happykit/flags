@@ -1,30 +1,32 @@
 import * as React from "react";
-import { GetStaticProps } from "next";
+import { GetServerSideProps } from "next";
 import { Layout } from "../../components/Layout";
 import { Result } from "../../components/Result";
 import { InitialFlagState, useFlags } from "@happykit/flags/client";
 import { getFlags } from "@happykit/flags/server";
 
 type AppFlags = { size: "small" | "medium" | "large" };
-type StaticProps = { initialFlagState: InitialFlagState<AppFlags> };
+type ServerSideProps = { initialFlagState: InitialFlagState<AppFlags> };
 
-export const getStaticProps: GetStaticProps<StaticProps> = async (context) => {
+export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
+  context
+) => {
   const { initialFlagState } = await getFlags<AppFlags>({ context });
   return { props: { initialFlagState } };
 };
 
-export default function Page(props: StaticProps) {
+export default function Page(props: ServerSideProps) {
   const flagBag = useFlags({ initialState: props.initialFlagState });
   return (
     <Layout
-      title="Example: Static Site Generation (Hybrid)"
-      source="https://github.com/happykit/flags/blob/example/pages/examples/hybrid-static-site-generation.tsx"
+      title="Example: Server Side Rendering (Hybrid)"
+      source="https://github.com/happykit/flags/blob/example/pages/examples/hybrid-server-side-rendering.tsx"
     >
       <div className="py-4">
         <p className="max-w-prose text-gray-600">
           This example shows how to use @happykit/flags for static pages.
         </p>
-        <Result key="hybrid-static-site-generation" value={flagBag} />
+        <Result key="hybrid-server-side-rendering" value={flagBag} />
       </div>
     </Layout>
   );

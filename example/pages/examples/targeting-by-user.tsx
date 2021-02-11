@@ -4,7 +4,7 @@ import { Result } from "../../components/Result";
 import { useFlags } from "@happykit/flags/client";
 
 export default function Page() {
-  const flagBag = useFlags();
+  const flagBag = useFlags({ user: { key: "fake-user-key-1", name: "Jon" } });
   return (
     <Layout
       title="Example: Targeting by User"
@@ -14,7 +14,7 @@ export default function Page() {
         <p className="max-w-prose text-gray-600">
           This example shows how to use @happykit/flags for static pages.
         </p>
-        <Result value={flagBag} />
+        <Result key="targeting-by-user" value={flagBag} />
       </div>
     </Layout>
   );
