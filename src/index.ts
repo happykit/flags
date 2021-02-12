@@ -364,6 +364,8 @@ function usePrimitiveFlags<F extends Flags>(
 
     let latestFetchId: number;
     const listener = async () => {
+      if (typeof document !== 'object' || document.visibilityState === 'hidden') return;
+                       
       const fetchId = (latestFetchId = Date.now());
 
       try {
@@ -390,9 +392,9 @@ function usePrimitiveFlags<F extends Flags>(
       }
     };
 
-    window.addEventListener('focus', listener);
+    window.addEventListener('visibilitychange', listener);
     return () => {
-      window.removeEventListener('focus', listener);
+      window.removeEventListener('visibilitychange', listener);
     };
   }, [revalidateOnFocus, setFlags, userAttributes]);
 
