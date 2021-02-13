@@ -11,7 +11,12 @@ import {
   FlagBag,
   EvaluationResponseBody,
 } from "./types";
-import { deepEqual, getCookie, serializeVisitorKeyCookie, has } from "./utils";
+import {
+  deepEqual,
+  getCookie,
+  serializeVisitorKeyCookie,
+  combineLoadedFlagsWithDefaultFlags,
+} from "./utils";
 
 export type {
   FlagUser,
@@ -193,7 +198,7 @@ export function useFlags<F extends Flags = Flags>(
 
   React.useEffect(() => {
     if (!isConfigured(config)) throw new MissingConfigurationError();
-    const currentKey = state.current?.outcome?.responseBody.visitor.key;
+    const currentKey = state.current?.outcome?.responseBody.visitor?.key;
 
     const visitorKey = (() => {
       const cookie =
@@ -280,20 +285,25 @@ export function useFlags<F extends Flags = Flags>(
 
   const flagBag = React.useMemo(() => {
     const loadedFlags = state.current?.outcome?.responseBody.flags as F;
-    const flags =
-      loadedFlags &&
-      Object.keys(defaultFlags).every((key) => has(loadedFlags, key))
-        ? (loadedFlags as F)
-        : ({ ...defaultFlags, ...loadedFlags } as F);
+    const flags = combineLoadedFlagsWithDefaultFlags<F>(
+      loadedFlags,
+      defaultFlags
+    );
 
     const outcome = state.current?.outcome;
     const base = { flags, loadedFlags, fetching: Boolean(state.pending) };
-    return outcome
+
+    // When the outcome was generated for a static site, then no visitor key
+    // is present on the outcome. In that case, the state can not be seen as
+    // settled as another revalidation will happen in which a visitor key will
+    // get generated.
+    const visitorKey = outcome?.responseBody.visitor?.key;
+
+    return outcome && visitorKey
       ? {
           ...base,
-          // the visitorKey that belongs to the loaded flags,
-          // it is "null" until the response has settled
-          visitorKey: outcome.responseBody.visitor.key,
+          // the visitorKey that belongs to the loaded flags
+          visitorKey,
           settled: !state.rehydrated,
         }
       : {

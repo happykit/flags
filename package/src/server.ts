@@ -10,7 +10,12 @@ import {
   InitialFlagState,
   EvaluationResponseBody,
 } from "./types";
-import { getCookie, has, serializeVisitorKeyCookie } from "./utils";
+import {
+  getCookie,
+  has,
+  serializeVisitorKeyCookie,
+  combineLoadedFlagsWithDefaultFlags,
+} from "./utils";
 
 function getXForwardedFor(context: {
   req: IncomingMessage;
@@ -40,6 +45,11 @@ export async function getFlags<F extends Flags = Flags>(options: {
    */
   flags: F;
   /**
+   * The actually loaded flags without any defaults applied, or null when
+   * the flags could not be loaded.
+   */
+  loadedFlags: F | null;
+  /**
    * The initial flag state that you can use to initialize useFlags()
    */
   initialFlagState: InitialFlagState<F>;
@@ -63,6 +73,7 @@ export async function getFlags<F extends Flags = Flags>(options: {
     visitorKey: visitorKeyFromCookie,
     user: options.user || null,
     traits: options.traits || null,
+    static: !has(options.context, "req"),
   };
 
   const input = {
@@ -87,6 +98,7 @@ export async function getFlags<F extends Flags = Flags>(options: {
   if (!response || response.status !== 200)
     return {
       flags: config.defaultFlags as F,
+      loadedFlags: null,
       initialFlagState: { input, outcome: null },
     };
 
@@ -97,6 +109,7 @@ export async function getFlags<F extends Flags = Flags>(options: {
   if (!responseBody) {
     return {
       flags: config.defaultFlags as F,
+      loadedFlags: null,
       initialFlagState: { input, outcome: null },
     };
   }
@@ -111,10 +124,14 @@ export async function getFlags<F extends Flags = Flags>(options: {
 
   // add defaults to flags here, but not in initialFlagState
   const flags = responseBody.flags ? responseBody.flags : null;
-  const flagsWithDefaults = { ...config.defaultFlags, ...flags } as F;
+  const flagsWithDefaults = combineLoadedFlagsWithDefaultFlags<F>(
+    flags,
+    config.defaultFlags
+  );
 
   return {
     flags: flagsWithDefaults,
+    loadedFlags: flags,
     initialFlagState: { input, outcome: { responseBody } },
   };
 }

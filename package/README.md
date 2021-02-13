@@ -373,7 +373,7 @@ export const getServerSideProps = async ({ req, res }) => {
 `@happykit/flags` includes type definitions. By default, flags returned from `useFlags` and `getFlags` have the following type:
 
 ```ts
-type Flags = { [key: string]: boolean | number | string | undefined };
+type Flags = { [key: string]: boolean | number | string | null };
 ```
 
 You can use `@happykit/flags` without further configuration and get pretty good types.
