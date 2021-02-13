@@ -223,12 +223,14 @@ export function useFlags<F extends Flags = Flags>(
     if (!shouldRevalidateOnFocus) return;
 
     function handleFocus() {
-      dispatch({ type: "evaluate", input });
+      if (document.visibilityState === "visible") {
+        dispatch({ type: "evaluate", input });
+      }
     }
 
-    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleFocus);
     return () => {
-      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleFocus);
     };
   }, [state, currentUser, currentTraits, shouldRevalidateOnFocus]);
 
