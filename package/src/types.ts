@@ -10,7 +10,10 @@ export type FlagUser = {
 export type Traits = { [key: string]: any };
 
 export type Flags = {
-  [key: string]: boolean | number | string;
+  // A flag can resolve to null when a percentage based rollout is set based
+  // on a criteria not present on the user, e.g. when bucketing by trait,
+  // but no such trait was sent
+  [key: string]: boolean | number | string | null;
 };
 
 export class MissingConfigurationError extends Error {
