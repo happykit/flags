@@ -3,7 +3,6 @@ import { GetStaticProps } from "next";
 import { Layout } from "../../components/Layout";
 import { Result } from "../../components/Result";
 import { getFlags } from "@happykit/flags/server";
-import { InitialFlagState } from "@happykit/flags/client";
 
 type AppFlags = { size: "small" | "medium" | "large" };
 type StaticProps = { flags: AppFlags };
