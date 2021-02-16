@@ -27,7 +27,7 @@ export function combineLoadedFlagsWithDefaultFlags<F extends Flags>(
   loadedFlags: F | null,
   defaultFlags: Flags
 ): F {
-  if (!loadedFlags) return defaultFlags;
+  if (!loadedFlags) return defaultFlags as F;
 
   const loadedFlagsContainAllDefaultFlags = Object.keys(defaultFlags).every(
     (key) => has(loadedFlags, key) && loadedFlags[key] !== null
