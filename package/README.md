@@ -320,7 +320,7 @@ export const getStaticProps = () => {
 
 ### Full example
 
-This example shows the full configuration with server-side rendering and code splitting.
+This demo shows the full configuration with server-side rendering and code splitting.
 
 ```js
 // _app.js

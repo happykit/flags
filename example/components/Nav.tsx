@@ -34,38 +34,38 @@ export function Nav() {
       </div>
       <div className="space-y-1">
         <div className="bg-white text-gray-600 group w-full flex items-center pl-7 pr-2 py-2 text-sm font-medium rounded-md">
-          Examples
+          Demos
         </div>
         {/* Expandable link section, show/hide based on state. */}
         <div className="space-y-1">
-          <NavLink indent href="/examples/basic-usage">
+          <NavLink indent href="/demo/basic-usage">
             Basic Usage
           </NavLink>
-          <NavLink indent href="/examples/disabled-revalidation">
+          <NavLink indent href="/demo/disabled-revalidation">
             Disabled Revalidation
           </NavLink>
-          <NavLink indent href="/examples/pure-static-site-generation">
+          <NavLink indent href="/demo/pure-static-site-generation">
             Static Site Generation (Pure)
           </NavLink>
-          <NavLink indent href="/examples/hybrid-static-site-generation">
+          <NavLink indent href="/demo/hybrid-static-site-generation">
             Static Site Generation (Hybrid)
           </NavLink>
-          <NavLink indent href="/examples/pure-server-side-rendering">
+          <NavLink indent href="/demo/pure-server-side-rendering">
             Server-Side Rendering (Pure)
           </NavLink>
-          <NavLink indent href="/examples/hybrid-server-side-rendering">
+          <NavLink indent href="/demo/hybrid-server-side-rendering">
             Server-Side Rendering (Hybrid)
           </NavLink>
-          <NavLink indent href="/examples/targeting-by-traits">
+          <NavLink indent href="/demo/targeting-by-traits">
             Targeting by Traits
           </NavLink>
-          <NavLink indent href="/examples/targeting-by-user">
+          <NavLink indent href="/demo/targeting-by-user">
             Targeting by User
           </NavLink>
-          <NavLink indent href="/examples/targeting-by-visitor-key">
+          <NavLink indent href="/demo/targeting-by-visitor-key">
             Targeting by Visitor Key
           </NavLink>
-          <NavLink indent href="/examples/context">
+          <NavLink indent href="/demo/context">
             Context
           </NavLink>
         </div>

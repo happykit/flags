@@ -17,12 +17,12 @@ export default function Page(props: StaticProps) {
   const flagBag = useFlags({ initialState: props.initialFlagState });
   return (
     <Layout
-      title="Example: Static Site Generation (Hybrid)"
-      source="https://github.com/happykit/flags/blob/example/pages/examples/hybrid-static-site-generation.tsx"
+      title="Demo: Static Site Generation (Hybrid)"
+      source="https://github.com/happykit/flags/blob/example/pages/demo/hybrid-static-site-generation.tsx"
     >
       <div className="py-4">
         <p className="max-w-prose text-gray-600">
-          This example shows how to use @happykit/flags for static pages.
+          This demo shows how to use @happykit/flags for static pages.
         </p>
         <Result key="hybrid-static-site-generation" value={flagBag} />
       </div>

@@ -17,12 +17,12 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
 export default function Page(props: ServerSideProps) {
   return (
     <Layout
-      title="Example: Server Side Rendering (Pure)"
-      source="https://github.com/happykit/flags/blob/example/pages/examples/pure-server-side-rendering.tsx"
+      title="Demo: Server Side Rendering (Pure)"
+      source="https://github.com/happykit/flags/blob/example/pages/demo/pure-server-side-rendering.tsx"
     >
       <div className="py-4">
         <p className="max-w-prose text-gray-600">
-          This example shows how to use @happykit/flags for static pages.
+          This demo shows how to use @happykit/flags for static pages.
         </p>
         <Result key="pure-server-side-rendering" value={props.flags} />
       </div>
