@@ -7,14 +7,14 @@ export default function Page() {
   const flagBag = useFlags();
   return (
     <Layout
-      title="Example: Targeting by Visitor Key"
-      source="https://github.com/happykit/flags/blob/example/pages/examples/targeting-by-visitor-key.tsx"
+      title="Demo: Basic Usage"
+      source="https://github.com/happykit/flags/blob/example/pages/demo/basic-usage.tsx"
     >
       <div className="py-4">
         <p className="max-w-prose text-gray-600">
-          This example shows how to use @happykit/flags for static pages.
+          This demo shows how to use @happykit/flags for static pages.
         </p>
-        <Result key="targetinb-by-visitor-key" value={flagBag} />
+        <Result key="basic-usage" value={flagBag} />
       </div>
     </Layout>
   );

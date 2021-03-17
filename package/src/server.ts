@@ -2,6 +2,7 @@
 import { IncomingMessage, ServerResponse } from "http";
 import { GetServerSidePropsContext, GetStaticPropsContext } from "next";
 import { config, isConfigured } from "./config";
+import { nanoid } from "nanoid";
 import {
   FlagUser,
   Traits,
@@ -17,20 +18,22 @@ import {
   combineLoadedFlagsWithDefaultFlags,
 } from "./utils";
 
-function getXForwardedFor(context: {
+function getRequestingIp(context: {
   req: IncomingMessage;
   res: ServerResponse;
-}): {} | { "x-forwarded-for": string } {
+}): null | string {
   const key = "x-forwarded-for" as const;
   const xForwardedFor = context.req.headers[key];
-  if (typeof xForwardedFor === "string") return { [key]: xForwardedFor };
+  if (typeof xForwardedFor === "string") return xForwardedFor;
   const remoteAddress = context.req.socket.remoteAddress;
-  if (remoteAddress) return { [key]: remoteAddress };
-  return {};
+  if (remoteAddress) return remoteAddress;
+  return null;
 }
 
 export async function getFlags<F extends Flags = Flags>(options: {
-  context: GetServerSidePropsContext | GetStaticPropsContext;
+  context:
+    | Pick<GetServerSidePropsContext, "req" | "res">
+    | GetStaticPropsContext;
   user?: FlagUser;
   traits?: Traits;
 }): Promise<{
@@ -59,8 +62,9 @@ export async function getFlags<F extends Flags = Flags>(options: {
   // Workaround alert:
   //
   // We use "has(options.context, "req")" to determine whether getFlags was
-  // called with a context from server-side or static rendering when
-  // options.context.req is set, we were called from static rendering.
+  // called with a context from server-side or static rendering.
+  //
+  // When options.context.req is missing, we were called from static rendering.
   //
   // Unfortunately, I could not make this work with simple type narrowing.
 
@@ -69,8 +73,17 @@ export async function getFlags<F extends Flags = Flags>(options: {
     ? getCookie(options.context.req.headers.cookie, "hkvk")
     : null;
 
-  const requestBody = {
-    visitorKey: visitorKeyFromCookie,
+  // When using server-side rendering and there was no visitor key cookie,
+  // we generate a visitor key
+  // When using static rendering, we never set any visitor key
+  const visitorKey = has(options.context, "req")
+    ? visitorKeyFromCookie
+      ? visitorKeyFromCookie
+      : nanoid()
+    : null;
+
+  const workerRequestBody = {
+    visitorKey,
     user: options.user || null,
     traits: options.traits || null,
     static: !has(options.context, "req"),
@@ -79,34 +92,40 @@ export async function getFlags<F extends Flags = Flags>(options: {
   const input = {
     endpoint: config.endpoint,
     envKey: config.envKey,
-    requestBody,
+    requestBody: workerRequestBody,
   };
 
-  const response = await fetch([input.endpoint, input.envKey].join("/"), {
+  const requestingIp = has(options.context, "req")
+    ? getRequestingIp(options.context)
+    : null;
+
+  const xForwardedForHeader: { "x-forwarded-for": string } | {} = requestingIp
+    ? // add x-forwarded-for header so the service worker gets
+      // access to the real client ip
+      { "x-forwarded-for": requestingIp }
+    : {};
+
+  const workerResponse = await fetch([input.endpoint, input.envKey].join("/"), {
     method: "POST",
     headers: Object.assign(
       { "content-type": "application/json" },
-      has(options.context, "req")
-        ? // add x-forwarded-for header so the service worker gets
-          // access to the real client ip
-          getXForwardedFor(options.context)
-        : {}
+      xForwardedForHeader
     ),
     body: JSON.stringify(input.requestBody),
   }).catch(() => null);
 
-  if (!response || response.status !== 200)
+  if (!workerResponse || workerResponse.status !== 200)
     return {
       flags: config.defaultFlags as F,
       loadedFlags: null,
       initialFlagState: { input, outcome: null },
     };
 
-  const responseBody: EvaluationResponseBody<F> | null = await response
+  const workerResponseBody: EvaluationResponseBody<F> | null = await workerResponse
     .json()
     .catch(() => null);
 
-  if (!responseBody) {
+  if (!workerResponseBody) {
     return {
       flags: config.defaultFlags as F,
       loadedFlags: null,
@@ -114,16 +133,16 @@ export async function getFlags<F extends Flags = Flags>(options: {
     };
   }
 
-  if (has(options.context, "req")) {
+  if (has(options.context, "req") && workerResponseBody.visitor?.key) {
     // always set the cookie so its max age refreshes
     options.context.res.setHeader(
       "Set-Cookie",
-      serializeVisitorKeyCookie(responseBody.visitor.key)
+      serializeVisitorKeyCookie(workerResponseBody.visitor.key)
     );
   }
 
   // add defaults to flags here, but not in initialFlagState
-  const flags = responseBody.flags ? responseBody.flags : null;
+  const flags = workerResponseBody.flags ? workerResponseBody.flags : null;
   const flagsWithDefaults = combineLoadedFlagsWithDefaultFlags<F>(
     flags,
     config.defaultFlags
@@ -132,6 +151,6 @@ export async function getFlags<F extends Flags = Flags>(options: {
   return {
     flags: flagsWithDefaults,
     loadedFlags: flags,
-    initialFlagState: { input, outcome: { responseBody } },
+    initialFlagState: { input, outcome: { responseBody: workerResponseBody } },
   };
 }
