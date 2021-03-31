@@ -42,7 +42,7 @@ const quotelessJson = (obj: any) => {
   return json.replace(/"([^"]+)":/g, "$1:");
 };
 
-export function Result(props: { value: any }) {
+export function Result(props: { value: any; label?: string }) {
   const [results, setResults] = React.useState<{ key: number; value: any }[]>([
     { key: 0, value: props.value },
   ]);
@@ -58,16 +58,24 @@ export function Result(props: { value: any }) {
   return (
     <div className="mt-4">
       <pre className="font-mono rounded bg-gray-200 p-2 max-w-prose">
+        <div className="text-gray-400 text-xs pb-1">
+          {props.label || `Render #${results.length} (Current render)`}
+        </div>
         {quotelessJson(currentResult.value)}
       </pre>
       {previousResults.length > 0 && (
-        <details>
-          <summary>Show previous values ({previousResults.length})</summary>
-          {previousResults.map((result) => (
+        <details className="my-1">
+          <summary className="p-1">
+            Show previous values ({previousResults.length})
+          </summary>
+          {previousResults.map((result, index) => (
             <pre
               key={result.key}
               className="mt-2 font-mono rounded bg-gray-200 p-2 max-w-prose"
             >
+              <div className="text-gray-400 text-xs pb-1">
+                Render #{previousResults.length - index}
+              </div>
               {quotelessJson(result.value)}
             </pre>
           ))}
