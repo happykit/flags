@@ -12,9 +12,9 @@ export default function Page() {
     >
       <div className="py-4">
         <p className="max-w-prose text-gray-600">
-          This demo shows how to use @happykit/flags for static pages.
+          This demo shows how to use @happykit/flags for targeting visitors.
         </p>
-        <Result key="targetinb-by-visitor-key" value={flagBag} />
+        <Result key="targeting-by-visitor-key" value={flagBag} />
       </div>
     </Layout>
   );

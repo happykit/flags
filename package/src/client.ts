@@ -37,18 +37,23 @@ type State<F extends Flags> =
   // or getFlags() and useFlags() failed both
   //
   // useFlags() used with getFlags(), and getFlags() was successful
+  //
+  // useFlags() used with getFlags() in static-site generation (refetching necessary)
+  //
+  // useFlags() used with getFlags() in server-side rendering (no refetching necessary)
   {
     current: null | {
+      mode?: "ssr" | "ssg";
       input: Input;
       outcome: Outcome<F> | null;
     };
     pending: null | { input: Input };
-    rehydrated: boolean;
+    prefilledFromLocalStorage: boolean;
   };
 
 type Action<F extends Flags> =
   | { type: "mount" }
-  | { type: "rehydrate"; current: State<F>["current"] }
+  | { type: "prefillFromLocalStorage"; current: State<F>["current"] }
   | { type: "evaluate"; input: Input }
   | { type: "settle"; input: Input; outcome: Outcome<F> }
   | { type: "fail"; input: Input };
@@ -108,9 +113,12 @@ function reducer<F extends Flags>(
   action: Action<F>
 ): [State<F>, Effect[]] {
   switch (action.type) {
-    case "rehydrate": {
+    case "prefillFromLocalStorage": {
       if (state.current) return [state, []];
-      return [{ ...state, current: action.current, rehydrated: true }, []];
+      return [
+        { ...state, current: action.current, prefilledFromLocalStorage: true },
+        [],
+      ];
     }
     case "evaluate": {
       return [
@@ -127,7 +135,7 @@ function reducer<F extends Flags>(
           ...state,
           current: { input: action.input, outcome: action.outcome },
           pending: null,
-          rehydrated: false,
+          prefilledFromLocalStorage: false,
         },
         [],
       ];
@@ -178,7 +186,11 @@ export function useFlags<F extends Flags = Flags>(
     reducer,
     options.initialState,
     (initialFlagState): [State<F>, Effect[]] => [
-      { current: initialFlagState || null, pending: null, rehydrated: false },
+      {
+        current: initialFlagState || null,
+        pending: null,
+        prefilledFromLocalStorage: false,
+      },
       [] as Effect[],
     ]
   );
@@ -191,7 +203,10 @@ export function useFlags<F extends Flags = Flags>(
       const cachedCurrent = JSON.parse(String(localStorage.getItem(cacheKey)));
 
       if (cachedCurrent) {
-        dispatch({ type: "rehydrate", current: cachedCurrent });
+        dispatch({
+          type: "prefillFromLocalStorage",
+          current: cachedCurrent,
+        });
       }
     } catch (e) {}
   }, [shouldDisableCache, state.current]);
@@ -220,7 +235,10 @@ export function useFlags<F extends Flags = Flags>(
 
     if (
       isEmergingInput(input, state) &&
-      !isAddedVisitorKeyTheOnlyDifference(input, state)
+      !isAddedVisitorKeyTheOnlyDifference(input, state) &&
+      // We don't need to reevaluate on mount when current result came from
+      // server-side rendering
+      state.current?.mode !== "ssr"
     ) {
       dispatch({ type: "evaluate", input });
     }
@@ -304,7 +322,7 @@ export function useFlags<F extends Flags = Flags>(
           ...base,
           // the visitorKey that belongs to the loaded flags
           visitorKey,
-          settled: !state.rehydrated,
+          settled: !state.prefilledFromLocalStorage,
         }
       : {
           ...base,

@@ -71,7 +71,7 @@ export function getCookie(
 export function serializeVisitorKeyCookie(visitorKey: string) {
   const seconds = 60 * 60 * 24 * 180;
   const value = encodeURIComponent(visitorKey);
-  return `hkvk=${value}; Max-Age=${seconds}; SameSite=Lax`;
+  return `hkvk=${value}; Path=/; Max-Age=${seconds}; SameSite=Lax`;
 }
 
 // source: https://github.com/lukeed/dequal/blob/master/src/lite.js
