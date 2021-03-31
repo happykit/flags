@@ -67,6 +67,7 @@ export async function getFlags<F extends Flags = Flags>(options: {
   // When options.context.req is missing, we were called from static rendering.
   //
   // Unfortunately, I could not make this work with simple type narrowing.
+  const mode = has(options.context, "req") ? "ssr" : "ssg";
 
   // determine visitor key
   const visitorKeyFromCookie = has(options.context, "req")
@@ -82,17 +83,15 @@ export async function getFlags<F extends Flags = Flags>(options: {
       : nanoid()
     : null;
 
-  const workerRequestBody = {
-    visitorKey,
-    user: options.user || null,
-    traits: options.traits || null,
-    static: !has(options.context, "req"),
-  };
-
   const input = {
     endpoint: config.endpoint,
     envKey: config.envKey,
-    requestBody: workerRequestBody,
+    requestBody: {
+      visitorKey,
+      user: options.user || null,
+      traits: options.traits || null,
+      static: !has(options.context, "req"),
+    },
   };
 
   const requestingIp = has(options.context, "req")
@@ -118,7 +117,7 @@ export async function getFlags<F extends Flags = Flags>(options: {
     return {
       flags: config.defaultFlags as F,
       loadedFlags: null,
-      initialFlagState: { input, outcome: null },
+      initialFlagState: { mode, input, outcome: null },
     };
 
   const workerResponseBody: EvaluationResponseBody<F> | null = await workerResponse
@@ -129,7 +128,7 @@ export async function getFlags<F extends Flags = Flags>(options: {
     return {
       flags: config.defaultFlags as F,
       loadedFlags: null,
-      initialFlagState: { input, outcome: null },
+      initialFlagState: { mode, input, outcome: null },
     };
   }
 
@@ -151,6 +150,10 @@ export async function getFlags<F extends Flags = Flags>(options: {
   return {
     flags: flagsWithDefaults,
     loadedFlags: flags,
-    initialFlagState: { input, outcome: { responseBody: workerResponseBody } },
+    initialFlagState: {
+      mode,
+      input,
+      outcome: { responseBody: workerResponseBody },
+    },
   };
 }
