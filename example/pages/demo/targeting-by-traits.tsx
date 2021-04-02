@@ -5,7 +5,7 @@ import { Result } from "../../components/Result";
 import { InitialFlagState, useFlags } from "@happykit/flags/client";
 import { getFlags } from "@happykit/flags/server";
 
-type Traits = { prefersSmallPortion: boolean };
+type Traits = { teamMember: boolean };
 type AppFlags = { size: "small" | "medium" | "large" };
 type ServerSideProps = {
   initialFlagState: InitialFlagState<AppFlags>;
@@ -18,7 +18,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
   context
 ) => {
   // These could be loaded from anywhere
-  const traits: Traits = { prefersSmallPortion: true };
+  const traits: Traits = { teamMember: true };
 
   const { initialFlagState } = await getFlags<AppFlags>({ context, traits });
   return { props: { initialFlagState, traits } };
@@ -50,6 +50,11 @@ export default function Page(props: ServerSideProps) {
           based on the passed traits.
         </p>
         <Result key="targeting-by-traits" value={flagBag} />
+        <p className="mt-4 max-w-prose text-gray-600">
+          Note that aside from traits, HappyKit also has the concepts of a
+          visitor and a user. These three concepts are all independent of each
+          other.
+        </p>
       </div>
     </Layout>
   );

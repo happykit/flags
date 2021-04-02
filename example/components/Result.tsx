@@ -66,7 +66,7 @@ export function Result(props: { value: any; label?: string }) {
       {previousResults.length > 0 && (
         <details className="my-1">
           <summary className="p-1">
-            Show previous values ({previousResults.length})
+            Previous values ({previousResults.length})
           </summary>
           {previousResults.map((result, index) => (
             <pre

@@ -63,14 +63,14 @@ export function Nav() {
           Demos of targeting and rules
         </div>
         <div className="space-y-1">
-          <NavLink indent href="/demo/targeting-by-traits">
-            Targeting by Traits
+          <NavLink indent href="/demo/targeting-by-visitor-key">
+            Targeting by Visitor Key
           </NavLink>
           <NavLink indent href="/demo/targeting-by-user">
             Targeting by User
           </NavLink>
-          <NavLink indent href="/demo/targeting-by-visitor-key">
-            Targeting by Visitor Key
+          <NavLink indent href="/demo/targeting-by-traits">
+            Targeting by Traits
           </NavLink>
         </div>
         <div className="bg-white text-gray-600 group w-full flex items-center pl-7 pr-2 py-2 text-sm font-medium rounded-md">

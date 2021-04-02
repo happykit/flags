@@ -41,7 +41,18 @@ export default function Page(props: ServerSideProps) {
           <p className="max-w-prose text-gray-600">
             This demo shows how to propagate the flag bag through the context.
           </p>
-
+          <p className="mt-2 max-w-prose text-gray-600">
+            The useFlags() hook of HappyKit should only be used once per Next.js
+            route, at the top level of the default exported page. You should
+            then pass the feature flags down to each component that needs access
+            to them using props.
+          </p>
+          <p className="mt-2 max-w-prose text-gray-600">
+            But some developers might prefer being able to use context instead.
+            This demo shows how to use `FlagBagProvider` and the `useFlagBag()``
+            hook to put the flagBag into context and how to access it from a
+            nested component.
+          </p>
           <SomeNestedComponent />
         </div>
       </Layout>
