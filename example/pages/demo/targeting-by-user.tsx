@@ -38,7 +38,18 @@ export default function Page(props: ServerSideProps) {
         <p className="max-w-prose text-gray-600">
           This demo shows how to use @happykit/flags for targeting users.
         </p>
+        <p className="mt-4 max-w-prose text-gray-600">
+          HappyKit allows you to do pass in a user. You can use that user and
+          the provided uesr profile for rules or percentage-based rollouts. The
+          fields supported in the user profile are defined in the README and in
+          the TypeScript types.
+        </p>
         <Result key="targeting-by-user" value={flagBag} />
+        <p className="mt-4 max-w-prose text-gray-600">
+          Note that aside from users, HappyKit also has the concepts of a
+          visitor and traits. These three concepts are all independent of each
+          other.
+        </p>
       </div>
     </Layout>
   );

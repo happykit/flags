@@ -28,7 +28,7 @@ export type {
   Outcome,
 } from "./types";
 
-export const cacheKey = "happykit_flags_cache_v1_";
+export const cacheKey = "happykit_flags_cache_v1";
 
 type State<F extends Flags> =
   // useFlags() used without initialState (without getFlags())

@@ -15,21 +15,21 @@ export default function Page() {
           This demo shows how to use @happykit/flags for static pages.
         </p>
         <p className="mt-4 max-w-prose text-gray-600">
-          You'll notice three different flagBag values
+          You'll notice three different renders
         </p>
         <ul className="list-disc ml-6 max-w-prose text-gray-600">
           <li className="mt-2">
-            the last one is the final settlement with the flags loaded from the
-            server
+            the earliest one (Render #1) is the initial render, using the
+            fallback flags (no fallback is configured in this demo)
           </li>
           <li className="mt-2">
-            the second one is the rehydration from the cache in localStorage,
-            whose outcome depends on whether you have visited the demo page
-            before
+            the second one (Render #2) is the rehydration from the cache in
+            localStorage, whose outcome depends on whether you have visited the
+            demo page before
           </li>
           <li className="mt-2">
-            the earliest one is the initial render, using the fallback flags (no
-            fallback is configured in this demo)
+            the last one (Render #3) is the final settlement with the flags
+            loaded from the server
           </li>
         </ul>
         <p className="max-w-prose text-gray-600 mt-4">
