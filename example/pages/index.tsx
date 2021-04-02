@@ -49,8 +49,14 @@ export default function Index() {
           You'll see boxes like the one below in each example. These boxes
           contain the value returned by the{" "}
           <code className="text-sm font-mono font-thin">useFlags()</code> hook.
+          We usually call this value the "flagBag", as it contains the evaluated
+          feature flags and a bunch of other things you might need.
         </p>
         <Result key="index" value={flagBag} />
+        <p className="max-w-prose text-gray-600 mt-2">
+          The "Previous values" section shows a history of the values the
+          useFlags() hook returned.
+        </p>
       </div>
     </Layout>
   );

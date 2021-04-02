@@ -15,6 +15,7 @@ export const getStaticProps: GetStaticProps<StaticProps> = async (context) => {
 
 export default function Page(props: StaticProps) {
   const flagBag = useFlags({ initialState: props.initialFlagState });
+
   return (
     <Layout
       title="Demo: Static Site Generation (Hybrid)"
