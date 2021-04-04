@@ -29,17 +29,18 @@ export default function Page(props: ServerSideProps) {
       title="Demo: Targeting by Visitor Key"
       source="https://github.com/happykit/flags/blob/example/pages/demo/targeting-by-visitor-key.tsx"
     >
-      <div className="py-4">
-        <p className="max-w-prose text-gray-600">
-          This demo shows how to use @happykit/flags for targeting visitors.
+      <article className="py-4 prose max-w-prose">
+        <p>
+          This demo shows how to use <code>@happykit/flags</code> for targeting
+          visitors.
         </p>
-        <p className="mt-4 max-w-prose text-gray-600">
+        <p>
           HappyKit allows you to do percentage-based rollouts or A/B testing. To
           do this, HappyKit automatically creates a unique visitor key for every
           visitor and saves it as a cookie. You don't need to manage it
           yourself. The visitor key can not be passed in at all.
         </p>
-        <p className="mt-4 max-w-prose text-gray-600">
+        <p>
           If you know more about the visitor, you can use configure your
           HappyKit Flags to use percentage-based rollouts or A/B testing based
           on the passed in user instead. HappyKit makes distinguishes users and
@@ -47,12 +48,12 @@ export default function Page(props: ServerSideProps) {
           controls the visitor.
         </p>
         <Result key="targeting-by-visitor-key" value={flagBag} />
-        <p className="mt-4 max-w-prose text-gray-600">
+        <p>
           Note that aside from visitors, HappyKit also has the concepts of a
           user and traits. These three concepts are all independent of each
           other.
         </p>
-      </div>
+      </article>
     </Layout>
   );
 }

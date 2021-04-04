@@ -21,28 +21,27 @@ export default function Page(props: StaticProps) {
       title="Demo: Static Site Generation (Hybrid)"
       source="https://github.com/happykit/flags/blob/example/pages/demo/static-site-generation-hybrid.tsx"
     >
-      <div className="py-4">
-        <p className="max-w-prose text-gray-600">
-          This demo shows how to use @happykit/flags for static pages.
-        </p>
-        <p className="mt-4 max-w-prose text-gray-600">
+      <article className="py-4 prose max-w-prose">
+        <p>This demo shows how to use @happykit/flags for static pages.</p>
+        <p>
           This page is rendered statically at first. The first rendering pass
           will use no visitor key. This is necessary as the the concept of a
           visitor does not exist during static site generation. Thus all rules
-          and percentage-based rollouts targeting a visitor resolve to "null".
-          If provided, the fallback values will be used for those.
+          and percentage-based rollouts targeting a visitor resolve to{" "}
+          <code>null</code>. If provided, the fallback values will be used for
+          those.
         </p>
-        <p className="mt-4 max-w-prose text-gray-600">
+        <p>
           The client reuses the statically evaluated feature flags for the first
           rendering pass. Then it reevaluates the flag with the visitor
           information. Some flags might change as a result of this.
         </p>
-        <p className="mt-4 max-w-prose text-gray-600">
-          The "settled" value will then flip to true after the reevaluation on
-          the client finishes.
+        <p>
+          The <code>settled</code> value will then flip to true after the
+          reevaluation on the client finishes.
         </p>
         <Result key="static-site-generation-hybrid" value={flagBag} />
-      </div>
+      </article>
     </Layout>
   );
 }

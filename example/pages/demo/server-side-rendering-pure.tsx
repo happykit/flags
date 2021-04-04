@@ -20,20 +20,20 @@ export default function Page(props: ServerSideProps) {
       title="Demo: Server Side Rendering (Pure)"
       source="https://github.com/happykit/flags/blob/example/pages/demo/server-side-rendering-pure.tsx"
     >
-      <div className="py-4">
-        <p className="max-w-prose text-gray-600">
+      <article className="py-4 prose max-w-prose">
+        <p>
           This demo shows how to use @happykit/flags for server-rendered pages.
         </p>
-        <p className="mt-4 max-w-prose text-gray-600">
-          Since this page is rendered on the server only, there is no "flagBag".
-          Instead, the values are shown directly.
+        <p>
+          Since this page is rendered on the server only, there is no{" "}
+          <code>flagBag</code>. Instead, the values are shown directly.
         </p>
         <Result
           key="server-side-rendering-pure"
           label="Flags"
           value={props.flags}
         />
-        <p className="mt-6 max-w-prose text-gray-600">
+        <p>
           Aside from the flags, we have access to the loaded flags as well.
           These are the flags without any fallback values.
         </p>
@@ -42,7 +42,7 @@ export default function Page(props: ServerSideProps) {
           label="Loaded Flags (without fallback values)"
           value={props.loadedFlags}
         />
-      </div>
+      </article>
     </Layout>
   );
 }

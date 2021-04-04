@@ -10,39 +10,44 @@ export default function Page() {
       title="Demo: Basic Usage"
       source="https://github.com/happykit/flags/blob/example/pages/demo/basic-usage.tsx"
     >
-      <div className="py-4">
-        <p className="max-w-prose text-gray-600">
-          This demo shows how to use @happykit/flags for static pages.
+      <article className="py-4 prose max-w-prose">
+        <p>
+          This shows the basics of how to use <code>@happykit/flags</code>. You
+          can find more detailed examples for the different use cases in the
+          navigation.
         </p>
-        <p className="mt-4 max-w-prose text-gray-600">
-          You'll notice three different renders
+        <p>
+          In this example where <code>@happykit/flags</code> is used for a
+          static site, you'll notice three different renders
         </p>
-        <ul className="list-disc ml-6 max-w-prose text-gray-600">
-          <li className="mt-2">
+        <ul>
+          <li>
             the earliest one (Render #1) is the initial render, using the
             fallback flags (no fallback is configured in this demo)
           </li>
-          <li className="mt-2">
+          <li>
             the second one (Render #2) is the rehydration from the cache in
             localStorage, whose outcome depends on whether you have visited the
             demo page before
           </li>
-          <li className="mt-2">
+          <li>
             the last one (Render #3) is the final settlement with the flags
             loaded from the server
           </li>
         </ul>
-        <p className="max-w-prose text-gray-600 mt-4">
-          Notice that the "settled" flag only switches to "true" after the flags
-          were loaded from the server and are thus guaranteed to be up to date.
+        <p>
+          Notice that the <code>settled</code> flag only switches to{" "}
+          <code>true</code> after the flags were loaded from the server and are
+          thus guaranteed to be up to date.
         </p>
-        <p className="max-w-prose text-gray-600 mt-4">
+        <p>
           If you are doing capturing important information or causing heavy work
           like code splitting depending on feature flags, it's best to wait
-          until "settled" turns true. You can then kick the work of confidently.
+          until <code>settled</code> turns <code>true</code>. You can then kick
+          the work of confidently.
         </p>
         <Result key="basic-usage" value={flagBag} />
-      </div>
+      </article>
     </Layout>
   );
 }

@@ -18,18 +18,20 @@ export default function Page(props: StaticProps) {
       title="Demo: Static Site Generation (Pure)"
       source="https://github.com/happykit/flags/blob/example/pages/demo/static-site-generation-pure.tsx"
     >
-      <div className="py-4">
-        <p className="max-w-prose text-gray-600">
-          This demo shows how to use @happykit/flags for static pages.
+      <article className="py-4 prose max-w-prose">
+        <p>
+          This demo shows how to use <code>@happykit/flags</code> for static
+          pages.
         </p>
-        <p className="mt-4 max-w-prose text-gray-600">
+        <p>
           Since this page is only rendered statically, the rendering will use no
           visitor key. This is necessary as the the concept of a visitor does
           not exist during static site generation. Thus all rules and
-          percentage-based rollouts targeting a visitor resolve to "null".
+          percentage-based rollouts targeting a visitor resolve to{" "}
+          <code>null</code>.
         </p>
         <Result key="static-site-generation-pure" value={props.flags} />
-      </div>
+      </article>
     </Layout>
   );
 }
