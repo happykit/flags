@@ -8,10 +8,9 @@ export default function Index() {
   return (
     <Layout title="Index">
       {/* Replace with your content */}
-      <div className="py-4">
-        <p className="max-w-prose text-gray-600">
-          These examples show how to use{" "}
-          <code className="text-sm font-mono font-thin">@happykit/flags</code>.
+      <article className="py-4 prose max-w-prose">
+        <p>
+          These examples show how to use <code>@happykit/flags</code>.
         </p>
 
         <div className="bg-blue-100 border-l-4 border-blue-400 p-4 md:hidden my-2">
@@ -55,9 +54,9 @@ export default function Index() {
         <Result key="index" value={flagBag} />
         <p className="max-w-prose text-gray-600 mt-2">
           The "Previous values" section shows a history of the values the
-          useFlags() hook returned.
+          <code>useFlags()</code> hook returned.
         </p>
-      </div>
+      </article>
     </Layout>
   );
 }

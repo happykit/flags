@@ -10,12 +10,12 @@ export default function Page() {
       title="Demo: Disabled Revalidation"
       source="https://github.com/happykit/flags/blob/example/pages/demo/disabled-revalidation.tsx"
     >
-      <div className="py-4">
-        <p className="max-w-prose text-gray-600">
+      <article className="py-4 prose max-w-prose">
+        <p>
           This demo shows how to configure @happykit/flags to not refetch the
           flags when the window regains focus.
         </p>
-        <p className="mt-2 max-w-prose text-gray-600">
+        <p>
           When you leave the window and come back to it later, HappyKit will
           reevaluate the feature flags by default. A new request is sent and the
           browser's flags are reevaluated. We use the{" "}
@@ -32,7 +32,7 @@ export default function Page() {
           window regains focus.
         </p>
         <Result key="disabled-validation" value={flagBag} />
-      </div>
+      </article>
     </Layout>
   );
 }
