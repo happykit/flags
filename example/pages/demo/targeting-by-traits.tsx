@@ -34,28 +34,29 @@ export default function Page(props: ServerSideProps) {
       title="Demo: Targeting by Traits"
       source="https://github.com/happykit/flags/blob/example/pages/demo/targeting-by-traits.tsx"
     >
-      <div className="py-4">
-        <p className="max-w-prose text-gray-600">
-          This demo shows how to use @happykit/flags for targeting by traits.
+      <article className="py-4 prose max-w-prose">
+        <p>
+          This demo shows how to use <code>@happykit/flags</code> for targeting
+          by traits.
         </p>
-        <p className="mt-4 max-w-prose text-gray-600">
+        <p>
           You can pass any traits into the flag evaluation. These traits can
           then be used by the flags defined in your flag's rules. This allows
           you to resolve flags differently based on the provided traits.
         </p>
-        <p className="mt-4 max-w-prose text-gray-600">
+        <p>
           Traits can be related to the visitor, to the authenticated user or to
           anything else. You can pass any traits you want. Use the traits in
           your HappyKit flag rules to resolve the flag to different variants
           based on the passed traits.
         </p>
         <Result key="targeting-by-traits" value={flagBag} />
-        <p className="mt-4 max-w-prose text-gray-600">
+        <p>
           Note that aside from traits, HappyKit also has the concepts of a
           visitor and a user. These three concepts are all independent of each
           other.
         </p>
-      </div>
+      </article>
     </Layout>
   );
 }

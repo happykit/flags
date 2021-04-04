@@ -34,23 +34,24 @@ export default function Page(props: ServerSideProps) {
       title="Demo: Targeting by User"
       source="https://github.com/happykit/flags/blob/example/pages/demo/targeting-by-user.tsx"
     >
-      <div className="py-4">
-        <p className="max-w-prose text-gray-600">
-          This demo shows how to use @happykit/flags for targeting users.
+      <article className="py-4 prose max-w-prose">
+        <p>
+          This demo shows how to use <code>@happykit/flags</code> for targeting
+          users.
         </p>
-        <p className="mt-4 max-w-prose text-gray-600">
+        <p>
           HappyKit allows you to do pass in a user. You can use that user and
           the provided uesr profile for rules or percentage-based rollouts. The
           fields supported in the user profile are defined in the README and in
           the TypeScript types.
         </p>
         <Result key="targeting-by-user" value={flagBag} />
-        <p className="mt-4 max-w-prose text-gray-600">
+        <p>
           Note that aside from users, HappyKit also has the concepts of a
           visitor and traits. These three concepts are all independent of each
           other.
         </p>
-      </div>
+      </article>
     </Layout>
   );
 }
