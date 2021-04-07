@@ -17,7 +17,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
 export default function Page(props: ServerSideProps) {
   return (
     <Layout
-      title="Demo: Server Side Rendering (Pure)"
+      title="Server Side Rendering (Pure)"
       source="https://github.com/happykit/flags/blob/example/pages/demo/server-side-rendering-pure.tsx"
     >
       <article className="py-4 prose max-w-prose">

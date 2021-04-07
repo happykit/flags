@@ -26,7 +26,7 @@ export default function Page(props: ServerSideProps) {
 
   return (
     <Layout
-      title="Demo: Targeting by Visitor Key"
+      title="Targeting by Visitor Key"
       source="https://github.com/happykit/flags/blob/example/pages/demo/targeting-by-visitor-key.tsx"
     >
       <article className="py-4 prose max-w-prose">

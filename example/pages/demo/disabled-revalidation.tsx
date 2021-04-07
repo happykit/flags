@@ -7,13 +7,13 @@ export default function Page() {
   const flagBag = useFlags({ revalidateOnFocus: false });
   return (
     <Layout
-      title="Demo: Disabled Revalidation"
+      title="Disabled Revalidation"
       source="https://github.com/happykit/flags/blob/example/pages/demo/disabled-revalidation.tsx"
     >
       <article className="py-4 prose max-w-prose">
         <p>
-          This demo shows how to configure <code>@happykit/flags</code> to not refetch the
-          flags when the window regains focus.
+          This demo shows how to configure <code>@happykit/flags</code> to not
+          refetch the flags when the window regains focus.
         </p>
         <p>
           When you leave the window and come back to it later, HappyKit will

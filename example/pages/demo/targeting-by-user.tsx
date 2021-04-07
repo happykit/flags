@@ -31,7 +31,7 @@ export default function Page(props: ServerSideProps) {
   });
   return (
     <Layout
-      title="Demo: Targeting by User"
+      title="Targeting by User"
       source="https://github.com/happykit/flags/blob/example/pages/demo/targeting-by-user.tsx"
     >
       <article className="py-4 prose max-w-prose">
