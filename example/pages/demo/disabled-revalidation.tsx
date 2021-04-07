@@ -12,7 +12,7 @@ export default function Page() {
     >
       <article className="py-4 prose max-w-prose">
         <p>
-          This demo shows how to configure @happykit/flags to not refetch the
+          This demo shows how to configure <code>@happykit/flags</code> to not refetch the
           flags when the window regains focus.
         </p>
         <p>
