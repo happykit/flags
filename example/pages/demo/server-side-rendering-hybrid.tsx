@@ -24,7 +24,7 @@ export default function Page(props: ServerSideProps) {
     >
       <article className="py-4 prose max-w-prose">
         <p>
-          This demo shows how to use @happykit/flags for server-rendered pages.
+          This demo shows how to use <code>@happykit/flags</code> for server-rendered pages.
         </p>
         <p>
           The server preloads the initial values and the client then rehydrates
