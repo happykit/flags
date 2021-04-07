@@ -8,7 +8,7 @@ export default function Page() {
   return (
     <Layout
       title="Disabled Revalidation"
-      source={`https://github.com/happykit/flags/raw/${process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF}/example/pages/demo/disabled-revalidation.tsx`}
+      source={`https://github.com/happykit/flags/blob/${process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF}/example/pages/demo/disabled-revalidation.tsx`}
     >
       <article className="py-4 prose max-w-prose">
         <p>
