@@ -3,13 +3,11 @@
 </a>
 
 <div align="right">
-  <a href="https://github.com/happykit/flags/tree/next/package">Documentation</a>
+  <a href="https://github.com/happykit/flags/tree/master/package">Package</a>
   <span>&nbsp;•&nbsp;</span>
-  <a href="https://happykit-flags.vercel.app/">Examples</a>
+  <a href="https://flags.happykit.dev/">Demo, Examples and Docs</a>
   <span>&nbsp;•&nbsp;</span>
   <a href="https://happykit.dev/solutions/flags">Website</a>
-  <span>&nbsp;•&nbsp;</span>
-  <a href="https://medium.com/frontend-digest/using-feature-flags-in-next-js-c5c8d0795a2?source=friends_link&sk=d846a29f376acf9cfa41e926883923ab">Full Tutorial</a>
   <span>&nbsp;•&nbsp;</span>
   <a href="https://twitter.com/happykitdev" target="_blank">Twitter</a>
 </div>
@@ -44,7 +42,7 @@ Add Feature Flags to your Next.js application with a single React Hook. This pac
 
 The documentation of `@happykit/flags` lives in the `package` folder. You can find the setup guide and usage examples there.
 
-> *[Continue to `@happykit/flags`](https://github.com/happykit/flags/tree/next/package)*
+> *[Continue to `@happykit/flags`](https://github.com/happykit/flags/tree/master/package)*
 
 ---
 
