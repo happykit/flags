@@ -16,7 +16,7 @@ export default function Page(props: StaticProps) {
   return (
     <Layout
       title="Static Site Generation (Pure)"
-      source="https://github.com/happykit/flags/blob/example/pages/demo/static-site-generation-pure.tsx"
+      source={`https://github.com/happykit/flags/raw/${process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF}/example/pages/demo/static-site-generation-pure.tsx`}
     >
       <article className="py-4 prose max-w-prose">
         <p>

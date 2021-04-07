@@ -78,6 +78,9 @@ export function Nav() {
             Context
           </NavLink>
         </div>
+        <div>
+          <NavLink href="/docs/public-api">Public API</NavLink>
+        </div>
       </div>
     </React.Fragment>
   );

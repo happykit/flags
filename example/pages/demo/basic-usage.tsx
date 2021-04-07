@@ -8,7 +8,7 @@ export default function Page() {
   return (
     <Layout
       title="Basic Usage"
-      source="https://github.com/happykit/flags/blob/example/pages/demo/basic-usage.tsx"
+      source={`https://github.com/happykit/flags/raw/${process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF}/example/pages/demo/basic-usage.tsx`}
     >
       <article className="py-4 prose max-w-prose">
         <p>
