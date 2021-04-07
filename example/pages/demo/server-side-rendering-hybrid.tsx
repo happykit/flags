@@ -19,12 +19,13 @@ export default function Page(props: ServerSideProps) {
   const flagBag = useFlags({ initialState: props.initialFlagState });
   return (
     <Layout
-      title="Demo: Server Side Rendering (Hybrid)"
+      title="Server Side Rendering (Hybrid)"
       source="https://github.com/happykit/flags/blob/example/pages/demo/server-side-rendering-hybrid.tsx"
     >
       <article className="py-4 prose max-w-prose">
         <p>
-          This demo shows how to use <code>@happykit/flags</code> for server-rendered pages.
+          This demo shows how to use <code>@happykit/flags</code> for
+          server-rendered pages.
         </p>
         <p>
           The server preloads the initial values and the client then rehydrates

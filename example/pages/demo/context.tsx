@@ -34,7 +34,7 @@ export default function Page(props: ServerSideProps) {
     // The FlagBagProvider is intended to be set on every page
     <FlagBagProvider value={flagBag}>
       <Layout
-        title="Demo: Context"
+        title="Context"
         source="https://github.com/happykit/flags/blob/example/pages/demo/context.tsx"
       >
         <article className="py-4 prose max-w-prose">

@@ -32,18 +32,12 @@ export function Nav() {
       <div>
         <NavLink href="/">Introduction</NavLink>
       </div>
+      <div>
+        <NavLink href="/demo/basic-usage">Basic Usage</NavLink>
+      </div>
       <div className="space-y-1">
         <div className="bg-white text-gray-600 group w-full flex items-center pl-7 pr-2 py-2 text-sm font-medium rounded-md">
-          Demos
-        </div>
-        {/* Expandable link section, show/hide based on state. */}
-        <div className="space-y-1">
-          <NavLink indent href="/demo/basic-usage">
-            Basic Usage
-          </NavLink>
-        </div>
-        <div className="bg-white text-gray-600 group w-full flex items-center pl-7 pr-2 py-2 text-sm font-medium rounded-md">
-          Demos by rendering strategy
+          Rendering Strategies
         </div>
         <div className="space-y-1 list-disc">
           <NavLink indent href="/demo/server-side-rendering-pure">
@@ -60,7 +54,7 @@ export function Nav() {
           </NavLink>
         </div>
         <div className="bg-white text-gray-600 group w-full flex items-center pl-7 pr-2 py-2 text-sm font-medium rounded-md">
-          Demos of targeting and rules
+          Targeting and Rules
         </div>
         <div className="space-y-1">
           <NavLink indent href="/demo/targeting-by-visitor-key">
@@ -74,7 +68,7 @@ export function Nav() {
           </NavLink>
         </div>
         <div className="bg-white text-gray-600 group w-full flex items-center pl-7 pr-2 py-2 text-sm font-medium rounded-md">
-          Demos (Other)
+          Options and Patterns
         </div>
         <div className="space-y-1">
           <NavLink indent href="/demo/disabled-revalidation">

@@ -15,7 +15,7 @@ export const getStaticProps: GetStaticProps<StaticProps> = async (context) => {
 export default function Page(props: StaticProps) {
   return (
     <Layout
-      title="Demo: Static Site Generation (Pure)"
+      title="Static Site Generation (Pure)"
       source="https://github.com/happykit/flags/blob/example/pages/demo/static-site-generation-pure.tsx"
     >
       <article className="py-4 prose max-w-prose">
