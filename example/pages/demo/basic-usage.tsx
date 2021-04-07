@@ -7,7 +7,7 @@ export default function Page() {
   const flagBag = useFlags();
   return (
     <Layout
-      title="Demo: Basic Usage"
+      title="Basic Usage"
       source="https://github.com/happykit/flags/blob/example/pages/demo/basic-usage.tsx"
     >
       <article className="py-4 prose max-w-prose">

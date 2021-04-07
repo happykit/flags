@@ -18,7 +18,7 @@ export default function Page(props: StaticProps) {
 
   return (
     <Layout
-      title="Demo: Static Site Generation (Hybrid)"
+      title="Static Site Generation (Hybrid)"
       source="https://github.com/happykit/flags/blob/example/pages/demo/static-site-generation-hybrid.tsx"
     >
       <article className="py-4 prose max-w-prose">
