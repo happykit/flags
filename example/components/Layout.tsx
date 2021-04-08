@@ -199,7 +199,7 @@ export function Layout(props: {
                   {props.title}
                 </h1>
                 {props.source && (
-                  <div className="mt-4 rounded-md bg-blue-100 p-4">
+                  <div className="mt-4 rounded-md bg-blue-50 border border-blue-200 p-4">
                     <div className="flex">
                       <div className="flex-shrink-0">
                         {/* Heroicon name: solid/information-circle */}
@@ -218,7 +218,7 @@ export function Layout(props: {
                         </svg>
                       </div>
                       <div className="ml-3">
-                        <p className="text-sm text-blue-700">
+                        <p className="text-sm text-blue-600">
                           This demo is easiest to understand if you open its
                           source code in a parallel tab.
                         </p>
@@ -226,7 +226,7 @@ export function Layout(props: {
                           <a
                             href={props.source}
                             target="_blank"
-                            className="whitespace-nowrap font-medium text-blue-700 hover:text-blue-600"
+                            className="whitespace-nowrap font-medium text-blue-600 hover:text-blue-700"
                           >
                             Source code <span aria-hidden="true">→</span>
                           </a>
