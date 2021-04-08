@@ -41,8 +41,8 @@ export default function Page(props: ServerSideProps) {
         </p>
         <p>
           You can pass any traits into the flag evaluation. These traits can
-          then be used by the flags defined in your flag's rules. This allows
-          you to resolve flags differently based on the provided traits.
+          then be used by the rules defined in your flags. This allows you to
+          resolve flags differently based on the provided traits.
         </p>
         <p>
           Traits can be related to the visitor, to the authenticated user or to
