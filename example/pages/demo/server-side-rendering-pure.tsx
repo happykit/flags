@@ -3,8 +3,8 @@ import { GetServerSideProps } from "next";
 import { Layout } from "../../components/Layout";
 import { Result } from "../../components/Result";
 import { getFlags } from "@happykit/flags/server";
+import { AppFlags } from "../../types/AppFlags";
 
-type AppFlags = { size: "small" | "medium" | "large" };
 type ServerSideProps = { flags: AppFlags; loadedFlags: AppFlags | null };
 
 export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (

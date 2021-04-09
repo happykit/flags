@@ -5,30 +5,27 @@ import { Result } from "../../components/Result";
 import { useFlags, InitialFlagState } from "@happykit/flags/client";
 import { getFlags } from "@happykit/flags/server";
 import { FlagBagProvider, useFlagBag } from "@happykit/flags/context";
-
-type Flags = {
-  size: "small" | "medium" | "large";
-};
+import { AppFlags } from "../../types/AppFlags";
 
 type ServerSideProps = {
-  initialFlagState: InitialFlagState<Flags>;
+  initialFlagState: InitialFlagState<AppFlags>;
 };
 
 function SomeNestedComponent() {
   // The nested component has access to the flagBag using context
-  const flagBag = useFlagBag<Flags>();
+  const flagBag = useFlagBag<AppFlags>();
   return <Result key="context" value={flagBag} />;
 }
 
 export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
   context
 ) => {
-  const { initialFlagState } = await getFlags<Flags>({ context });
+  const { initialFlagState } = await getFlags<AppFlags>({ context });
   return { props: { initialFlagState } };
 };
 
 export default function Page(props: ServerSideProps) {
-  const flagBag = useFlags<Flags>({ initialState: props.initialFlagState });
+  const flagBag = useFlags<AppFlags>({ initialState: props.initialFlagState });
 
   return (
     // The FlagBagProvider is intended to be set on every page
