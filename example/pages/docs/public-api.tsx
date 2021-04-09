@@ -25,7 +25,7 @@ export default function Page() {
   ].join("/");
 
   return (
-    <Layout title="Docs: Public API">
+    <Layout title="Public API">
       <article className="py-4 prose max-w-prose">
         <p className="max-w-prose text-gray-600">
           This page describes the API used by <code>@happykit/flags</code>. You

@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Nav } from "../components/Nav";
+import Head from "next/head";
 import { Transition } from "@tailwindui/react";
 import Link from "next/link";
 
@@ -12,6 +13,9 @@ export function Layout(props: {
 
   return (
     <React.Fragment>
+      <Head>
+        <title>{props.title}</title>
+      </Head>
       {/* This example requires Tailwind CSS v2.0+ */}
       <div className="h-screen flex overflow-hidden bg-gray-100">
         {/* Off-canvas menu for mobile, show/hide based on off-canvas menu state. */}
