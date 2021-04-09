@@ -1,6 +1,6 @@
 {
   "name": "@happykit/flags",
-  "version": "1.0.0-alpha.0",
+  "version": "1.0.0-alpha.1",
   "description": "Feature Flags for Next.js",
   "author": "Dominik Ferber <dominik.ferber+npm@gmail.com> (http://dferber.de/)",
   "license": "MIT",
@@ -50,5 +50,12 @@
     "jest": "26.6.3",
     "jest-fetch-mock": "3.0.3",
     "ts-jest": "26.5.4"
-  }
+  },
+  "files": [
+    "dist",
+    "client",
+    "config",
+    "context",
+    "server"
+  ]
 }
