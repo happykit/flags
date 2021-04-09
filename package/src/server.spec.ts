@@ -63,6 +63,7 @@ describe("server-side rendering (pure)", () => {
             visitorKey: "V1StGXR8_Z5jdHi6B-myT",
           },
         },
+        mode: "ssr",
         outcome: {
           responseBody: {
             flags: { meal: "large" },
@@ -75,7 +76,7 @@ describe("server-side rendering (pure)", () => {
 
     expect(context.res!.setHeader).toHaveBeenCalledWith(
       "Set-Cookie",
-      "hkvk=V1StGXR8_Z5jdHi6B-myT; Max-Age=15552000; SameSite=Lax"
+      "hkvk=V1StGXR8_Z5jdHi6B-myT; Path=/; Max-Age=15552000; SameSite=Lax"
     );
   });
 
@@ -111,6 +112,7 @@ describe("server-side rendering (pure)", () => {
             visitorKey: "V1StGXR8_Z5jdHi6B-myT",
           },
         },
+        mode: "ssr",
         outcome: {
           responseBody: {
             flags: { meal: "large" },
@@ -123,7 +125,7 @@ describe("server-side rendering (pure)", () => {
 
     expect(context.res!.setHeader).toHaveBeenCalledWith(
       "Set-Cookie",
-      "hkvk=V1StGXR8_Z5jdHi6B-myT; Max-Age=15552000; SameSite=Lax"
+      "hkvk=V1StGXR8_Z5jdHi6B-myT; Path=/; Max-Age=15552000; SameSite=Lax"
     );
   });
 
@@ -161,6 +163,7 @@ describe("server-side rendering (pure)", () => {
             visitorKey: "V1StGXR8_Z5jdHi6B-myT",
           },
         },
+        mode: "ssr",
         outcome: {
           responseBody: {
             flags: { meal: "large" },
@@ -173,7 +176,7 @@ describe("server-side rendering (pure)", () => {
 
     expect(context.res!.setHeader).toHaveBeenCalledWith(
       "Set-Cookie",
-      "hkvk=V1StGXR8_Z5jdHi6B-myT; Max-Age=15552000; SameSite=Lax"
+      "hkvk=V1StGXR8_Z5jdHi6B-myT; Path=/; Max-Age=15552000; SameSite=Lax"
     );
   });
 
@@ -211,6 +214,7 @@ describe("server-side rendering (pure)", () => {
             visitorKey: "V1StGXR8_Z5jdHi6B-myT",
           },
         },
+        mode: "ssr",
         outcome: {
           responseBody: {
             flags: { meal: "large" },
@@ -223,7 +227,7 @@ describe("server-side rendering (pure)", () => {
 
     expect(context.res!.setHeader).toHaveBeenCalledWith(
       "Set-Cookie",
-      "hkvk=V1StGXR8_Z5jdHi6B-myT; Max-Age=15552000; SameSite=Lax"
+      "hkvk=V1StGXR8_Z5jdHi6B-myT; Path=/; Max-Age=15552000; SameSite=Lax"
     );
   });
 });
@@ -254,6 +258,7 @@ describe("static site generation (pure)", () => {
             visitorKey: null,
           },
         },
+        mode: "ssg",
         outcome: {
           responseBody: {
             flags: { meal: "large" },
@@ -291,6 +296,7 @@ describe("static site generation (pure)", () => {
             visitorKey: null,
           },
         },
+        mode: "ssg",
         outcome: {
           responseBody: {
             flags: { meal: "large" },
@@ -328,6 +334,7 @@ describe("static site generation (pure)", () => {
             visitorKey: null,
           },
         },
+        mode: "ssg",
         outcome: {
           responseBody: {
             flags: { meal: "large" },
