@@ -4,9 +4,8 @@ import { Layout } from "../../components/Layout";
 import { Result } from "../../components/Result";
 import { InitialFlagState, useFlags } from "@happykit/flags/client";
 import { getFlags } from "@happykit/flags/server";
+import { AppFlags } from "../../types/AppFlags";
 
-type User = { key: string; name: string };
-type AppFlags = { size: "small" | "medium" | "large" };
 type ServerSideProps = {
   initialFlagState: InitialFlagState<AppFlags>;
 };
