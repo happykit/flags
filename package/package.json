@@ -8,6 +8,7 @@
     "dev": "preconstruct dev",
     "build": "preconstruct build",
     "prepublish": "preconstruct build",
+    "postpublish": "preconstruct dev",
     "test": "jest"
   },
   "keywords": [
