@@ -26,11 +26,11 @@
     "react": ">=16.13.1"
   },
   "dependencies": {
-    "@babel/core": "7.13.14",
-    "@babel/preset-env": "7.13.12",
+    "@babel/core": "7.13.15",
+    "@babel/preset-env": "7.13.15",
     "@babel/preset-typescript": "7.13.0",
     "nanoid": "3.1.22",
-    "typescript": "4.2.3"
+    "typescript": "4.2.4"
   },
   "preconstruct": {
     "entrypoints": [
