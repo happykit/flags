@@ -3,8 +3,8 @@ import { GetStaticProps } from "next";
 import { Layout } from "../../components/Layout";
 import { Result } from "../../components/Result";
 import { getFlags } from "@happykit/flags/server";
+import { AppFlags } from "../../types/AppFlags";
 
-type AppFlags = { size: "small" | "medium" | "large" };
 type StaticProps = { flags: AppFlags };
 
 export const getStaticProps: GetStaticProps<StaticProps> = async (context) => {
