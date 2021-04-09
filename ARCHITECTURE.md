@@ -12,3 +12,6 @@ The `@happykit/flags` library lives inside `package`.
 
 A Next.js example project lives inside `example`. The Next.js example project uses `@preconstruct/next`, which is only necessary for development of `@happykit/flags` but not required in a real Next.js project.
 
+# Publishing
+
+To publish a `next` version, run `yarn publish --tag next` from the `package` folder.
