@@ -6,7 +6,7 @@ import { Result } from "../components/Result";
 export default function Index() {
   const flagBag = useFlags();
   return (
-    <Layout title="Index">
+    <Layout title="Introduction">
       {/* Replace with your content */}
       <article className="py-4 prose max-w-prose">
         <p>
