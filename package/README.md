@@ -3,7 +3,7 @@
 </a>
 
 <div align="right">
-  <a href="https://github.com/happykit/flags/tree/master/package">Package</a>
+  <a href="https://github.com/happykit/flags/tree/next/package">Package</a>
   <span>&nbsp;•&nbsp;</span>
   <a href="https://flags.happykit.dev/">Demo, Examples and Docs</a>
   <span>&nbsp;•&nbsp;</span>
