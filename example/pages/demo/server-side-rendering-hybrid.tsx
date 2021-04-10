@@ -16,7 +16,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
 };
 
 export default function Page(props: ServerSideProps) {
-  const flagBag = useFlags({ initialState: props.initialFlagState });
+  const flagBag = useFlags<AppFlags>({ initialState: props.initialFlagState });
   return (
     <Layout
       title="Server Side Rendering (Hybrid)"

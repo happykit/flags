@@ -39,6 +39,9 @@ export function Nav() {
         Rendering Strategies
       </div>
       <div className="space-y-1 list-disc">
+        <NavLink indent href="/demo/client-side-rendering">
+          Client-Side Rendering
+        </NavLink>
         <NavLink indent href="/demo/server-side-rendering-pure">
           Server-Side Rendering (Pure)
         </NavLink>
