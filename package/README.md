@@ -3,14 +3,14 @@
 </a>
 
 <div align="right">
-  <a href="https://github.com/happykit/flags/tree/next/package">Package</a>
+  <a href="https://github.com/happykit/flags/tree/master/package">Docs</a>
   <span>&nbsp;•&nbsp;</span>
-  <a href="https://flags.happykit.dev/">Demo, Examples and Docs</a>
+  <a href="https://flags.happykit.dev/">Examples</a>
   <span>&nbsp;•&nbsp;</span>
   <a href="https://happykit.dev/solutions/flags">Website</a>
   <span>&nbsp;•&nbsp;</span>
   <a href="https://twitter.com/happykitdev" target="_blank">Twitter</a>
-</div>
+</div>****
 
 &nbsp;
 &nbsp;
@@ -23,7 +23,7 @@ Add Feature Flags to your Next.js application with a single React Hook. This pac
 - integrate using a simple `useFlags()` hook
 - only 1 kB in size
 - extremely fast flag responses (~50ms)
-- supports individual user targeting, custom rules and partial rollouts
+- supports individual user targeting, custom rules and rollouts
 - server-side rendering support
 - static site generation support (redeploy your website on flag changes) *(soon)*
 
@@ -142,19 +142,12 @@ export default function FooPage(props) {
 
 ### `useFlags`
 
-{
-    user?: FlagUser | null;
-    traits?: Traits | null;
-    initialState?: InitialFlagState<F>;
-    revalidateOnFocus?: boolean;
-    disableCache?: boolean;
-  }
-
 - `useFlag(options)`
   - `options.user` _(object)_ _optional_: A user to load the flags for. A user must at least have a `key`. See the supported user attributes [here](#supported-user-attributes). The user information you pass can be used for [individual targeting](#with-user-targeting) or rules. You can set the `persist` attribute on the user to store them in HappyKit for future reference.
   - `options.traits` _(object)_ _optional_: An object which you have access to in the flag's rules. You can target users based on traits.
   - `options.initialState` _(object)_ _optional_: In case you preloaded your flags during server-side rendering using `getFlags()`, provide the returned state as `initialState`. The client will then skip the first request whenever possible and use the provided flags instead. This allows you to get rid of loading states and on the client.
   - `options.revalidateOnFocus` _(object)_ _optional_: By default the client will revalidate all feature flags when the browser window regains focus. Pass `revalidateOnFocus: false` to skip this behaviour.
+  - `options.disableCache` _(boolean)_ _optional_: The client will not cache the flags in localStorage when this setting is enabled.
 
 This function returns an object we usually call [`flagBag`](#flagBag). It contains the requested flags and other information.
 
@@ -185,7 +178,14 @@ Provide any of these attributes to store them in HappyKit. You will be able to u
   - `options.user` _(object)_ _optional_: Same as `user` in `useFlags()`. If pass a user here, make sure to pass the same user to `useFlags({ user })`.
   - `options.traits` _(object)_ _optional_: Same as `traits` in `useFlags()`. If pass traits here, make sure to pass the same traits to `useFlags({ traits })`.
 
-This function returns a promise resolving to an object containing requested flags.
+This function returns a promise resolving to an object that looks like this:
+
+```js
+{
+  flags: { /* Evaluated flags, combined with the configured fallbacks */ },
+  loadedFlags: { /* Evaluated flags, as loaded from the API (no fallbacks applied) */ },
+  initialFlagState: { /* Information about the loaded flags, which can be provided to useFlags({ initialState }) */ }
+```
 
 ## Advanced Usage
 
@@ -297,19 +297,19 @@ HappyKit will soon be able to trigger redeployment of your site when you change 
 // pages/foo.js
 import { getFlags } from "@happykit/flags/server";
 
-export default function FooPage(props) {
-  return props.flags.xzibit ? 'Yo dawg' : 'Hello';
-}
-
 export const getStaticProps = () => {
   const initialFlags = await getFlags();
   return { props: { initialFlags } };
 };
+
+export default function FooPage(props) {
+  return props.flags.xzibit ? 'Yo dawg' : 'Hello';
+}
 ```
 
-_The upside of this approach is that `useFlags` isn't even shipped to the client._
+_The upside of this approach is that `useFlags` isn't even shipped to the client. This keeps the page extremly small, as no client-side JS is added._
 
-_For use with `getStaticProps` the downside is that the new flags are only available once your site is redeployed. You will be able to automate redeployments on flag changes with Deploy Hooks soon._
+_For use with `getStaticProps` the downside is that the new flags are only available once your site is redeployed. You will be able to automate redeployments on flag changes with Deploy Hooks on happykit.dev soon._
 
 _Note that when you use `getFlags()` with `getStaticProps` the static generation phase has no concept of a visitor, so rollouts based on visitor information are not possible. You can still use `getStaticProps`, but you should also use `useFlags()` in such cases._
 
@@ -417,10 +417,10 @@ You can use `@happykit/flags` without further configuration and get pretty good 
 However, all exported functions accept an optional generic type, so you can harden your flag definitions by defining a custom flag type. This allows you to define flag values explicitily.
 
 ```ts
-// _app.tsx
-import { configure } from "@happykit/flags/config";
+// types/AppFlags.ts
 
-type Flags = {
+// Define the types of your app's flags
+export type AppFlags = {
   booleanFlag: boolean;
   numericFlag: number;
   textualFlag: string;
@@ -429,9 +429,17 @@ type Flags = {
   // numericFlag: 0 | 10;
   // textualFlag: 'profileA' | 'profileB';
 };
+```
+
+```ts
+// _app.tsx
+import { configure } from "@happykit/flags/config";
+// import your custom AppFlags type
+import { AppFlags } from "../types/AppFlags";
+
 
 // the types defined in "configure" are used to check "defaultFlags"
-configure<Flags>({
+configure<AppFlags>({
   endpoint: 'http://localhost:8787/api/flags',
   envKey: 'flags_pub_272357356657967622',
   defaultFlags: {
@@ -444,17 +452,13 @@ configure<Flags>({
 
 ```ts
 // pages/SomePage.tsx
-import { useFlags, Flags } from "@happykit/flags/client";
+import { useFlags } from "@happykit/flags/client";
 import { getFlags } from "@happykit/flags/server";
-
-type Flags = {
-  booleanFlag: boolean;
-  numericFlag: number;
-  textualFlag: string;
-};
+import { AppFlags } from "../types/AppFlags";
 
 export async function getServerSideProps(context) {
-  const { flags, initialFlagState } = await getFlags<Flags>({ context });
+  // Pass your AppFlags type when calling getFlags()
+  const { flags, initialFlagState } = await getFlags<AppFlags>({ context });
 
   flags.booleanFlag; // has type "boolean"
   flags.numericFlag; // has type "number"
@@ -464,7 +468,8 @@ export async function getServerSideProps(context) {
 }
 
 export default function SomePage(props) {
-  const { flags } = useFlags<Flags>({ initialState: props.flags });
+  // Pass your AppFlags type when calling useFlags()
+  const { flags } = useFlags<AppFlags>({ initialState: props.flags });
 
   flags.booleanFlag; // has type "boolean"
   flags.numericFlag; // has type "number"
