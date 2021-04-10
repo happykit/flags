@@ -14,7 +14,7 @@ export const getStaticProps: GetStaticProps<StaticProps> = async (context) => {
 };
 
 export default function Page(props: StaticProps) {
-  const flagBag = useFlags({ initialState: props.initialFlagState });
+  const flagBag = useFlags<AppFlags>({ initialState: props.initialFlagState });
 
   return (
     <Layout
@@ -22,7 +22,10 @@ export default function Page(props: StaticProps) {
       source={`https://github.com/happykit/flags/blob/${process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF}/example/pages/demo/static-site-generation-hybrid.tsx`}
     >
       <article className="py-4 prose max-w-prose">
-        <p>This demo shows how to use @happykit/flags for static pages.</p>
+        <p>
+          This demo shows how to use <code>@happykit/flags</code> for static
+          pages.
+        </p>
         <p>
           This page is rendered statically at first. The first rendering pass
           will use no visitor key. This is necessary as the the concept of a
