@@ -7,8 +7,8 @@
   "scripts": {
     "dev": "preconstruct dev",
     "build": "preconstruct build",
-    "prepublish": "preconstruct build",
-    "postpublish": "preconstruct dev",
+    "prepublishOnly": "preconstruct build",
+    "postpublishOnly": "preconstruct dev",
     "test": "jest"
   },
   "keywords": [
@@ -31,6 +31,8 @@
     "@babel/core": "7.13.15",
     "@babel/preset-env": "7.13.15",
     "@babel/preset-typescript": "7.13.0",
+    "@babel/runtime": "7.13.10",
+    "core-js": "3.10.1",
     "nanoid": "3.1.22",
     "typescript": "4.2.4"
   },
@@ -43,6 +45,7 @@
     ]
   },
   "devDependencies": {
+    "@babel/plugin-transform-runtime": "7.13.15",
     "@sheerun/mutationobserver-shim": "0.3.3",
     "@tailwindui/react": "0.1.1",
     "@testing-library/jest-dom": "5.11.10",
