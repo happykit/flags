@@ -14,7 +14,7 @@ export function Layout(props: {
   return (
     <React.Fragment>
       <Head>
-        <title>{props.title}</title>
+        <title>{props.title} · HappyKit Flags Documentation</title>
       </Head>
       {/* This example requires Tailwind CSS v2.0+ */}
       <div className="h-screen flex overflow-hidden bg-gray-100">
