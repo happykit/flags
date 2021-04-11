@@ -60,16 +60,6 @@ export async function getFlags<F extends Flags = Flags>(options: {
 }> {
   if (!isConfigured(config)) throw new MissingConfigurationError();
 
-  // Workaround alert:
-  //
-  // We use "has(options.context, "req")" to determine whether getFlags was
-  // called with a context from server-side or static rendering.
-  //
-  // When options.context.req is missing, we were called from static rendering.
-  //
-  // Unfortunately, I could not make this work with simple type narrowing.
-  const mode = has(options.context, "req") ? "ssr" : "ssg";
-
   // determine visitor key
   const visitorKeyFromCookie = has(options.context, "req")
     ? getCookie(options.context.req.headers.cookie, "hkvk")
@@ -118,7 +108,7 @@ export async function getFlags<F extends Flags = Flags>(options: {
     return {
       flags: config.defaultFlags as F,
       loadedFlags: null,
-      initialFlagState: { mode, input, outcome: null },
+      initialFlagState: { input, outcome: null },
     };
 
   const workerResponseBody: EvaluationResponseBody<F> | null = await workerResponse
@@ -129,7 +119,7 @@ export async function getFlags<F extends Flags = Flags>(options: {
     return {
       flags: config.defaultFlags as F,
       loadedFlags: null,
-      initialFlagState: { mode, input, outcome: null },
+      initialFlagState: { input, outcome: null },
     };
   }
 
@@ -152,7 +142,6 @@ export async function getFlags<F extends Flags = Flags>(options: {
     flags: flagsWithDefaults,
     loadedFlags: flags,
     initialFlagState: {
-      mode,
       input,
       outcome: { responseBody: workerResponseBody },
     },

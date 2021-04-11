@@ -45,7 +45,6 @@ export type EvaluationResponseBody<F extends Flags> = {
 };
 
 export type InitialFlagState<F extends Flags> = {
-  mode: "ssr" | "ssg";
   input: Input;
   outcome: Outcome<F> | null;
 };
