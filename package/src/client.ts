@@ -87,12 +87,13 @@ function isEmergingInput<F extends Flags>(input: Input, state: State<F>) {
  * We use a hand-rolled version to keep the size of this package minimal.
  */
 function reducer<F extends Flags>(
-  [state /* and effects */]: [State<F>, Effect[]],
+  tuple: [State<F>, Effect[]],
   action: Action<F>
 ): [State<F>, Effect[]] {
+  const [state /* and effects */] = tuple;
   switch (action.type) {
     case "prefillFromLocalStorage": {
-      if (state.current) return [state, []];
+      if (state.current) return tuple;
       return [
         { ...state, current: action.current, prefilledFromLocalStorage: true },
         [],
@@ -106,7 +107,7 @@ function reducer<F extends Flags>(
     }
     case "settle": {
       // skip outdated responses
-      if (state.pending?.input !== action.input) return [state, []];
+      if (state.pending?.input !== action.input) return tuple;
 
       return [
         {
@@ -119,12 +120,12 @@ function reducer<F extends Flags>(
       ];
     }
     case "fail": {
-      return isEmergingInput(action.input, state)
+      return deepEqual(action.input, state.pending?.input)
         ? [{ ...state, pending: null }, []]
-        : [state, []];
+        : tuple;
     }
     default:
-      return [state, []];
+      return tuple;
   }
 }
 
