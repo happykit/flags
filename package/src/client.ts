@@ -43,7 +43,6 @@ type State<F extends Flags> =
   // useFlags() used with getFlags() in server-side rendering (no refetching necessary)
   {
     current: null | {
-      mode?: "ssr" | "ssg";
       input: Input;
       outcome: Outcome<F> | null;
     };
