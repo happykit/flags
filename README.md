@@ -38,6 +38,16 @@ Add Feature Flags to your Next.js application with a single React Hook. This pac
 
 <br />
 
+> A complete rewrite of the `@happykit/flags` client is coming soon!
+>
+> *The preview is available on the [`next`](https://github.com/happykit/flags/tree/next) branch.*
+>
+> *You can install it with `yarn add @happykit/flags@next`.*
+> 
+> *A live example is available on [flags.happykit.dev](http://flags.happykit.dev/).*
+
+<br />
+
 - [Installation](#installation)
 - [Setup](#setup)
 - [Basic Usage](#basic-usage)
