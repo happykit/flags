@@ -61,10 +61,11 @@ type Action<F extends Flags> =
 type Effect = { type: "fetch"; input: Input };
 
 /**
- * Checks whether input is the upcoming input, or the current input in case
- * there is no upcoming input.
+ * Checks whether input is a brand new input.
  *
- * Ignores "current" while "pending" is present
+ * In case there is a pending input, it checks if the incoming input equals that.
+ *
+ * In case there is no pending input, it checks if the incoming input equals the current input.
  */
 function isEmergingInput<F extends Flags>(input: Input, state: State<F>) {
   if (state.pending) {
@@ -73,28 +74,6 @@ function isEmergingInput<F extends Flags>(input: Input, state: State<F>) {
     if (deepEqual(state.current.input, input)) return false;
   }
   return true;
-}
-
-/**
- * If the initial flag evaluation request contained no visitor key,
- * a visitor key will be present in the state afterwards, but the
- * currently resolved input under state.input.requestBody won't have a
- * visitorKey attached to it.
- *
- * That would trigger another validation which we can skip as it would
- * lead to the same result anyways, since the flag worker already took
- * that generated visitor key into account when evaluating.
- */
-function isAddedVisitorKeyTheOnlyDifference<F extends Flags>(
-  input: Input,
-  state: State<F>
-) {
-  if (state.current?.input.requestBody.visitorKey !== null) return false;
-
-  return deepEqual(state.current.input, {
-    ...input,
-    requestBody: { ...input.requestBody, visitorKey: null },
-  } as Input);
 }
 
 /**
@@ -230,16 +209,15 @@ export function useFlags<F extends Flags = Flags>(
     const input: Input = {
       endpoint: config.endpoint,
       envKey: config.envKey,
-      requestBody: { visitorKey, user: currentUser, traits: currentTraits },
+      requestBody: {
+        visitorKey,
+        user: currentUser,
+        traits: currentTraits,
+        static: false,
+      },
     };
 
-    if (
-      isEmergingInput(input, state) &&
-      !isAddedVisitorKeyTheOnlyDifference(input, state) &&
-      // We don't need to reevaluate on mount when current result came from
-      // server-side rendering
-      state.current?.mode !== "ssr"
-    ) {
+    if (isEmergingInput(input, state)) {
       dispatch({ type: "evaluate", input });
     }
 
