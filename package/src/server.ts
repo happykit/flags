@@ -10,6 +10,7 @@ import {
   Flags,
   InitialFlagState,
   EvaluationResponseBody,
+  Input,
 } from "./types";
 import {
   getCookie,
@@ -83,7 +84,7 @@ export async function getFlags<F extends Flags = Flags>(options: {
       : nanoid()
     : null;
 
-  const input = {
+  const input: Input = {
     endpoint: config.endpoint,
     envKey: config.envKey,
     requestBody: {
