@@ -8,6 +8,7 @@ import {
 } from "@happykit/flags/client";
 import { getFlags } from "@happykit/flags/server";
 import { GetServerSideProps } from "next";
+import { Result } from "../components/Result";
 
 type Flags = {
   "baby-koalas": boolean;
@@ -25,8 +26,8 @@ type ServerSideProps = {
 export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
   context
 ) => {
-  const user: FlagUser = { key: "jennyc" };
-  const traits: Traits = { employee: true };
+  const user: FlagUser = { key: "xyz", email: "xyz@example.com" };
+  const traits: Traits = { teamMember: true };
   const { initialFlagState } = await getFlags<Flags>({ context, user, traits });
 
   return {
@@ -74,7 +75,7 @@ export default function Home(props: ServerSideProps) {
         <p>
           {user ? "has user" : "no user"}, {traits ? "has traits" : "no traits"}
         </p>
-        <pre>{JSON.stringify(flagBag, null, 2)}</pre>
+        <Result key="test" value={flagBag} />
       </main>
     </div>
   );
