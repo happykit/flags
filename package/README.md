@@ -5,9 +5,9 @@
 <div align="right">
   <a href="https://github.com/happykit/flags/tree/next/package">Docs</a>
   <span>&nbsp;•&nbsp;</span>
-  <a href="https://flags.happykit.dev/">Examples</a>
+  <a href="https://flags.happykit.dev/" target="_blank">Examples</a>
   <span>&nbsp;•&nbsp;</span>
-  <a href="https://happykit.dev/solutions/flags">Website</a>
+  <a href="https://happykit.dev/solutions/flags" target="_blank">Website</a>
   <span>&nbsp;•&nbsp;</span>
   <a href="https://twitter.com/happykitdev" target="_blank">Twitter</a>
 </div>
