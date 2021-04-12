@@ -10,7 +10,7 @@
   <a href="https://happykit.dev/solutions/flags">Website</a>
   <span>&nbsp;•&nbsp;</span>
   <a href="https://twitter.com/happykitdev" target="_blank">Twitter</a>
-</div>****
+</div>
 
 &nbsp;
 &nbsp;
