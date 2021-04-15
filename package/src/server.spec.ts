@@ -3,6 +3,7 @@
  */
 import { getFlags } from "./server";
 import "@testing-library/jest-dom/extend-expect";
+// TODO rewrite tests from jest-fetch-mock to fetch-mock-jest
 import "jest-fetch-mock";
 import { configure, _resetConfig } from "./config";
 import { GetServerSidePropsContext, GetStaticPropsContext } from "next";

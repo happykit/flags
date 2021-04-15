@@ -1,3 +1,4 @@
+import { nanoid } from "nanoid";
 import * as React from "react";
 import { isConfigured, config } from "./config";
 import {
@@ -150,6 +151,8 @@ export function useFlags<F extends Flags = Flags>(
 ): SettledFlagBag<F> | UnsettledFlagBag<F> {
   if (!isConfigured(config)) throw new MissingConfigurationError();
 
+  const [generatedVisitorKey] = React.useState(nanoid);
+
   const currentUser = options.user || null;
   const currentTraits = options.traits || null;
   const shouldRevalidateOnFocus =
@@ -192,7 +195,6 @@ export function useFlags<F extends Flags = Flags>(
 
   React.useEffect(() => {
     if (!isConfigured(config)) throw new MissingConfigurationError();
-    const currentKey = state.current?.outcome?.responseBody.visitor?.key;
 
     const visitorKey = (() => {
       const cookie =
@@ -201,9 +203,13 @@ export function useFlags<F extends Flags = Flags>(
           : null;
       if (cookie) return cookie;
 
-      if (currentKey) return currentKey;
+      if (state.pending?.input.requestBody.visitorKey)
+        return state.pending?.input.requestBody.visitorKey;
 
-      return null;
+      if (state.current?.outcome?.responseBody.visitor?.key)
+        return state.current?.outcome?.responseBody.visitor?.key;
+
+      return generatedVisitorKey;
     })();
 
     const input: Input = {
@@ -262,7 +268,12 @@ export function useFlags<F extends Flags = Flags>(
                 );
               }
             })
-            .catch(() => dispatch({ type: "fail", input }));
+            .catch((error) => {
+              console.error("HappyKit: Failed to load flags");
+              console.error(error);
+              // TODO failing leads to infinite rerendering at the moment
+              // dispatch({ type: "fail", input });
+            });
         }
 
         default:
