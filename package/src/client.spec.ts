@@ -68,14 +68,22 @@ describe("client-side rendering", () => {
     const { result, waitForNextUpdate } = renderHook(() => useFlags());
 
     // flags are an empty object (defaultFlags) until the first response arrives
-    expect(result.current).toEqual({
-      flags: {},
-      // loadedFlags are undefined as no flags were loaded
-      loadedFlags: undefined,
-      settled: false,
-      fetching: true,
-      visitorKey: null,
-    });
+    expect(result.all).toEqual([
+      {
+        flags: {},
+        loadedFlags: null,
+        fetching: false,
+        settled: false,
+        visitorKey: null,
+      },
+      {
+        flags: {},
+        loadedFlags: null,
+        fetching: true,
+        settled: false,
+        visitorKey: expect.any(String),
+      },
+    ]);
 
     await waitForNextUpdate();
 
@@ -96,6 +104,8 @@ describe("client-side rendering", () => {
       settled: true,
       visitorKey: expect.any(String),
     });
+
+    expect(result.all).toHaveLength(3);
   });
 });
 

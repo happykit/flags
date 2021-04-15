@@ -55,8 +55,8 @@ type Action<F extends Flags> =
   | { type: "mount" }
   | { type: "prefillFromLocalStorage"; current: State<F>["current"] }
   | { type: "evaluate"; input: Input }
-  | { type: "settle"; input: Input; outcome: Outcome<F> }
-  | { type: "fail"; input: Input };
+  | { type: "settle/success"; input: Input; outcome: Outcome<F> }
+  | { type: "settle/failure"; input: Input };
 
 type Effect = { type: "fetch"; input: Input };
 
@@ -106,7 +106,7 @@ function reducer<F extends Flags>(
         [{ type: "fetch", input: action.input }],
       ];
     }
-    case "settle": {
+    case "settle/success": {
       // skip outdated responses
       if (state.pending?.input !== action.input) return tuple;
 
@@ -120,24 +120,22 @@ function reducer<F extends Flags>(
         [],
       ];
     }
-    case "fail": {
+    case "settle/failure": {
       return deepEqual(action.input, state.pending?.input)
-        ? [{ ...state, pending: null }, []]
+        ? [
+            {
+              ...state,
+              current: { input: action.input, outcome: null },
+              pending: null,
+              prefilledFromLocalStorage: false,
+            },
+            [],
+          ]
         : tuple;
     }
     default:
       return tuple;
   }
-}
-
-interface SettledFlagBag<F extends Flags> extends FlagBag<F> {
-  visitorKey: string;
-  settled: true;
-}
-
-interface UnsettledFlagBag<F extends Flags> extends FlagBag<F> {
-  visitorKey: string | null;
-  settled: false;
 }
 
 export function useFlags<F extends Flags = Flags>(
@@ -148,7 +146,7 @@ export function useFlags<F extends Flags = Flags>(
     revalidateOnFocus?: boolean;
     disableCache?: boolean;
   } = {}
-): SettledFlagBag<F> | UnsettledFlagBag<F> {
+): FlagBag<F> {
   if (!isConfigured(config)) throw new MissingConfigurationError();
 
   const [generatedVisitorKey] = React.useState(nanoid);
@@ -255,13 +253,17 @@ export function useFlags<F extends Flags = Flags>(
             .then(async (response) => {
               const responseBody = (await response.json()) as EvaluationResponseBody<F>;
               // responses to outdated requests are skipped in the reducer
-              dispatch({ type: "settle", input, outcome: { responseBody } });
+              dispatch({
+                type: "settle/success",
+                input,
+                outcome: { responseBody },
+              });
 
               if (
                 // server hasn't set it
                 !response.headers.get("Set-Cookie")?.includes("hkvk=") &&
                 // response contains visitor key
-                responseBody.visitor.key
+                responseBody.visitor?.key
               ) {
                 document.cookie = serializeVisitorKeyCookie(
                   responseBody.visitor.key
@@ -271,8 +273,7 @@ export function useFlags<F extends Flags = Flags>(
             .catch((error) => {
               console.error("HappyKit: Failed to load flags");
               console.error(error);
-              // TODO failing leads to infinite rerendering at the moment
-              // dispatch({ type: "fail", input });
+              dispatch({ type: "settle/failure", input });
             });
         }
 
@@ -290,36 +291,34 @@ export function useFlags<F extends Flags = Flags>(
 
   const defaultFlags = config.defaultFlags;
 
-  const flagBag = React.useMemo(() => {
-    const loadedFlags = state.current?.outcome?.responseBody.flags as F;
+  const flagBag = React.useMemo<FlagBag<F>>(() => {
+    const loadedFlags =
+      (state.current?.outcome?.responseBody.flags as F | undefined) || null;
+
     const flags = combineLoadedFlagsWithDefaultFlags<F>(
       loadedFlags,
       defaultFlags
     );
 
-    const outcome = state.current?.outcome;
-    const base = { flags, loadedFlags, fetching: Boolean(state.pending) };
-
     // When the outcome was generated for a static site, then no visitor key
     // is present on the outcome. In that case, the state can not be seen as
     // settled as another revalidation will happen in which a visitor key will
     // get generated.
-    const visitorKey = outcome?.responseBody.visitor?.key;
-
-    return outcome && visitorKey
-      ? {
-          ...base,
-          // the visitorKey that belongs to the loaded flags
-          visitorKey,
-          settled: !state.prefilledFromLocalStorage,
-        }
-      : {
-          ...base,
-          // the visitorKey that belongs to the loaded flags,
-          // it is "null" until the response has settled
-          visitorKey: null,
-          settled: false as false,
-        };
+    return {
+      flags,
+      loadedFlags,
+      fetching: Boolean(state.pending),
+      settled: Boolean(
+        state.current &&
+          !state.current.input.requestBody.static &&
+          !state.prefilledFromLocalStorage
+      ),
+      visitorKey:
+        state.current?.outcome?.responseBody.visitor?.key ||
+        state.current?.input.requestBody.visitorKey ||
+        state.pending?.input.requestBody.visitorKey ||
+        null,
+    };
   }, [state, defaultFlags]);
 
   return flagBag;

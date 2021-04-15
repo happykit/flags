@@ -40,7 +40,7 @@ export type EvaluationRequestBody = {
 };
 
 export type EvaluationResponseBody<F extends Flags> = {
-  visitor: { key: string };
+  visitor: { key: string } | null;
   flags: F;
 };
 
@@ -138,6 +138,10 @@ export interface FlagBag<F extends Flags> {
    * The resolved feature flags, extended with the defaults.
    */
   flags: F;
+  /**
+   * The feature flags as loaded from the API, without default fallbacks.
+   */
+  loadedFlags: F | null;
   /**
    * The visitor key the feature flags were fetched for.
    */
