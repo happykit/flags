@@ -7,12 +7,13 @@ import { renderHook } from "@testing-library/react-hooks";
 import { useFlags, cacheKey } from "./client";
 import { configure, _resetConfig } from "./config";
 import * as fetchMock from "fetch-mock-jest";
+import { deleteAllCookies } from "../jest/delete-all-cookies";
 
 beforeEach(() => {
   _resetConfig();
   fetchMock.reset();
   window.localStorage.removeItem(cacheKey);
-  // TODO reset cookie?
+  deleteAllCookies(window);
 });
 
 it("exports a useFlags hook", () => {
