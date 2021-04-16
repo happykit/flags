@@ -3,8 +3,7 @@
  */
 import { getFlags } from "./server";
 import "@testing-library/jest-dom/extend-expect";
-// TODO rewrite tests from jest-fetch-mock to fetch-mock-jest
-import "jest-fetch-mock";
+import * as fetchMock from "fetch-mock-jest";
 import { configure, _resetConfig } from "./config";
 import { GetServerSidePropsContext, GetStaticPropsContext } from "next";
 
@@ -14,7 +13,7 @@ jest.mock("nanoid", () => {
 
 beforeEach(() => {
   _resetConfig();
-  fetchMock.resetMocks();
+  fetchMock.reset();
 });
 
 describe("getFlags", () => {
@@ -35,12 +34,23 @@ describe("server-side rendering (pure)", () => {
   it("refreshes the hkvk cookie when it was present in the initial request", async () => {
     configure({ envKey: "flags_pub_000000" });
 
-    fetchMock.mockOnce(
-      JSON.stringify({
-        flags: { meal: "large" },
-        visitor: { key: "V1StGXR8_Z5jdHi6B-myT" },
-      }),
-      { headers: { "content-type": "application/json" } }
+    fetchMock.post(
+      {
+        url: "https://happykit.dev/api/flags/flags_pub_000000",
+        body: {
+          static: false,
+          traits: null,
+          user: null,
+          visitorKey: "V1StGXR8_Z5jdHi6B-myT",
+        },
+      },
+      {
+        headers: { "content-type": "application/json" },
+        body: {
+          flags: { meal: "large" },
+          visitor: { key: "V1StGXR8_Z5jdHi6B-myT" },
+        },
+      }
     );
 
     const context = {
@@ -83,12 +93,23 @@ describe("server-side rendering (pure)", () => {
   it("forwards the passed in traits", async () => {
     configure({ envKey: "flags_pub_000000" });
 
-    fetchMock.mockOnce(
-      JSON.stringify({
-        flags: { meal: "large" },
-        visitor: { key: "V1StGXR8_Z5jdHi6B-myT" },
-      }),
-      { headers: { "content-type": "application/json" } }
+    fetchMock.post(
+      {
+        url: "https://happykit.dev/api/flags/flags_pub_000000",
+        body: {
+          static: false,
+          traits: { teamMember: true },
+          user: null,
+          visitorKey: "V1StGXR8_Z5jdHi6B-myT",
+        },
+      },
+      {
+        headers: { "content-type": "application/json" },
+        body: {
+          flags: { meal: "large" },
+          visitor: { key: "V1StGXR8_Z5jdHi6B-myT" },
+        },
+      }
     );
 
     const context = {
@@ -131,12 +152,23 @@ describe("server-side rendering (pure)", () => {
   it("forwards the passed in user", async () => {
     configure({ envKey: "flags_pub_000000" });
 
-    fetchMock.mockOnce(
-      JSON.stringify({
-        flags: { meal: "large" },
-        visitor: { key: "V1StGXR8_Z5jdHi6B-myT" },
-      }),
-      { headers: { "content-type": "application/json" } }
+    fetchMock.post(
+      {
+        url: "https://happykit.dev/api/flags/flags_pub_000000",
+        body: {
+          static: false,
+          traits: null,
+          user: { key: "random-user-key", name: "joe" },
+          visitorKey: "V1StGXR8_Z5jdHi6B-myT",
+        },
+      },
+      {
+        headers: { "content-type": "application/json" },
+        body: {
+          flags: { meal: "large" },
+          visitor: { key: "V1StGXR8_Z5jdHi6B-myT" },
+        },
+      }
     );
 
     const context = {
@@ -181,12 +213,25 @@ describe("server-side rendering (pure)", () => {
   it("generates and sets the hkvk cookie when it was missing in the initial request", async () => {
     configure({ envKey: "flags_pub_000000" });
 
-    fetchMock.mockOnce(
-      JSON.stringify({
-        flags: { meal: "large" },
-        visitor: { key: "V1StGXR8_Z5jdHi6B-myT" },
-      }),
-      { headers: { "content-type": "application/json" } }
+    fetchMock.post(
+      {
+        url: "https://happykit.dev/api/flags/flags_pub_000000",
+        body: {
+          static: false,
+          traits: null,
+          user: null,
+          // nanoid is mocked to always return "V1StGXR8_Z5jdHi6B-myT",
+          // so the generated id is always this one
+          visitorKey: "V1StGXR8_Z5jdHi6B-myT",
+        },
+      },
+      {
+        headers: { "content-type": "application/json" },
+        body: {
+          flags: { meal: "large" },
+          visitor: { key: "V1StGXR8_Z5jdHi6B-myT" },
+        },
+      }
     );
 
     const context = {
@@ -233,16 +278,23 @@ describe("static site generation (pure)", () => {
   it("should return", async () => {
     configure({ envKey: "flags_pub_000000" });
 
-    fetchMock.mockOnce(
-      JSON.stringify({ flags: { meal: "large" }, visitor: null }),
-      { headers: { "content-type": "application/json" } }
+    fetchMock.post(
+      {
+        url: "https://happykit.dev/api/flags/flags_pub_000000",
+        body: {
+          static: true,
+          traits: null,
+          user: null,
+          visitorKey: null,
+        },
+      },
+      {
+        headers: { "content-type": "application/json" },
+        body: { flags: { meal: "large" }, visitor: null },
+      }
     );
 
-    expect(
-      await getFlags({
-        context: {} as GetStaticPropsContext,
-      })
-    ).toEqual({
+    expect(await getFlags({ context: {} as GetStaticPropsContext })).toEqual({
       flags: { meal: "large" },
       initialFlagState: {
         input: {
@@ -269,9 +321,20 @@ describe("static site generation (pure)", () => {
   it("forwards given traits", async () => {
     configure({ envKey: "flags_pub_000000" });
 
-    fetchMock.mockOnce(
-      JSON.stringify({ flags: { meal: "large" }, visitor: null }),
-      { headers: { "content-type": "application/json" } }
+    fetchMock.post(
+      {
+        url: "https://happykit.dev/api/flags/flags_pub_000000",
+        body: {
+          static: true,
+          traits: { friendly: true },
+          user: null,
+          visitorKey: null,
+        },
+      },
+      {
+        headers: { "content-type": "application/json" },
+        body: { flags: { meal: "large" }, visitor: null },
+      }
     );
 
     expect(
@@ -306,9 +369,20 @@ describe("static site generation (pure)", () => {
   it("forwards a given user", async () => {
     configure({ envKey: "flags_pub_000000" });
 
-    fetchMock.mockOnce(
-      JSON.stringify({ flags: { meal: "large" }, visitor: null }),
-      { headers: { "content-type": "application/json" } }
+    fetchMock.post(
+      {
+        url: "https://happykit.dev/api/flags/flags_pub_000000",
+        body: {
+          static: true,
+          traits: null,
+          user: { key: "random-user-key", name: "joe" },
+          visitorKey: null,
+        },
+      },
+      {
+        headers: { "content-type": "application/json" },
+        body: { flags: { meal: "large" }, visitor: null },
+      }
     );
 
     expect(
