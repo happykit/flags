@@ -10,7 +10,7 @@ import { configure, _resetConfig } from "./config";
 import * as fetchMock from "fetch-mock-jest";
 import { deleteAllCookies } from "../jest/delete-all-cookies";
 import { nanoid } from "nanoid";
-import { FlagBag } from "./types";
+import { FlagBag, Flags, InitialFlagState } from "./types";
 
 beforeEach(() => {
   _resetConfig();
@@ -550,7 +550,142 @@ describe("client-side rendering", () => {
   });
 });
 
-describe("server-side rendering (hybrid)", () => {});
+describe("server-side rendering (hybrid)", () => {
+  describe("when visitorKey is not set in cookie", () => {
+    it("uses the visitor key generated on the server", async () => {
+      expect(document.cookie).toBe("");
+      const generatedVisitorKey = nanoid();
+
+      configure({ envKey: "flags_pub_000000" });
+      expect(localStorage.getItem(cacheKey)).toBeNull();
+      expect(document.cookie).toEqual("");
+
+      const initialStateFromProps: InitialFlagState<Flags> = {
+        input: {
+          endpoint: "https://happykit.dev/api/flags",
+          envKey: "flags_pub_000000",
+          requestBody: {
+            visitorKey: generatedVisitorKey,
+            user: null,
+            traits: null,
+            static: false,
+          },
+        },
+        outcome: {
+          responseBody: {
+            flags: {
+              ads: true,
+              checkout: "short",
+              discount: 5,
+              purchaseButtonLabel: "Buy now",
+            },
+            visitor: { key: generatedVisitorKey },
+          },
+        },
+      };
+
+      const { result } = renderHook(() =>
+        useFlags({ initialState: initialStateFromProps })
+      );
+
+      expect(result.all).toEqual([
+        {
+          flags: {
+            ads: true,
+            checkout: "short",
+            discount: 5,
+            purchaseButtonLabel: "Buy now",
+          },
+          loadedFlags: {
+            ads: true,
+            checkout: "short",
+            discount: 5,
+            purchaseButtonLabel: "Buy now",
+          },
+          fetching: false,
+          settled: true,
+          visitorKey: generatedVisitorKey,
+        },
+      ]);
+
+      expect(fetchMock.calls(), "should not fetch at all").toHaveLength(0);
+
+      // getFlags() would set the cookies in the response to the page itself,
+      // but that server function is mocked in this example.
+      //
+      // The header sent in response to the page load would look like
+      // Set-Cookie: hkvk=generatedVisitorKey; Path=/; Max-Age=15552000; SameSite=Lax
+      //
+      // We expect an empty cookie instead, since this is a unit, in which
+      // the getFlags() on the server does not run, and thus has no chance to
+      // set the cookie.
+      expect(document.cookie).toBe("");
+    });
+  });
+
+  describe("when visitorKey is set in cookie", () => {
+    it("reuses the visitor key", async () => {
+      // prepare cookie before test
+      const visitorKeyInCookie = nanoid();
+      document.cookie = `hkvk=${visitorKeyInCookie}`;
+
+      configure({ envKey: "flags_pub_000000" });
+      expect(localStorage.getItem(cacheKey)).toBeNull();
+      expect(document.cookie).toEqual(`hkvk=${visitorKeyInCookie}`);
+
+      const initialStateFromProps: InitialFlagState<Flags> = {
+        input: {
+          endpoint: "https://happykit.dev/api/flags",
+          envKey: "flags_pub_000000",
+          requestBody: {
+            visitorKey: visitorKeyInCookie,
+            user: null,
+            traits: null,
+            static: false,
+          },
+        },
+        outcome: {
+          responseBody: {
+            flags: {
+              ads: true,
+              checkout: "short",
+              discount: 5,
+              purchaseButtonLabel: "Buy now",
+            },
+            visitor: { key: visitorKeyInCookie },
+          },
+        },
+      };
+
+      // start actual testing
+      const { result } = renderHook(() =>
+        useFlags({ initialState: initialStateFromProps })
+      );
+
+      expect(fetchMock.calls(), "should not fetch at all").toHaveLength(0);
+
+      expect(result.all).toEqual([
+        {
+          fetching: false,
+          flags: {
+            ads: true,
+            checkout: "short",
+            discount: 5,
+            purchaseButtonLabel: "Buy now",
+          },
+          loadedFlags: {
+            ads: true,
+            checkout: "short",
+            discount: 5,
+            purchaseButtonLabel: "Buy now",
+          },
+          settled: true,
+          visitorKey: visitorKeyInCookie,
+        },
+      ]);
+    });
+  });
+});
 
 describe("static site generation (hybrid)", () => {
   //   it("posts to the flags endpoint", async () => {
