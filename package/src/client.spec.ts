@@ -688,77 +688,427 @@ describe("server-side rendering (hybrid)", () => {
 });
 
 describe("static site generation (hybrid)", () => {
-  //   it("posts to the flags endpoint", async () => {
-  //     fetchMock.mockOnce(
-  //       anonymousEvaluationResponse.body,
-  //       anonymousEvaluationResponse.options
-  //     );
-  //     configure({ envKey: "flags_pub_000000" });
-  //     expect(localStorage.getItem(cacheKey)).toBeNull();
-  //     expect(document.cookie).toEqual("");
-  //     const { result, waitForNextUpdate } = renderHook(() => useFlags());
-  //     // flags are an empty object (defaultFlags) until the first response arrives
-  //     expect(result.current).toEqual({
-  //       fetching: true,
-  //       flags: {},
-  //       // loadedFlags are undefined as no flags were loaded
-  //       loadedFlags: undefined,
-  //       settled: false,
-  //       visitorKey: null,
-  //     });
-  //     await waitForNextUpdate();
-  //     // TODO the worker never sets cookies now, so the client has to deal
-  //     // with generating a visitor key and storing it as a cookie
-  //     //
-  //     // we need this to work nicely with ssr and ssg, so the expected behaviour
-  //     // of useFlags depends on which initial state is passed in
-  //     //
-  //     // rendered with ssr? => server should have generated visitorKey if not present, and it should be set in response
-  //     // rendered with ssg? => server sets visitorKey: null in request, and useFlags needs to reevaluate the flags after the initial render
-  //     expect(result.current).toEqual({
-  //       fetching: false,
-  //       flags: { meal: "large" },
-  //       loadedFlags: { meal: "large" },
-  //       settled: false,
-  //       visitorKey: null,
-  //     });
-  //     expect(document.cookie).toEqual("");
-  //     // await waitForNextUpdate();
-  //     // expect(result.current).toEqual({
-  //     //   fetching: false,
-  //     //   flags: { meal: "large" },
-  //     //   loadedFlags: { meal: "large" },
-  //     //   settled: false,
-  //     //   visitorKey: null,
-  //     // });
-  //     // // expect(document.cookie).toEqual("hkvk=fake-visitor-key");
-  //     // expect(fetchMock).toHaveBeenCalledWith(
-  //     //   "https://happykit.dev/api/flags/flags_pub_000000",
-  //     //   {
-  //     //     body: JSON.stringify({ visitorKey: null, user: null, traits: null }),
-  //     //     headers: { "content-type": "application/json" },
-  //     //     method: "POST",
-  //     //   }
-  //     // );
-  //     // expect(localStorage.getItem(cacheKey)).toEqual(
-  //     //   JSON.stringify({
-  //     //     input: {
-  //     //       endpoint: "https://happykit.dev/api/flags",
-  //     //       envKey: "flags_pub_000000",
-  //     //       requestBody: { visitorKey: null, user: null, traits: null },
-  //     //     },
-  //     //     outcome: {
-  //     //       responseBody: {
-  //     //         flags: { meal: "large" },
-  //     //         visitor: null,
-  //     //       },
-  //     //     },
-  //     //   })
-  //     // );
-  //     // expect(fetchMock).toHaveBeenCalledTimes(1);
-  //     // // ensure there are no further updates
-  //     // await expect(waitForNextUpdate({ timeout: 500 })).rejects.toThrow(
-  //     //   "Timed out"
-  //     // );
-  //   });
+  describe("when no visitorKey in cookie and no localStorage", () => {
+    it("generates a visitorKey", async () => {
+      // prepare cookie before test
+      let generatedVisitorKey;
+
+      fetchMock.post(
+        {
+          url: "https://happykit.dev/api/flags/flags_pub_000000",
+          body: {
+            // false because this is the request of the client afer hydration,
+            // not the one during static site generation
+            static: false,
+            traits: null,
+            user: null,
+            // visitorKey: generatedVisitorKey,
+          },
+          matchPartialBody: true,
+        },
+        (url: string, options: RequestInit, request: Request) => {
+          // parse visitorKey so we can mirror it back
+          const body = JSON.parse(options.body as string);
+          generatedVisitorKey = body.visitorKey;
+          expect(typeof generatedVisitorKey).toBe("string");
+          expect(generatedVisitorKey).toHaveLength(21);
+
+          return {
+            flags: {
+              ads: true,
+              checkout: "short",
+              discount: 5,
+              purchaseButtonLabel: "Purchase",
+            },
+            visitor: { key: generatedVisitorKey },
+          };
+        }
+      );
+
+      configure({ envKey: "flags_pub_000000" });
+      expect(localStorage.getItem(cacheKey)).toBeNull();
+      expect(document.cookie).toEqual("");
+
+      const initialStateFromProps: InitialFlagState<Flags> = {
+        input: {
+          endpoint: "https://happykit.dev/api/flags",
+          envKey: "flags_pub_000000",
+          requestBody: {
+            visitorKey: null,
+            user: null,
+            traits: null,
+            static: true,
+          },
+        },
+        outcome: {
+          responseBody: {
+            flags: {
+              ads: true,
+              checkout: null,
+              discount: 5,
+              purchaseButtonLabel: null,
+            },
+            visitor: null,
+          },
+        },
+      };
+
+      const { result, waitForNextUpdate } = renderHook(() =>
+        useFlags({ initialState: initialStateFromProps })
+      );
+
+      expect(result.all).toHaveLength(2);
+      expect(document.cookie).toEqual("");
+      await waitForNextUpdate();
+      expect(document.cookie).toEqual(`hkvk=${generatedVisitorKey}`);
+
+      // the worker never sets cookies now, so the client has to deal
+      // with generating a visitor key and storing it as a cookie
+      //
+      // we need this to work nicely with ssr and ssg, so the expected behaviour
+      // of useFlags depends on which initial state is passed in
+      //
+      // rendered with ssr? => server should have generated visitorKey if not present, and it should be set in response
+      // rendered with ssg? => server sets visitorKey: null in request, and useFlags needs to reevaluate the flags after the initial render
+
+      expect(result.all).toEqual([
+        {
+          flags: {
+            ads: true,
+            checkout: null,
+            discount: 5,
+            purchaseButtonLabel: null,
+          },
+          loadedFlags: {
+            ads: true,
+            checkout: null,
+            discount: 5,
+            purchaseButtonLabel: null,
+          },
+          fetching: false,
+          settled: false,
+          visitorKey: null,
+        },
+        {
+          flags: {
+            ads: true,
+            checkout: null,
+            discount: 5,
+            purchaseButtonLabel: null,
+          },
+          loadedFlags: {
+            ads: true,
+            checkout: null,
+            discount: 5,
+            purchaseButtonLabel: null,
+          },
+          fetching: true,
+          settled: false,
+          visitorKey: generatedVisitorKey,
+        },
+        {
+          flags: {
+            ads: true,
+            checkout: "short",
+            discount: 5,
+            purchaseButtonLabel: "Purchase",
+          },
+          loadedFlags: {
+            ads: true,
+            checkout: "short",
+            discount: 5,
+            purchaseButtonLabel: "Purchase",
+          },
+          fetching: false,
+          settled: true,
+          visitorKey: generatedVisitorKey,
+        },
+      ]);
+
+      // ensure there are no further updates
+      await expect(waitForNextUpdate({ timeout: 500 })).rejects.toThrow(
+        "Timed out"
+      );
+    });
+  });
+
+  describe("when visitorKey in cookie and no localStorage", () => {
+    it("generates a visitorKey", async () => {
+      // prepare cookie before test
+      const visitorKeyInCookie = nanoid();
+      document.cookie = `hkvk=${visitorKeyInCookie}`;
+
+      fetchMock.post(
+        {
+          url: "https://happykit.dev/api/flags/flags_pub_000000",
+          body: {
+            // false because this is the request of the client afer hydration,
+            // not the one during static site generation
+            static: false,
+            traits: null,
+            user: null,
+            visitorKey: visitorKeyInCookie,
+          },
+        },
+        {
+          flags: {
+            ads: true,
+            checkout: "short",
+            discount: 5,
+            purchaseButtonLabel: "Purchase",
+          },
+          visitor: { key: visitorKeyInCookie },
+        }
+      );
+
+      configure({ envKey: "flags_pub_000000" });
+      expect(localStorage.getItem(cacheKey)).toBeNull();
+
+      const initialStateFromProps: InitialFlagState<Flags> = {
+        input: {
+          endpoint: "https://happykit.dev/api/flags",
+          envKey: "flags_pub_000000",
+          requestBody: {
+            visitorKey: null,
+            user: null,
+            traits: null,
+            static: true,
+          },
+        },
+        outcome: {
+          responseBody: {
+            flags: {
+              ads: true,
+              checkout: null,
+              discount: 5,
+              purchaseButtonLabel: null,
+            },
+            visitor: null,
+          },
+        },
+      };
+
+      const { result, waitForNextUpdate } = renderHook(() =>
+        useFlags({ initialState: initialStateFromProps })
+      );
+
+      expect(result.all).toHaveLength(2);
+      expect(document.cookie).toEqual(`hkvk=${visitorKeyInCookie}`);
+      await waitForNextUpdate();
+      expect(document.cookie).toEqual(`hkvk=${visitorKeyInCookie}`);
+
+      expect(result.all).toEqual([
+        {
+          flags: {
+            ads: true,
+            checkout: null,
+            discount: 5,
+            purchaseButtonLabel: null,
+          },
+          loadedFlags: {
+            ads: true,
+            checkout: null,
+            discount: 5,
+            purchaseButtonLabel: null,
+          },
+          fetching: false,
+          settled: false,
+          visitorKey: null,
+        },
+        {
+          flags: {
+            ads: true,
+            checkout: null,
+            discount: 5,
+            purchaseButtonLabel: null,
+          },
+          loadedFlags: {
+            ads: true,
+            checkout: null,
+            discount: 5,
+            purchaseButtonLabel: null,
+          },
+          fetching: true,
+          settled: false,
+          visitorKey: visitorKeyInCookie,
+        },
+        {
+          flags: {
+            ads: true,
+            checkout: "short",
+            discount: 5,
+            purchaseButtonLabel: "Purchase",
+          },
+          loadedFlags: {
+            ads: true,
+            checkout: "short",
+            discount: 5,
+            purchaseButtonLabel: "Purchase",
+          },
+          fetching: false,
+          settled: true,
+          visitorKey: visitorKeyInCookie,
+        },
+      ]);
+
+      // ensure there are no further updates
+      await expect(waitForNextUpdate({ timeout: 500 })).rejects.toThrow(
+        "Timed out"
+      );
+    });
+  });
+
+  describe("when visitorKey in cookie and localStorage", () => {
+    it("generates a visitorKey", async () => {
+      // prepare cookie before test
+      const visitorKeyInCookie = nanoid();
+      document.cookie = `hkvk=${visitorKeyInCookie}`;
+
+      // the localStorage doesn't play any role here as the static result counts
+      // first and we don't want to swap twice
+      localStorage.setItem(
+        "happykit_flags_cache_v1",
+        JSON.stringify({
+          input: {
+            endpoint: "https://happykit.dev/api/flags",
+            envKey: "flags_pub_000000",
+            requestBody: {
+              visitorKey: visitorKeyInCookie,
+              user: null,
+              traits: null,
+              static: false,
+            },
+          },
+          outcome: {
+            responseBody: {
+              flags: {
+                ads: true,
+                checkout: "medium",
+                discount: 5,
+                // purchaseButtonLabel: "Buy now",
+              },
+              visitor: { key: visitorKeyInCookie },
+            },
+          },
+        })
+      );
+
+      fetchMock.post(
+        {
+          url: "https://happykit.dev/api/flags/flags_pub_000000",
+          body: {
+            // false because this is the request of the client afer hydration,
+            // not the one during static site generation
+            static: false,
+            traits: null,
+            user: null,
+            visitorKey: visitorKeyInCookie,
+          },
+        },
+        {
+          flags: {
+            ads: true,
+            checkout: "short",
+            discount: 5,
+            purchaseButtonLabel: "Purchase",
+          },
+          visitor: { key: visitorKeyInCookie },
+        }
+      );
+
+      configure({ envKey: "flags_pub_000000" });
+
+      const initialStateFromProps: InitialFlagState<Flags> = {
+        input: {
+          endpoint: "https://happykit.dev/api/flags",
+          envKey: "flags_pub_000000",
+          requestBody: {
+            visitorKey: null,
+            user: null,
+            traits: null,
+            static: true,
+          },
+        },
+        outcome: {
+          responseBody: {
+            flags: {
+              ads: true,
+              checkout: null,
+              discount: 5,
+              purchaseButtonLabel: null,
+            },
+            visitor: null,
+          },
+        },
+      };
+
+      const { result, waitForNextUpdate } = renderHook(() =>
+        useFlags({ initialState: initialStateFromProps })
+      );
+
+      expect(result.all).toHaveLength(2);
+      expect(document.cookie).toEqual(`hkvk=${visitorKeyInCookie}`);
+      await waitForNextUpdate();
+      expect(document.cookie).toEqual(`hkvk=${visitorKeyInCookie}`);
+
+      expect(result.all).toEqual([
+        {
+          flags: {
+            ads: true,
+            checkout: null,
+            discount: 5,
+            purchaseButtonLabel: null,
+          },
+          loadedFlags: {
+            ads: true,
+            checkout: null,
+            discount: 5,
+            purchaseButtonLabel: null,
+          },
+          fetching: false,
+          settled: false,
+          visitorKey: null,
+        },
+        {
+          flags: {
+            ads: true,
+            checkout: null,
+            discount: 5,
+            purchaseButtonLabel: null,
+          },
+          loadedFlags: {
+            ads: true,
+            checkout: null,
+            discount: 5,
+            purchaseButtonLabel: null,
+          },
+          fetching: true,
+          settled: false,
+          visitorKey: visitorKeyInCookie,
+        },
+        {
+          flags: {
+            ads: true,
+            checkout: "short",
+            discount: 5,
+            purchaseButtonLabel: "Purchase",
+          },
+          loadedFlags: {
+            ads: true,
+            checkout: "short",
+            discount: 5,
+            purchaseButtonLabel: "Purchase",
+          },
+          fetching: false,
+          settled: true,
+          visitorKey: visitorKeyInCookie,
+        },
+      ]);
+
+      // ensure there are no further updates
+      await expect(waitForNextUpdate({ timeout: 500 })).rejects.toThrow(
+        "Timed out"
+      );
+    });
+  });
 });
