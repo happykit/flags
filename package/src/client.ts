@@ -177,12 +177,24 @@ export function useFlags<F extends Flags = Flags>(
 
   // read from cache initially
   React.useEffect(() => {
+    if (!isConfigured(config)) throw new MissingConfigurationError();
     if (shouldDisableCache || state.current) return;
 
     try {
       const cachedCurrent = JSON.parse(String(localStorage.getItem(cacheKey)));
 
       if (cachedCurrent) {
+        // cache is only respected if it matches
+        const hkvk = getCookie(document.cookie, "hkvk");
+        if (
+          !hkvk ||
+          cachedCurrent?.input?.requestBody?.visitorKey !== hkvk ||
+          cachedCurrent?.outcome?.responseBody?.visitor?.key !== hkvk ||
+          cachedCurrent?.input?.endpoint !== config.endpoint ||
+          cachedCurrent?.input?.envKey !== config.envKey
+        )
+          return;
+
         dispatch({
           type: "prefillFromLocalStorage",
           current: cachedCurrent,
@@ -233,9 +245,11 @@ export function useFlags<F extends Flags = Flags>(
       }
     }
 
-    document.addEventListener("visibilitychange", handleFocus);
+    // extracted "visibilitychange" for bundle size
+    const visibilityChange = "visibilitychange";
+    document.addEventListener(visibilityChange, handleFocus);
     return () => {
-      document.removeEventListener("visibilitychange", handleFocus);
+      document.removeEventListener(visibilityChange, handleFocus);
     };
   }, [state, currentUser, currentTraits, shouldRevalidateOnFocus]);
 
@@ -292,11 +306,15 @@ export function useFlags<F extends Flags = Flags>(
   const defaultFlags = config.defaultFlags;
 
   const flagBag = React.useMemo<FlagBag<F>>(() => {
-    const loadedFlags =
+    const loadedFlags = state.prefilledFromLocalStorage
+      ? null
+      : (state.current?.outcome?.responseBody.flags as F | undefined) || null;
+
+    const prefilledFlags =
       (state.current?.outcome?.responseBody.flags as F | undefined) || null;
 
     const flags = combineLoadedFlagsWithDefaultFlags<F>(
-      loadedFlags,
+      loadedFlags || prefilledFlags,
       defaultFlags
     );
 
