@@ -5,4 +5,5 @@ module.exports = {
   testEnvironment: "node",
   // automock: false,
   setupFiles: ["./jest/mutation-observer.js"],
+  setupFilesAfterEnv: ["jest-expect-message"],
 };
