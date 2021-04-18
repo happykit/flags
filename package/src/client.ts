@@ -88,9 +88,9 @@ function isEmergingInput<F extends Flags>(input: Input, state: State<F>) {
  * We use a hand-rolled version to keep the size of this package minimal.
  */
 function reducer<F extends Flags>(
-  tuple: [State<F>, Effect[]],
+  tuple: readonly [State<F>, Effect[]],
   action: Action<F>
-): [State<F>, Effect[]] {
+): readonly [State<F>, Effect[]] {
   const [state /* and effects */] = tuple;
   switch (action.type) {
     case "prefillFromLocalStorage": {
