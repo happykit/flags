@@ -29,8 +29,6 @@ export type {
   Outcome,
 } from "./types";
 
-export const cacheKey = "happykit_flags_cache_v1";
-
 type State<F extends Flags> =
   // useFlags() used without initialState (without getFlags())
   //
@@ -48,12 +46,10 @@ type State<F extends Flags> =
       outcome: Outcome<F> | null;
     };
     pending: null | { input: Input };
-    prefilledFromLocalStorage: boolean;
   };
 
 type Action<F extends Flags> =
   | { type: "mount" }
-  | { type: "prefillFromLocalStorage"; current: State<F>["current"] }
   | { type: "evaluate"; input: Input }
   | { type: "settle/success"; input: Input; outcome: Outcome<F> }
   | { type: "settle/failure"; input: Input };
@@ -93,13 +89,6 @@ function reducer<F extends Flags>(
 ): readonly [State<F>, Effect[]] {
   const [state /* and effects */] = tuple;
   switch (action.type) {
-    case "prefillFromLocalStorage": {
-      if (state.current) return tuple;
-      return [
-        { ...state, current: action.current, prefilledFromLocalStorage: true },
-        [],
-      ];
-    }
     case "evaluate": {
       return [
         { ...state, pending: { input: action.input } },
@@ -115,7 +104,6 @@ function reducer<F extends Flags>(
           ...state,
           current: { input: action.input, outcome: action.outcome },
           pending: null,
-          prefilledFromLocalStorage: false,
         },
         [],
       ];
@@ -127,7 +115,6 @@ function reducer<F extends Flags>(
               ...state,
               current: { input: action.input, outcome: null },
               pending: null,
-              prefilledFromLocalStorage: false,
             },
             [],
           ]
@@ -144,7 +131,6 @@ export function useFlags<F extends Flags = Flags>(
     traits?: Traits | null;
     initialState?: InitialFlagState<F>;
     revalidateOnFocus?: boolean;
-    disableCache?: boolean;
   } = {}
 ): FlagBag<F> {
   if (!isConfigured(config)) throw new MissingConfigurationError();
@@ -157,10 +143,6 @@ export function useFlags<F extends Flags = Flags>(
     options.revalidateOnFocus === undefined
       ? config.revalidateOnFocus
       : options.revalidateOnFocus;
-  const shouldDisableCache =
-    options.disableCache === undefined
-      ? config.disableCache
-      : options.disableCache;
 
   const [[state, effects], dispatch] = React.useReducer(
     reducer,
@@ -169,39 +151,10 @@ export function useFlags<F extends Flags = Flags>(
       {
         current: initialFlagState || null,
         pending: null,
-        prefilledFromLocalStorage: false,
       },
       [] as Effect[],
     ]
   );
-
-  // read from cache initially
-  React.useEffect(() => {
-    if (!isConfigured(config)) throw new MissingConfigurationError();
-    if (shouldDisableCache || state.current) return;
-
-    try {
-      const cachedCurrent = JSON.parse(String(localStorage.getItem(cacheKey)));
-
-      if (cachedCurrent) {
-        // cache is only respected if it matches
-        const hkvk = getCookie(document.cookie, "hkvk");
-        if (
-          !hkvk ||
-          cachedCurrent?.input?.requestBody?.visitorKey !== hkvk ||
-          cachedCurrent?.outcome?.responseBody?.visitor?.key !== hkvk ||
-          cachedCurrent?.input?.endpoint !== config.endpoint ||
-          cachedCurrent?.input?.envKey !== config.envKey
-        )
-          return;
-
-        dispatch({
-          type: "prefillFromLocalStorage",
-          current: cachedCurrent,
-        });
-      }
-    } catch (e) {}
-  }, [shouldDisableCache, state.current]);
 
   React.useEffect(() => {
     if (!isConfigured(config)) throw new MissingConfigurationError();
@@ -297,18 +250,11 @@ export function useFlags<F extends Flags = Flags>(
     });
   }, [effects, dispatch]);
 
-  // sync to cache in localStorage
-  React.useEffect(() => {
-    if (shouldDisableCache || !state.current) return;
-    localStorage.setItem(cacheKey, JSON.stringify(state.current));
-  }, [shouldDisableCache, state.current]);
-
   const defaultFlags = config.defaultFlags;
 
   const flagBag = React.useMemo<FlagBag<F>>(() => {
-    const loadedFlags = state.prefilledFromLocalStorage
-      ? null
-      : (state.current?.outcome?.responseBody.flags as F | undefined) || null;
+    const loadedFlags =
+      (state.current?.outcome?.responseBody.flags as F | undefined) || null;
 
     const prefilledFlags =
       (state.current?.outcome?.responseBody.flags as F | undefined) || null;
@@ -327,9 +273,7 @@ export function useFlags<F extends Flags = Flags>(
       loadedFlags,
       fetching: Boolean(state.pending),
       settled: Boolean(
-        state.current &&
-          !state.current.input.requestBody.static &&
-          !state.prefilledFromLocalStorage
+        state.current && !state.current.input.requestBody.static
       ),
       visitorKey:
         state.current?.outcome?.responseBody.visitor?.key ||
