@@ -15,7 +15,6 @@ import { FlagBag, Flags, InitialFlagState } from "./types";
 beforeEach(() => {
   _resetConfig();
   fetchMock.reset();
-  window.localStorage.removeItem(cacheKey);
   deleteAllCookies(window);
 });
 
@@ -31,7 +30,7 @@ it("it warns on missing config", () => {
 });
 
 describe("client-side rendering", () => {
-  describe("when no cookie and no localStorage are set", () => {
+  describe("when cookie is not set", () => {
     it("generates a visitor key", async () => {
       // mock incoming post request...
       fetchMock.post(
@@ -67,7 +66,6 @@ describe("client-side rendering", () => {
       );
 
       configure({ envKey: "flags_pub_000000" });
-      expect(localStorage.getItem(cacheKey)).toBeNull();
       expect(document.cookie).toEqual("");
 
       const { result, waitForNextUpdate } = renderHook(() => useFlags());
@@ -117,7 +115,7 @@ describe("client-side rendering", () => {
     });
   });
 
-  describe("when set in cookie, and no localStorage is set", () => {
+  describe("when cookie is set", () => {
     it("reuses the visitor key", async () => {
       // prepare cookie before test
       const visitorKeyInCookie = nanoid();
@@ -150,7 +148,6 @@ describe("client-side rendering", () => {
       );
 
       configure({ envKey: "flags_pub_000000" });
-      expect(localStorage.getItem(cacheKey)).toBeNull();
       expect(document.cookie).toEqual(`hkvk=${visitorKeyInCookie}`);
 
       // start actual testing
@@ -195,359 +192,6 @@ describe("client-side rendering", () => {
       ]);
     });
   });
-
-  describe("when no cookie, but localStorage is set", () => {
-    it("ignores the localStorage", async () => {
-      // prepare localStorage with the same endpoint + envKey
-      const visitorKeyInLocalStorage = nanoid();
-      localStorage.setItem(
-        "happykit_flags_cache_v1",
-        JSON.stringify({
-          input: {
-            endpoint: "https://happykit.dev/api/flags",
-            envKey: "flags_pub_000000",
-            requestBody: {
-              visitorKey: visitorKeyInLocalStorage,
-              user: null,
-              traits: null,
-              static: false,
-            },
-          },
-          outcome: {
-            responseBody: {
-              flags: {
-                ads: true,
-                checkout: "medium",
-                discount: 5,
-                purchaseButtonLabel: "Buy now",
-              },
-              visitor: { key: visitorKeyInLocalStorage },
-            },
-          },
-        })
-      );
-
-      // but there is no visitorKey cookie, so the localStorage can't be used
-      expect(document.cookie).toBe("");
-
-      fetchMock.post(
-        {
-          url: "https://happykit.dev/api/flags/flags_pub_000000",
-          body: {
-            // there is a visitorKey but we don't know the value as it's generated
-            // visitorKey: expect.any(String),
-            user: null,
-            traits: null,
-            static: false,
-          },
-          matchPartialBody: true,
-        },
-        (url: string, options: RequestInit, request: Request) => {
-          // parse visitorKey so we can mirror it back
-          const body = JSON.parse(options.body as string);
-          const visitorKey = body.visitorKey;
-          expect(typeof visitorKey).toBe("string");
-
-          expect(
-            visitorKey,
-            "cache in localStorage and its visitorKey should be ignored, as no matching visitorKey in the cookies existed"
-          ).not.toBe(visitorKeyInLocalStorage);
-
-          return {
-            flags: {
-              ads: true,
-              checkout: "medium",
-              discount: 5,
-              purchaseButtonLabel: "Purchase",
-            },
-            visitor: { key: visitorKey },
-          };
-        }
-      );
-
-      configure({ envKey: "flags_pub_000000" });
-      // expect(localStorage.getItem(cacheKey)).toBeNull();
-      expect(document.cookie).toEqual("");
-
-      const { result, waitForNextUpdate } = renderHook(() => useFlags());
-
-      expect(result.all).toHaveLength(2);
-
-      await waitForNextUpdate();
-
-      expect(result.all).toEqual([
-        {
-          flags: {},
-          loadedFlags: null,
-          fetching: false,
-          settled: false,
-          visitorKey: null,
-        },
-        {
-          flags: {},
-          loadedFlags: null,
-          fetching: true,
-          settled: false,
-          visitorKey: expect.any(String),
-        },
-        {
-          flags: {
-            ads: true,
-            checkout: "medium",
-            discount: 5,
-            purchaseButtonLabel: "Purchase",
-          },
-          loadedFlags: {
-            ads: true,
-            checkout: "medium",
-            discount: 5,
-            purchaseButtonLabel: "Purchase",
-          },
-          fetching: false,
-          settled: true,
-          visitorKey: expect.any(String),
-        },
-      ]);
-
-      expect(
-        (result.all[1] as FlagBag<any>).visitorKey,
-        "visitor key must stay consistent between renders"
-      ).toEqual((result.all[2] as FlagBag<any>).visitorKey);
-
-      expect(
-        (result.all[1] as FlagBag<any>).visitorKey,
-        "visitor key should not be reused from original localStorage"
-      ).not.toEqual(visitorKeyInLocalStorage);
-    });
-  });
-
-  describe("when cookie and localStorage are set but the visitorKey does not match", () => {
-    it("ignores the localStorage", async () => {
-      // prepare localStorage and cookie, but use a different visitorKey for each
-      const visitorKeyInCookie = nanoid();
-      document.cookie = `hkvk=${visitorKeyInCookie}`;
-
-      const visitorKeyInLocalStorage = nanoid();
-      localStorage.setItem(
-        "happykit_flags_cache_v1",
-        JSON.stringify({
-          input: {
-            endpoint: "https://happykit.dev/api/flags",
-            envKey: "flags_pub_000000",
-            requestBody: {
-              visitorKey: visitorKeyInLocalStorage,
-              user: null,
-              traits: null,
-              static: false,
-            },
-          },
-          outcome: {
-            responseBody: {
-              flags: {
-                ads: true,
-                checkout: "medium",
-                discount: 5,
-                purchaseButtonLabel: "Buy now",
-              },
-              visitor: { key: visitorKeyInLocalStorage },
-            },
-          },
-        })
-      );
-
-      fetchMock.post(
-        {
-          url: "https://happykit.dev/api/flags/flags_pub_000000",
-          body: {
-            static: false,
-            traits: null,
-            user: null,
-            visitorKey: visitorKeyInCookie,
-          },
-        },
-        {
-          headers: { "content-type": "application/json" },
-          body: {
-            flags: {
-              ads: true,
-              checkout: "medium",
-              discount: 5,
-              purchaseButtonLabel: "Purchase",
-            },
-            visitor: { key: visitorKeyInCookie },
-          },
-        }
-      );
-
-      configure({ envKey: "flags_pub_000000" });
-      expect(localStorage.getItem(cacheKey)).not.toBeNull();
-      expect(document.cookie).toEqual(`hkvk=${visitorKeyInCookie}`);
-
-      const { result, waitForNextUpdate } = renderHook(() => useFlags());
-
-      expect(result.all).toHaveLength(2);
-
-      await waitForNextUpdate();
-
-      expect(result.all).toEqual([
-        {
-          flags: {},
-          loadedFlags: null,
-          fetching: false,
-          settled: false,
-          visitorKey: null,
-        },
-        {
-          flags: {},
-          loadedFlags: null,
-          fetching: true,
-          settled: false,
-          visitorKey: visitorKeyInCookie,
-        },
-        {
-          flags: {
-            ads: true,
-            checkout: "medium",
-            discount: 5,
-            purchaseButtonLabel: "Purchase",
-          },
-          loadedFlags: {
-            ads: true,
-            checkout: "medium",
-            discount: 5,
-            purchaseButtonLabel: "Purchase",
-          },
-          fetching: false,
-          settled: true,
-          visitorKey: visitorKeyInCookie,
-        },
-      ]);
-
-      expect(
-        (result.all[1] as FlagBag<any>).visitorKey,
-        "visitor key must stay consistent between renders"
-      ).toEqual((result.all[2] as FlagBag<any>).visitorKey);
-
-      expect(
-        (result.all[1] as FlagBag<any>).visitorKey,
-        "visitor key should not be reused from original localStorage"
-      ).not.toEqual(visitorKeyInLocalStorage);
-    });
-  });
-
-  describe("when cookie and localStorage are set and they match", () => {
-    it("uses the localStorage", async () => {
-      // prepare localStorage and cookie, but use a different visitorKey for each
-      const generatedVisitorKey = nanoid();
-      document.cookie = `hkvk=${generatedVisitorKey}`;
-
-      localStorage.setItem(
-        "happykit_flags_cache_v1",
-        JSON.stringify({
-          input: {
-            endpoint: "https://happykit.dev/api/flags",
-            envKey: "flags_pub_000000",
-            requestBody: {
-              visitorKey: generatedVisitorKey,
-              user: null,
-              traits: null,
-              static: false,
-            },
-          },
-          outcome: {
-            responseBody: {
-              flags: {
-                ads: true,
-                checkout: "medium",
-                discount: 5,
-                // purchaseButtonLabel: "Buy now",
-              },
-              visitor: { key: generatedVisitorKey },
-            },
-          },
-        })
-      );
-
-      fetchMock.post(
-        {
-          url: "https://happykit.dev/api/flags/flags_pub_000000",
-          body: {
-            static: false,
-            traits: null,
-            user: null,
-            visitorKey: generatedVisitorKey,
-          },
-        },
-        {
-          headers: { "content-type": "application/json" },
-          body: {
-            flags: {
-              ads: true,
-              checkout: "medium",
-              discount: 5,
-              purchaseButtonLabel: "Purchase",
-            },
-            visitor: { key: generatedVisitorKey },
-          },
-        }
-      );
-
-      configure({ envKey: "flags_pub_000000" });
-      expect(localStorage.getItem(cacheKey)).not.toBeNull();
-      expect(document.cookie).toEqual(`hkvk=${generatedVisitorKey}`);
-
-      const { result, waitForNextUpdate } = renderHook(() => useFlags());
-
-      expect(result.all).toHaveLength(2);
-
-      await waitForNextUpdate();
-
-      expect(result.all).toEqual([
-        {
-          flags: {},
-          loadedFlags: null,
-          fetching: false,
-          settled: false,
-          visitorKey: null,
-        },
-        // prefilled from localStorage
-        {
-          flags: {
-            ads: true,
-            checkout: "medium",
-            discount: 5,
-            // purchaseButtonLabel: "Buy now",
-          },
-          loadedFlags: null,
-          fetching: true,
-          settled: false,
-          visitorKey: generatedVisitorKey,
-        },
-        {
-          flags: {
-            ads: true,
-            checkout: "medium",
-            discount: 5,
-            purchaseButtonLabel: "Purchase",
-          },
-          loadedFlags: {
-            ads: true,
-            checkout: "medium",
-            discount: 5,
-            purchaseButtonLabel: "Purchase",
-          },
-          fetching: false,
-          settled: true,
-          visitorKey: generatedVisitorKey,
-        },
-      ]);
-
-      expect(
-        (result.all[1] as FlagBag<any>).visitorKey,
-        "visitor key must stay consistent between renders"
-      ).toEqual((result.all[2] as FlagBag<any>).visitorKey);
-    });
-  });
 });
 
 describe("server-side rendering (hybrid)", () => {
@@ -557,7 +201,6 @@ describe("server-side rendering (hybrid)", () => {
       const generatedVisitorKey = nanoid();
 
       configure({ envKey: "flags_pub_000000" });
-      expect(localStorage.getItem(cacheKey)).toBeNull();
       expect(document.cookie).toEqual("");
 
       const initialStateFromProps: InitialFlagState<Flags> = {
@@ -630,7 +273,6 @@ describe("server-side rendering (hybrid)", () => {
       document.cookie = `hkvk=${visitorKeyInCookie}`;
 
       configure({ envKey: "flags_pub_000000" });
-      expect(localStorage.getItem(cacheKey)).toBeNull();
       expect(document.cookie).toEqual(`hkvk=${visitorKeyInCookie}`);
 
       const initialStateFromProps: InitialFlagState<Flags> = {
@@ -688,7 +330,7 @@ describe("server-side rendering (hybrid)", () => {
 });
 
 describe("static site generation (hybrid)", () => {
-  describe("when no visitorKey in cookie and no localStorage", () => {
+  describe("when cookie is not set", () => {
     it("generates a visitorKey", async () => {
       // prepare cookie before test
       let generatedVisitorKey;
@@ -726,7 +368,6 @@ describe("static site generation (hybrid)", () => {
       );
 
       configure({ envKey: "flags_pub_000000" });
-      expect(localStorage.getItem(cacheKey)).toBeNull();
       expect(document.cookie).toEqual("");
 
       const initialStateFromProps: InitialFlagState<Flags> = {
@@ -832,166 +473,11 @@ describe("static site generation (hybrid)", () => {
     });
   });
 
-  describe("when visitorKey in cookie and no localStorage", () => {
+  describe("when cookie is set", () => {
     it("generates a visitorKey", async () => {
       // prepare cookie before test
       const visitorKeyInCookie = nanoid();
       document.cookie = `hkvk=${visitorKeyInCookie}`;
-
-      fetchMock.post(
-        {
-          url: "https://happykit.dev/api/flags/flags_pub_000000",
-          body: {
-            // false because this is the request of the client afer hydration,
-            // not the one during static site generation
-            static: false,
-            traits: null,
-            user: null,
-            visitorKey: visitorKeyInCookie,
-          },
-        },
-        {
-          flags: {
-            ads: true,
-            checkout: "short",
-            discount: 5,
-            purchaseButtonLabel: "Purchase",
-          },
-          visitor: { key: visitorKeyInCookie },
-        }
-      );
-
-      configure({ envKey: "flags_pub_000000" });
-      expect(localStorage.getItem(cacheKey)).toBeNull();
-
-      const initialStateFromProps: InitialFlagState<Flags> = {
-        input: {
-          endpoint: "https://happykit.dev/api/flags",
-          envKey: "flags_pub_000000",
-          requestBody: {
-            visitorKey: null,
-            user: null,
-            traits: null,
-            static: true,
-          },
-        },
-        outcome: {
-          responseBody: {
-            flags: {
-              ads: true,
-              checkout: null,
-              discount: 5,
-              purchaseButtonLabel: null,
-            },
-            visitor: null,
-          },
-        },
-      };
-
-      const { result, waitForNextUpdate } = renderHook(() =>
-        useFlags({ initialState: initialStateFromProps })
-      );
-
-      expect(result.all).toHaveLength(2);
-      expect(document.cookie).toEqual(`hkvk=${visitorKeyInCookie}`);
-      await waitForNextUpdate();
-      expect(document.cookie).toEqual(`hkvk=${visitorKeyInCookie}`);
-
-      expect(result.all).toEqual([
-        {
-          flags: {
-            ads: true,
-            checkout: null,
-            discount: 5,
-            purchaseButtonLabel: null,
-          },
-          loadedFlags: {
-            ads: true,
-            checkout: null,
-            discount: 5,
-            purchaseButtonLabel: null,
-          },
-          fetching: false,
-          settled: false,
-          visitorKey: null,
-        },
-        {
-          flags: {
-            ads: true,
-            checkout: null,
-            discount: 5,
-            purchaseButtonLabel: null,
-          },
-          loadedFlags: {
-            ads: true,
-            checkout: null,
-            discount: 5,
-            purchaseButtonLabel: null,
-          },
-          fetching: true,
-          settled: false,
-          visitorKey: visitorKeyInCookie,
-        },
-        {
-          flags: {
-            ads: true,
-            checkout: "short",
-            discount: 5,
-            purchaseButtonLabel: "Purchase",
-          },
-          loadedFlags: {
-            ads: true,
-            checkout: "short",
-            discount: 5,
-            purchaseButtonLabel: "Purchase",
-          },
-          fetching: false,
-          settled: true,
-          visitorKey: visitorKeyInCookie,
-        },
-      ]);
-
-      // ensure there are no further updates
-      await expect(waitForNextUpdate({ timeout: 500 })).rejects.toThrow(
-        "Timed out"
-      );
-    });
-  });
-
-  describe("when visitorKey in cookie and localStorage", () => {
-    it("generates a visitorKey", async () => {
-      // prepare cookie before test
-      const visitorKeyInCookie = nanoid();
-      document.cookie = `hkvk=${visitorKeyInCookie}`;
-
-      // the localStorage doesn't play any role here as the static result counts
-      // first and we don't want to swap twice
-      localStorage.setItem(
-        "happykit_flags_cache_v1",
-        JSON.stringify({
-          input: {
-            endpoint: "https://happykit.dev/api/flags",
-            envKey: "flags_pub_000000",
-            requestBody: {
-              visitorKey: visitorKeyInCookie,
-              user: null,
-              traits: null,
-              static: false,
-            },
-          },
-          outcome: {
-            responseBody: {
-              flags: {
-                ads: true,
-                checkout: "medium",
-                discount: 5,
-                // purchaseButtonLabel: "Buy now",
-              },
-              visitor: { key: visitorKeyInCookie },
-            },
-          },
-        })
-      );
 
       fetchMock.post(
         {

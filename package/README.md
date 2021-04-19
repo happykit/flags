@@ -137,7 +137,6 @@ export default function FooPage(props) {
 - `configure(options)`
   - `options.envKey` _(string)_ _required_: Your HappyKit Flags Client Id
   - `options.defaultFlags` _(object)_ _optional_: Key-value pairs of flags and their values. These values are used as fallbacks in `useFlags` and `getFlags`. The fallbacks are used while the actual flags are loaded, in case a flag is missing or when the request loading the flags fails for unexpected reasons. If you don't declare `defaultFlags`, then the flag values will be `undefined`.
-  - `options.disableCache` _(boolean)_ _optional_: Pass `true` to turn off the client-side cache. The cache is persisted to `localStorage` and persists across page loads. Even with an enabled cache, all flags will get revalidated in [`stale-while-revalidate`](https://tools.ietf.org/html/rfc5861) fashion.
 
 ### `useFlags`
 
@@ -146,7 +145,6 @@ export default function FooPage(props) {
   - `options.traits` _(object)_ _optional_: An object which you have access to in the flag's rules. You can target users based on traits.
   - `options.initialState` _(object)_ _optional_: In case you preloaded your flags during server-side rendering using `getFlags()`, provide the returned state as `initialState`. The client will then skip the first request whenever possible and use the provided flags instead. This allows you to get rid of loading states and on the client.
   - `options.revalidateOnFocus` _(object)_ _optional_: By default the client will revalidate all feature flags when the browser window regains focus. Pass `revalidateOnFocus: false` to skip this behaviour.
-  - `options.disableCache` _(boolean)_ _optional_: The client will not cache the flags in localStorage when this setting is enabled.
 
 This function returns an object we usually call [`flagBag`](#flagBag). It contains the requested flags and other information.
 

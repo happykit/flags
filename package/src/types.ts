@@ -106,31 +106,12 @@ export type IncomingConfiguration<F extends Flags> = {
    * regains focus. You can disable this by passing `revalidateOnFocus: false`.
    */
   revalidateOnFocus?: boolean;
-  /**
-   * By default `@happykit/flags` stores the evaluated feature flags in
-   * localStorage and reads them from there when rendering.
-   *
-   * When `useFlags` is used without `initialState` the flags are
-   * initially empty (or set to `defaultFlags` in case it was provided) to
-   * ensure that the server-generated site matches the client. Then, the flags
-   * are resolved from the cache first while the most recent flags are loaded
-   * from the API in the background. You can disable this intermediate resolving
-   * from the cache by passing `disableCache: true`.
-   *
-   * Note that you can detect whether the flags were loaded from the API and
-   * have thus stabilized by checking the `settled` property on the object
-   * returned from `useFlags()`.
-   *
-   * @default false
-   */
-  disableCache?: boolean;
 };
 
 export type DefaultConfiguration = {
   endpoint: string;
   defaultFlags: Flags;
   revalidateOnFocus: boolean;
-  disableCache: boolean;
 };
 
 export interface FlagBag<F extends Flags> {

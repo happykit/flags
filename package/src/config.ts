@@ -20,7 +20,6 @@ export function configure<F extends Flags = Flags>(
     endpoint: "https://happykit.dev/api/flags",
     defaultFlags: {},
     revalidateOnFocus: true,
-    disableCache: false,
   };
 
   if (
