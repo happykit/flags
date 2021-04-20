@@ -102,3 +102,36 @@ export function deepEqual(objA: any, objB: any) {
 
   return objA !== objA && objB !== objB;
 }
+
+export class ObjectMap<Key extends any, Value extends any> {
+  keys: Key[] = [];
+  values: Value[] = [];
+
+  private _getIndex(key: Key) {
+    return this.keys.findIndex((storedKey) => deepEqual(key, storedKey));
+  }
+
+  set(key: Key, value: Value) {
+    const index = this._getIndex(key);
+    if (index == -1) {
+      this.keys.push(key);
+      this.values.push(value);
+    } else {
+      this.values[index] = value;
+    }
+  }
+
+  get<ReturnValue>(key: Key): ReturnValue | null {
+    const index = this._getIndex(key);
+    return index === -1 ? null : (this.values[index] as ReturnValue);
+  }
+
+  // exists(key: Key) {
+  //   return this.keys.some((storedKey) => deepEqual(storedKey, key));
+  // }
+
+  // clear() {
+  //   this.keys = [];
+  //   this.values = [];
+  // }
+}
