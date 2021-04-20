@@ -26,9 +26,8 @@ export default function Page() {
             fallback flags (no fallback is configured in this demo)
           </li>
           <li>
-            the second one (Render #2) is the rehydration from the cache in
-            localStorage, whose outcome depends on whether you have visited the
-            demo page before
+            the second one (Render #2) is the rehydration from the cache, whose
+            outcome depends on whether you have visited the demo page before
           </li>
           <li>
             the last one (Render #3) is the final settlement with the flags

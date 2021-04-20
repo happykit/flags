@@ -17,6 +17,7 @@ import {
   getCookie,
   serializeVisitorKeyCookie,
   combineLoadedFlagsWithDefaultFlags,
+  ObjectMap,
 } from "./utils";
 
 export type {
@@ -46,6 +47,7 @@ type State<F extends Flags> =
       outcome: Outcome<F> | null;
     };
     pending: null | { input: Input };
+    prefilledFromCache: boolean;
   };
 
 type Action<F extends Flags> =
@@ -90,8 +92,17 @@ function reducer<F extends Flags>(
   const [state /* and effects */] = tuple;
   switch (action.type) {
     case "evaluate": {
+      const cachedOutcome = cache.get<Outcome<F>>(action.input);
+
       return [
-        { ...state, pending: { input: action.input } },
+        {
+          ...state,
+          pending: { input: action.input },
+          current: cachedOutcome
+            ? { input: action.input, outcome: cachedOutcome }
+            : state.current,
+          prefilledFromCache: Boolean(cachedOutcome),
+        },
         [{ type: "fetch", input: action.input }],
       ];
     }
@@ -104,6 +115,7 @@ function reducer<F extends Flags>(
           ...state,
           current: { input: action.input, outcome: action.outcome },
           pending: null,
+          prefilledFromCache: false,
         },
         [],
       ];
@@ -115,6 +127,7 @@ function reducer<F extends Flags>(
               ...state,
               current: { input: action.input, outcome: null },
               pending: null,
+              prefilledFromCache: false,
             },
             [],
           ]
@@ -124,6 +137,8 @@ function reducer<F extends Flags>(
       return tuple;
   }
 }
+
+const cache = new ObjectMap<Input, Outcome<Flags>>();
 
 export function useFlags<F extends Flags = Flags>(
   options: {
@@ -151,10 +166,25 @@ export function useFlags<F extends Flags = Flags>(
       {
         current: initialFlagState || null,
         pending: null,
+        prefilledFromCache: false,
       },
       [] as Effect[],
     ]
   );
+
+  // add initialState to cache
+  React.useEffect(() => {
+    if (
+      options.initialState &&
+      // only cache successful requests
+      options.initialState.outcome &&
+      // do not cache static requests as they'll always be passed in from the
+      // server anyhow, so they'd never be read from the cache
+      !options.initialState.input.requestBody.static
+    ) {
+      cache.set(options.initialState.input, options.initialState.outcome);
+    }
+  }, [options.initialState]);
 
   React.useEffect(() => {
     if (!isConfigured(config)) throw new MissingConfigurationError();
@@ -212,6 +242,7 @@ export function useFlags<F extends Flags = Flags>(
         // execute the effect
         case "fetch": {
           const { input } = effect;
+
           fetch([input.endpoint, input.envKey].join("/"), {
             method: "POST",
             headers: { "content-type": "application/json" },
@@ -219,12 +250,11 @@ export function useFlags<F extends Flags = Flags>(
           })
             .then(async (response) => {
               const responseBody = (await response.json()) as EvaluationResponseBody<F>;
+              const outcome = { responseBody };
               // responses to outdated requests are skipped in the reducer
-              dispatch({
-                type: "settle/success",
-                input,
-                outcome: { responseBody },
-              });
+              dispatch({ type: "settle/success", input, outcome });
+
+              cache.set(input, outcome);
 
               if (
                 // server hasn't set it
@@ -253,14 +283,11 @@ export function useFlags<F extends Flags = Flags>(
   const defaultFlags = config.defaultFlags;
 
   const flagBag = React.useMemo<FlagBag<F>>(() => {
-    const loadedFlags =
-      (state.current?.outcome?.responseBody.flags as F | undefined) || null;
-
-    const prefilledFlags =
+    const outcomeFlags =
       (state.current?.outcome?.responseBody.flags as F | undefined) || null;
 
     const flags = combineLoadedFlagsWithDefaultFlags<F>(
-      loadedFlags || prefilledFlags,
+      outcomeFlags,
       defaultFlags
     );
 
@@ -270,10 +297,12 @@ export function useFlags<F extends Flags = Flags>(
     // get generated.
     return {
       flags,
-      loadedFlags,
+      loadedFlags: state.prefilledFromCache ? null : outcomeFlags,
       fetching: Boolean(state.pending),
       settled: Boolean(
-        state.current && !state.current.input.requestBody.static
+        state.current &&
+          !state.current.input.requestBody.static &&
+          !state.prefilledFromCache
       ),
       visitorKey:
         state.current?.outcome?.responseBody.visitor?.key ||
