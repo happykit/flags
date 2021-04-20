@@ -138,7 +138,7 @@ function reducer<F extends Flags>(
   }
 }
 
-const cache = new ObjectMap<Input, Outcome<Flags>>();
+export const cache = new ObjectMap<Input, Outcome<Flags>>();
 
 export function useFlags<F extends Flags = Flags>(
   options: {

@@ -69,9 +69,10 @@ export function getCookie(
 }
 
 export function serializeVisitorKeyCookie(visitorKey: string) {
-  const seconds = 60 * 60 * 24 * 180;
-  const value = encodeURIComponent(visitorKey);
-  return `hkvk=${value}; Path=/; Max-Age=${seconds}; SameSite=Lax`;
+  // Max-Age 15552000 seconds equals 180 days
+  return `hkvk=${encodeURIComponent(
+    visitorKey
+  )}; Path=/; Max-Age=15552000; SameSite=Lax`;
 }
 
 // source: https://github.com/lukeed/dequal/blob/master/src/lite.js
@@ -130,8 +131,9 @@ export class ObjectMap<Key extends any, Value extends any> {
   //   return this.keys.some((storedKey) => deepEqual(storedKey, key));
   // }
 
-  // clear() {
-  //   this.keys = [];
-  //   this.values = [];
-  // }
+  /** Resets the cache. For testing purposes. */
+  clear() {
+    this.keys = [];
+    this.values = [];
+  }
 }
