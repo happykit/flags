@@ -124,7 +124,7 @@ export interface FlagBag<F extends Flags> {
   /**
    * The feature flags as loaded from the API, without default fallbacks.
    */
-  loadedFlags: F | null;
+  rawFlags: F | null;
   /**
    * The visitor key the feature flags were fetched for.
    */
