@@ -43,11 +43,11 @@ type State<F extends Flags> =
   // useFlags() used with getFlags() in server-side rendering (no refetching necessary)
   {
     current: null | {
+      prefilledFromCache: boolean;
       input: Input;
       outcome: Outcome<F> | null;
     };
     pending: null | { input: Input };
-    prefilledFromCache: boolean;
   };
 
 type Action<F extends Flags> =
@@ -104,9 +104,12 @@ function reducer<F extends Flags>(
           ...state,
           pending: { input: action.input },
           current: cachedOutcome
-            ? { input: action.input, outcome: cachedOutcome }
+            ? {
+                input: action.input,
+                outcome: cachedOutcome,
+                prefilledFromCache: true,
+              }
             : state.current,
-          prefilledFromCache: Boolean(cachedOutcome),
         },
         [{ type: "fetch", input: action.input }],
       ];
@@ -118,9 +121,12 @@ function reducer<F extends Flags>(
       return [
         {
           ...state,
-          current: { input: action.input, outcome: action.outcome },
+          current: {
+            input: action.input,
+            outcome: action.outcome,
+            prefilledFromCache: false,
+          },
           pending: null,
-          prefilledFromCache: false,
         },
         [],
       ];
@@ -130,9 +136,12 @@ function reducer<F extends Flags>(
         ? [
             {
               ...state,
-              current: { input: action.input, outcome: null },
+              current: {
+                input: action.input,
+                outcome: null,
+                prefilledFromCache: false,
+              },
               pending: null,
-              prefilledFromCache: false,
             },
             [],
           ]
@@ -170,9 +179,14 @@ export function useFlags<F extends Flags = Flags>(
     options.initialState,
     (initialFlagState): [State<F>, Effect[]] => [
       {
-        current: initialFlagState || null,
+        current: initialFlagState
+          ? {
+              input: initialFlagState.input,
+              outcome: initialFlagState.outcome,
+              prefilledFromCache: false,
+            }
+          : null,
         pending: null,
-        prefilledFromCache: false,
       },
       [] as Effect[],
     ]
@@ -309,12 +323,12 @@ export function useFlags<F extends Flags = Flags>(
     // get generated.
     return {
       flags: outcomeFlags ? flags : null,
-      rawFlags: state.prefilledFromCache ? null : outcomeFlags,
+      rawFlags: state.current?.prefilledFromCache ? null : outcomeFlags,
       fetching: Boolean(state.pending),
       settled: Boolean(
         state.current &&
           !state.current.input.requestBody.static &&
-          !state.prefilledFromCache
+          !state.current.prefilledFromCache
       ),
       visitorKey:
         state.current?.outcome?.responseBody.visitor?.key ||
