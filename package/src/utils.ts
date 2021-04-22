@@ -20,21 +20,21 @@ function omitNullValues<O extends object, T = Partial<O>>(obj: O): T {
  * Tries to return the loaded flags directly in case the they contain all defaults
  * to avoid changing object references in the caller.
  *
- * @param loadedFlags
+ * @param rawFlags
  * @param defaultFlags
  */
-export function combineLoadedFlagsWithDefaultFlags<F extends Flags>(
-  loadedFlags: F | null,
+export function combineRawFlagsWithDefaultFlags<F extends Flags>(
+  rawFlags: F | null,
   defaultFlags: Flags
 ): F {
-  if (!loadedFlags) return defaultFlags as F;
+  if (!rawFlags) return defaultFlags as F;
 
-  const loadedFlagsContainAllDefaultFlags = Object.keys(defaultFlags).every(
-    (key) => has(loadedFlags, key) && loadedFlags[key] !== null
+  const rawFlagsContainAllDefaultFlags = Object.keys(defaultFlags).every(
+    (key) => has(rawFlags, key) && rawFlags[key] !== null
   );
 
-  return loadedFlagsContainAllDefaultFlags
-    ? (loadedFlags as F)
+  return rawFlagsContainAllDefaultFlags
+    ? (rawFlags as F)
     : ({
         // this triple ordering ensures that null-ish loaded values are
         // overwritten by the defaults:
@@ -42,9 +42,9 @@ export function combineLoadedFlagsWithDefaultFlags<F extends Flags>(
         //   - loaded null & no default => null
         //   - loaded value & default => loaded value
         //   - loaded value & no default => loaded value
-        ...loadedFlags,
+        ...rawFlags,
         ...defaultFlags,
-        ...omitNullValues(loadedFlags),
+        ...omitNullValues(rawFlags),
       } as F);
 }
 

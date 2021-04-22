@@ -16,7 +16,7 @@ import {
   deepEqual,
   getCookie,
   serializeVisitorKeyCookie,
-  combineLoadedFlagsWithDefaultFlags,
+  combineRawFlagsWithDefaultFlags,
   ObjectMap,
 } from "./utils";
 
@@ -298,7 +298,7 @@ export function useFlags<F extends Flags = Flags>(
     const outcomeFlags =
       (state.current?.outcome?.responseBody.flags as F | undefined) || null;
 
-    const flags = combineLoadedFlagsWithDefaultFlags<F>(
+    const flags = combineRawFlagsWithDefaultFlags<F>(
       outcomeFlags,
       defaultFlags
     );
@@ -309,7 +309,7 @@ export function useFlags<F extends Flags = Flags>(
     // get generated.
     return {
       flags: outcomeFlags ? flags : null,
-      loadedFlags: state.prefilledFromCache ? null : outcomeFlags,
+      rawFlags: state.prefilledFromCache ? null : outcomeFlags,
       fetching: Boolean(state.pending),
       settled: Boolean(
         state.current &&

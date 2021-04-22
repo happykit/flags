@@ -5,13 +5,13 @@ import { Result } from "../../components/Result";
 import { getFlags } from "@happykit/flags/server";
 import { AppFlags } from "../../types/AppFlags";
 
-type ServerSideProps = { flags: AppFlags; loadedFlags: AppFlags | null };
+type ServerSideProps = { flags: AppFlags; rawFlags: AppFlags | null };
 
 export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
   context
 ) => {
-  const { flags, loadedFlags } = await getFlags<AppFlags>({ context });
-  return { props: { flags, loadedFlags } };
+  const { flags, rawFlags } = await getFlags<AppFlags>({ context });
+  return { props: { flags, rawFlags } };
 };
 
 export default function Page(props: ServerSideProps) {
@@ -41,7 +41,7 @@ export default function Page(props: ServerSideProps) {
         <Result
           key="server-side-rendering-pure-with-fallback-values"
           label="Loaded Flags (without fallback values)"
-          value={props.loadedFlags}
+          value={props.rawFlags}
         />
       </article>
     </Layout>

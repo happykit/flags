@@ -79,7 +79,7 @@ describe("server-side rendering (pure + hybrid)", () => {
               },
             },
           },
-          loadedFlags: { meal: "large" },
+          rawFlags: { meal: "large" },
         }
       );
 
@@ -146,7 +146,7 @@ describe("server-side rendering (pure + hybrid)", () => {
             },
           },
         },
-        loadedFlags: { meal: "large" },
+        rawFlags: { meal: "large" },
       });
 
       expect(context.res!.setHeader).toHaveBeenCalledWith(
@@ -212,7 +212,7 @@ describe("server-side rendering (pure + hybrid)", () => {
             },
           },
         },
-        loadedFlags: { meal: "large" },
+        rawFlags: { meal: "large" },
       });
 
       expect(context.res!.setHeader).toHaveBeenCalledWith(
@@ -263,7 +263,7 @@ describe("static site generation (pure + hybrid)", () => {
           },
         },
       },
-      loadedFlags: { meal: "large" },
+      rawFlags: { meal: "large" },
     });
   });
 
@@ -312,7 +312,7 @@ describe("static site generation (pure + hybrid)", () => {
             },
           },
         },
-        loadedFlags: { meal: "large" },
+        rawFlags: { meal: "large" },
       });
     });
   });
@@ -362,7 +362,7 @@ describe("static site generation (pure + hybrid)", () => {
             },
           },
         },
-        loadedFlags: { meal: "large" },
+        rawFlags: { meal: "large" },
       });
     });
   });

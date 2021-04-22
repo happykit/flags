@@ -5,7 +5,7 @@ import { Result } from "../components/Result";
 // defined outside to guarantee a consistent ref
 const exampleFlagBag = {
   flags: {},
-  loadedFlags: {},
+  rawFlags: {},
   fetching: false,
   visitorKey: "...",
   settled: true,

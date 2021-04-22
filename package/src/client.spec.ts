@@ -77,14 +77,14 @@ describe("client-side rendering", () => {
       expect(result.all).toEqual([
         {
           flags: {},
-          loadedFlags: null,
+          rawFlags: null,
           fetching: false,
           settled: false,
           visitorKey: null,
         },
         {
           flags: {},
-          loadedFlags: null,
+          rawFlags: null,
           fetching: true,
           settled: false,
           visitorKey: expect.any(String),
@@ -96,7 +96,7 @@ describe("client-side rendering", () => {
             discount: 5,
             purchaseButtonLabel: "Purchase",
           },
-          loadedFlags: {
+          rawFlags: {
             ads: true,
             checkout: "medium",
             discount: 5,
@@ -160,14 +160,14 @@ describe("client-side rendering", () => {
       expect(result.all).toEqual([
         {
           flags: {},
-          loadedFlags: null,
+          rawFlags: null,
           fetching: false,
           settled: false,
           visitorKey: null,
         },
         {
           flags: {},
-          loadedFlags: null,
+          rawFlags: null,
           fetching: true,
           settled: false,
           visitorKey: visitorKeyInCookie,
@@ -180,7 +180,7 @@ describe("client-side rendering", () => {
             discount: 5,
             purchaseButtonLabel: "Purchase",
           },
-          loadedFlags: {
+          rawFlags: {
             ads: true,
             checkout: "medium",
             discount: 5,
@@ -239,7 +239,7 @@ describe("server-side rendering (hybrid)", () => {
             discount: 5,
             purchaseButtonLabel: "Buy now",
           },
-          loadedFlags: {
+          rawFlags: {
             ads: true,
             checkout: "short",
             discount: 5,
@@ -315,7 +315,7 @@ describe("server-side rendering (hybrid)", () => {
             discount: 5,
             purchaseButtonLabel: "Buy now",
           },
-          loadedFlags: {
+          rawFlags: {
             ads: true,
             checkout: "short",
             discount: 5,
@@ -420,7 +420,7 @@ describe("static site generation (hybrid)", () => {
             discount: 5,
             purchaseButtonLabel: null,
           },
-          loadedFlags: {
+          rawFlags: {
             ads: true,
             checkout: null,
             discount: 5,
@@ -437,7 +437,7 @@ describe("static site generation (hybrid)", () => {
             discount: 5,
             purchaseButtonLabel: null,
           },
-          loadedFlags: {
+          rawFlags: {
             ads: true,
             checkout: null,
             discount: 5,
@@ -454,7 +454,7 @@ describe("static site generation (hybrid)", () => {
             discount: 5,
             purchaseButtonLabel: "Purchase",
           },
-          loadedFlags: {
+          rawFlags: {
             ads: true,
             checkout: "short",
             discount: 5,
@@ -545,7 +545,7 @@ describe("static site generation (hybrid)", () => {
             discount: 5,
             purchaseButtonLabel: null,
           },
-          loadedFlags: {
+          rawFlags: {
             ads: true,
             checkout: null,
             discount: 5,
@@ -562,7 +562,7 @@ describe("static site generation (hybrid)", () => {
             discount: 5,
             purchaseButtonLabel: null,
           },
-          loadedFlags: {
+          rawFlags: {
             ads: true,
             checkout: null,
             discount: 5,
@@ -579,7 +579,7 @@ describe("static site generation (hybrid)", () => {
             discount: 5,
             purchaseButtonLabel: "Purchase",
           },
-          loadedFlags: {
+          rawFlags: {
             ads: true,
             checkout: "short",
             discount: 5,

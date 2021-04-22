@@ -16,7 +16,7 @@ import {
   getCookie,
   has,
   serializeVisitorKeyCookie,
-  combineLoadedFlagsWithDefaultFlags,
+  combineRawFlagsWithDefaultFlags,
 } from "./utils";
 
 function getRequestingIp(context: {
@@ -52,7 +52,7 @@ export async function getFlags<F extends Flags = Flags>(options: {
    * The actually loaded flags without any defaults applied, or null when
    * the flags could not be loaded.
    */
-  loadedFlags: F | null;
+  rawFlags: F | null;
   /**
    * The initial flag state that you can use to initialize useFlags()
    */
@@ -107,7 +107,7 @@ export async function getFlags<F extends Flags = Flags>(options: {
   if (!workerResponse || workerResponse.status !== 200)
     return {
       flags: config.defaultFlags as F,
-      loadedFlags: null,
+      rawFlags: null,
       initialFlagState: { input, outcome: null },
     };
 
@@ -118,7 +118,7 @@ export async function getFlags<F extends Flags = Flags>(options: {
   if (!workerResponseBody) {
     return {
       flags: config.defaultFlags as F,
-      loadedFlags: null,
+      rawFlags: null,
       initialFlagState: { input, outcome: null },
     };
   }
@@ -133,14 +133,14 @@ export async function getFlags<F extends Flags = Flags>(options: {
 
   // add defaults to flags here, but not in initialFlagState
   const flags = workerResponseBody.flags ? workerResponseBody.flags : null;
-  const flagsWithDefaults = combineLoadedFlagsWithDefaultFlags<F>(
+  const flagsWithDefaults = combineRawFlagsWithDefaultFlags<F>(
     flags,
     config.defaultFlags
   );
 
   return {
     flags: flagsWithDefaults,
-    loadedFlags: flags,
+    rawFlags: flags,
     initialFlagState: {
       input,
       outcome: { responseBody: workerResponseBody },
