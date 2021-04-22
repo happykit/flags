@@ -5,7 +5,7 @@ import "@testing-library/jest-dom/extend-expect";
 import "@testing-library/jest-dom";
 import "jest-expect-message";
 import { renderHook } from "@testing-library/react-hooks";
-import { useFlags, cacheKey } from "./client";
+import { useFlags } from "./client";
 import { configure, _resetConfig } from "./config";
 import * as fetchMock from "fetch-mock-jest";
 import { deleteAllCookies } from "../jest/delete-all-cookies";
