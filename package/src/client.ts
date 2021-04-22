@@ -51,7 +51,6 @@ type State<F extends Flags> =
   };
 
 type Action<F extends Flags> =
-  | { type: "mount" }
   | { type: "evaluate"; input: Input; ready?: boolean }
   | { type: "settle/success"; input: Input; outcome: Outcome<F> }
   | { type: "settle/failure"; input: Input };

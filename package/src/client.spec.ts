@@ -76,14 +76,14 @@ describe("client-side rendering", () => {
 
       expect(result.all).toEqual([
         {
-          flags: {},
+          flags: null,
           rawFlags: null,
           fetching: false,
           settled: false,
           visitorKey: null,
         },
         {
-          flags: {},
+          flags: null,
           rawFlags: null,
           fetching: true,
           settled: false,
@@ -159,14 +159,14 @@ describe("client-side rendering", () => {
 
       expect(result.all).toEqual([
         {
-          flags: {},
+          flags: null,
           rawFlags: null,
           fetching: false,
           settled: false,
           visitorKey: null,
         },
         {
-          flags: {},
+          flags: null,
           rawFlags: null,
           fetching: true,
           settled: false,
