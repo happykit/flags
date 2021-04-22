@@ -52,7 +52,7 @@ type State<F extends Flags> =
 
 type Action<F extends Flags> =
   | { type: "mount" }
-  | { type: "evaluate"; input: Input }
+  | { type: "evaluate"; input: Input; ready?: boolean }
   | { type: "settle/success"; input: Input; outcome: Outcome<F> }
   | { type: "settle/failure"; input: Input };
 
@@ -93,6 +93,11 @@ function reducer<F extends Flags>(
   switch (action.type) {
     case "evaluate": {
       const cachedOutcome = cache.get<Outcome<F>>(action.input);
+
+      const blocked =
+        typeof action.ready === "undefined" ? false : !action.ready;
+
+      if (blocked) return tuple;
 
       return [
         {
@@ -146,6 +151,7 @@ export function useFlags<F extends Flags = Flags>(
     traits?: Traits | null;
     initialState?: InitialFlagState<F>;
     revalidateOnFocus?: boolean;
+    ready?: boolean;
   } = {}
 ): FlagBag<F> {
   if (!isConfigured(config)) throw new MissingConfigurationError();
@@ -217,14 +223,14 @@ export function useFlags<F extends Flags = Flags>(
     };
 
     if (isEmergingInput(input, state)) {
-      dispatch({ type: "evaluate", input });
+      dispatch({ type: "evaluate", input, ready: options.ready });
     }
 
     if (!shouldRevalidateOnFocus) return;
 
     function handleFocus() {
       if (document.visibilityState === "visible") {
-        dispatch({ type: "evaluate", input });
+        dispatch({ type: "evaluate", input, ready: options.ready });
       }
     }
 
@@ -234,7 +240,13 @@ export function useFlags<F extends Flags = Flags>(
     return () => {
       document.removeEventListener(visibilityChange, handleFocus);
     };
-  }, [state, currentUser, currentTraits, shouldRevalidateOnFocus]);
+  }, [
+    state,
+    currentUser,
+    currentTraits,
+    shouldRevalidateOnFocus,
+    options.ready,
+  ]);
 
   React.useEffect(() => {
     effects.forEach((effect) => {
@@ -296,7 +308,7 @@ export function useFlags<F extends Flags = Flags>(
     // settled as another revalidation will happen in which a visitor key will
     // get generated.
     return {
-      flags,
+      flags: outcomeFlags ? flags : null,
       loadedFlags: state.prefilledFromCache ? null : outcomeFlags,
       fetching: Boolean(state.pending),
       settled: Boolean(
