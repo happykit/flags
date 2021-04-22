@@ -117,8 +117,10 @@ export type DefaultConfiguration = {
 export interface FlagBag<F extends Flags> {
   /**
    * The resolved feature flags, extended with the defaults.
+   *
+   * This is `null` while the flags are being loaded.
    */
-  flags: F;
+  flags: F | null;
   /**
    * The feature flags as loaded from the API, without default fallbacks.
    */
