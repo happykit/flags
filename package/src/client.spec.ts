@@ -82,6 +82,7 @@ describe("client-side rendering", () => {
           fetching: false,
           settled: false,
           visitorKey: null,
+          revalidate: expect.any(Function),
         },
         {
           flags: null,
@@ -89,6 +90,7 @@ describe("client-side rendering", () => {
           fetching: true,
           settled: false,
           visitorKey: expect.any(String),
+          revalidate: expect.any(Function),
         },
         {
           flags: {
@@ -106,6 +108,7 @@ describe("client-side rendering", () => {
           fetching: false,
           settled: true,
           visitorKey: expect.any(String),
+          revalidate: expect.any(Function),
         },
       ]);
 
@@ -165,6 +168,7 @@ describe("client-side rendering", () => {
           fetching: false,
           settled: false,
           visitorKey: null,
+          revalidate: expect.any(Function),
         },
         {
           flags: null,
@@ -172,6 +176,7 @@ describe("client-side rendering", () => {
           fetching: true,
           settled: false,
           visitorKey: visitorKeyInCookie,
+          revalidate: expect.any(Function),
         },
         {
           fetching: false,
@@ -189,6 +194,7 @@ describe("client-side rendering", () => {
           },
           settled: true,
           visitorKey: visitorKeyInCookie,
+          revalidate: expect.any(Function),
         },
       ]);
     });
@@ -249,6 +255,7 @@ describe("server-side rendering (hybrid)", () => {
           fetching: false,
           settled: true,
           visitorKey: generatedVisitorKey,
+          revalidate: expect.any(Function),
         },
       ]);
 
@@ -324,6 +331,7 @@ describe("server-side rendering (hybrid)", () => {
           },
           settled: true,
           visitorKey: visitorKeyInCookie,
+          revalidate: expect.any(Function),
         },
       ]);
     });
@@ -430,6 +438,7 @@ describe("static site generation (hybrid)", () => {
           fetching: false,
           settled: false,
           visitorKey: null,
+          revalidate: expect.any(Function),
         },
         {
           flags: {
@@ -447,6 +456,7 @@ describe("static site generation (hybrid)", () => {
           fetching: true,
           settled: false,
           visitorKey: generatedVisitorKey,
+          revalidate: expect.any(Function),
         },
         {
           flags: {
@@ -464,6 +474,7 @@ describe("static site generation (hybrid)", () => {
           fetching: false,
           settled: true,
           visitorKey: generatedVisitorKey,
+          revalidate: expect.any(Function),
         },
       ]);
 
@@ -555,6 +566,7 @@ describe("static site generation (hybrid)", () => {
           fetching: false,
           settled: false,
           visitorKey: null,
+          revalidate: expect.any(Function),
         },
         {
           flags: {
@@ -572,6 +584,7 @@ describe("static site generation (hybrid)", () => {
           fetching: true,
           settled: false,
           visitorKey: visitorKeyInCookie,
+          revalidate: expect.any(Function),
         },
         {
           flags: {
@@ -589,6 +602,7 @@ describe("static site generation (hybrid)", () => {
           fetching: false,
           settled: true,
           visitorKey: visitorKeyInCookie,
+          revalidate: expect.any(Function),
         },
       ]);
 
@@ -649,6 +663,7 @@ describe("stories", () => {
           fetching: false,
           settled: false,
           visitorKey: null,
+          revalidate: expect.any(Function),
         },
         {
           flags: null,
@@ -656,6 +671,7 @@ describe("stories", () => {
           fetching: true,
           settled: false,
           visitorKey: expect.any(String),
+          revalidate: expect.any(Function),
         },
       ];
       expect(result.all).toEqual(firstRenders);
@@ -679,6 +695,7 @@ describe("stories", () => {
           fetching: false,
           settled: true,
           visitorKey: expect.any(String),
+          revalidate: expect.any(Function),
         },
       ];
       expect(result.all).toEqual([...firstRenders, ...secondRenders]);
@@ -734,6 +751,7 @@ describe("stories", () => {
           fetching: false,
           settled: true,
           visitorKey: generatedVisitorKey,
+          revalidate: expect.any(Function),
         },
         {
           flags: {
@@ -751,6 +769,7 @@ describe("stories", () => {
           fetching: true,
           settled: true,
           visitorKey: generatedVisitorKey,
+          revalidate: expect.any(Function),
         },
         {
           flags: {
@@ -768,6 +787,7 @@ describe("stories", () => {
           fetching: false,
           settled: true,
           visitorKey: generatedVisitorKey,
+          revalidate: expect.any(Function),
         },
       ]);
 

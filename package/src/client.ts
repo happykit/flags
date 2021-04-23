@@ -40,6 +40,7 @@ type State<F extends Flags> = {
 
 type Action<F extends Flags> =
   | { type: "evaluate"; input: Input }
+  | { type: "revalidate" }
   | { type: "settle/success"; input: Input; outcome: Outcome<F> }
   | { type: "settle/failure"; input: Input };
 
@@ -78,12 +79,24 @@ function reducer<F extends Flags>(
 ): readonly [State<F>, Effect[]] {
   const [state /* and effects */] = tuple;
   switch (action.type) {
+    // fail hard (turn flags into null if failing)
     case "evaluate": {
       const cachedOutcome = cache.get<Outcome<F>>(action.input);
 
       return [
         { ...state, pending: { input: action.input, cachedOutcome } },
         [{ type: "fetch", input: action.input }],
+      ];
+    }
+    // fail soft (keep previous flags if failing)
+    case "revalidate": {
+      const latestInput = state.pending?.input || state.current?.input;
+      if (!latestInput) return tuple;
+
+      const cachedOutcome = cache.get<Outcome<F>>(latestInput);
+      return [
+        { ...state, pending: { input: latestInput, cachedOutcome } },
+        [{ type: "fetch", input: latestInput }],
       ];
     }
     case "settle/success": {
@@ -220,7 +233,7 @@ export function useFlags<F extends Flags = Flags>(
 
     function handleFocus() {
       if (document.visibilityState === "visible" && isReady(options.ready)) {
-        dispatch({ type: "evaluate", input });
+        dispatch({ type: "revalidate" });
       }
     }
 
@@ -271,6 +284,10 @@ export function useFlags<F extends Flags = Flags>(
 
   const defaultFlags = config.defaultFlags;
 
+  const revalidate = React.useCallback(() => dispatch({ type: "revalidate" }), [
+    dispatch,
+  ]);
+
   const flagBag = React.useMemo<FlagBag<F>>(() => {
     const rawFlags =
       (state.current?.outcome?.responseBody.flags as F | undefined) || null;
@@ -293,6 +310,7 @@ export function useFlags<F extends Flags = Flags>(
         state.current?.input.requestBody.visitorKey ||
         state.pending?.input.requestBody.visitorKey ||
         null,
+      revalidate,
     };
   }, [state, defaultFlags]);
 

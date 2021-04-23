@@ -158,4 +158,8 @@ export interface FlagBag<F extends Flags> {
    * once the initial flags were loaded, while `fetching` can flip multiple times.
    */
   fetching: boolean;
+  /**
+   *
+   */
+  revalidate: () => void;
 }
