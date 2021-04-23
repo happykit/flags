@@ -104,11 +104,11 @@ export async function getFlags<F extends Flags = Flags>(options: {
     body: JSON.stringify(input.requestBody),
   }).catch(() => null);
 
-  if (!workerResponse || workerResponse.status !== 200)
+  if (!workerResponse || !workerResponse.ok /* status not 200-299 */)
     return {
       flags: config.defaultFlags as F,
       rawFlags: null,
-      initialFlagState: { input, outcome: null },
+      initialFlagState: { input, outcome: null, error: "response-not-ok" },
     };
 
   const workerResponseBody: EvaluationResponseBody<F> | null = await workerResponse
@@ -119,7 +119,11 @@ export async function getFlags<F extends Flags = Flags>(options: {
     return {
       flags: config.defaultFlags as F,
       rawFlags: null,
-      initialFlagState: { input, outcome: null },
+      initialFlagState: {
+        input,
+        outcome: null,
+        error: "invalid-response-body",
+      },
     };
   }
 

@@ -32,6 +32,24 @@ export type Outcome<F extends Flags> = {
   responseBody: EvaluationResponseBody<F>;
 };
 
+/**
+ * The fetch() request failed due to a network error (fetch itself threw).
+ */
+type NetworkError = "network-error";
+/**
+ * The response body could not be parsed into the expected JSON structure.
+ */
+type InvalidResponseBodyError = "invalid-response-body";
+/**
+ * The HTTP Status Code was not 200-299, so the response was not ok.
+ */
+type ResponseNotOkError = "response-not-ok";
+
+export type ResolvingError =
+  | NetworkError
+  | InvalidResponseBodyError
+  | ResponseNotOkError;
+
 export type EvaluationRequestBody = {
   visitorKey: string | null;
   user: FlagUser | null;
@@ -44,10 +62,16 @@ export type EvaluationResponseBody<F extends Flags> = {
   flags: F;
 };
 
-export type InitialFlagState<F extends Flags> = {
-  input: Input;
-  outcome: Outcome<F> | null;
-};
+export type InitialFlagState<F extends Flags> =
+  | {
+      input: Input;
+      outcome: Outcome<F>;
+    }
+  | {
+      input: Input;
+      outcome: null;
+      error: ResolvingError;
+    };
 
 export class InvalidConfigurationError extends Error {
   constructor() {
