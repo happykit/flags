@@ -36,7 +36,7 @@ export type EvaluationRequestBody = {
   visitorKey: string | null;
   user: FlagUser | null;
   traits: Traits | null;
-  static: boolean;
+  static?: boolean;
 };
 
 export type EvaluationResponseBody<F extends Flags> = {
