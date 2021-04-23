@@ -11,6 +11,7 @@ import {
   Traits,
   FlagBag,
   EvaluationResponseBody,
+  ResolvingError,
 } from "./types";
 import {
   deepEqual,
@@ -31,10 +32,18 @@ export type {
 } from "./types";
 
 type State<F extends Flags> = {
-  current: null | {
-    input: Input;
-    outcome: Outcome<F> | null;
-  };
+  current:
+    | null
+    | {
+        input: Input;
+        outcome: Outcome<F>;
+        error?: never;
+      }
+    | {
+        input: Input;
+        outcome: null;
+        error: ResolvingError;
+      };
   pending: null | { input: Input; cachedOutcome: Outcome<F> | null };
 };
 
@@ -42,7 +51,7 @@ type Action<F extends Flags> =
   | { type: "evaluate"; input: Input }
   | { type: "revalidate" }
   | { type: "settle/success"; input: Input; outcome: Outcome<F> }
-  | { type: "settle/failure"; input: Input };
+  | { type: "settle/failure"; input: Input; error: ResolvingError };
 
 type Effect = { type: "fetch"; input: Input };
 
@@ -101,7 +110,7 @@ function reducer<F extends Flags>(
     }
     case "settle/success": {
       // skip outdated responses
-      if (state.pending?.input !== action.input) return tuple;
+      if (!deepEqual(action.input, state.pending?.input)) return tuple;
 
       cache.set(action.input, action.outcome);
 
@@ -119,16 +128,17 @@ function reducer<F extends Flags>(
       ];
     }
     case "settle/failure": {
-      return deepEqual(action.input, state.pending?.input)
-        ? [
-            {
-              ...state,
-              current: { input: action.input, outcome: null },
-              pending: null,
-            },
-            [],
-          ]
-        : tuple;
+      // skip outdated responses
+      if (!deepEqual(action.input, state.pending?.input)) return tuple;
+
+      return [
+        {
+          ...state,
+          current: { input: action.input, outcome: null, error: action.error },
+          pending: null,
+        },
+        [],
+      ];
     }
     default:
       return tuple;
@@ -170,10 +180,16 @@ export function useFlags<F extends Flags = Flags>(
     (initialFlagState): [State<F>, Effect[]] => [
       {
         current: initialFlagState
-          ? {
-              input: initialFlagState.input,
-              outcome: initialFlagState.outcome,
-            }
+          ? initialFlagState.outcome
+            ? {
+                input: initialFlagState.input,
+                outcome: initialFlagState.outcome,
+              }
+            : {
+                input: initialFlagState.input,
+                outcome: null,
+                error: initialFlagState.error,
+              }
           : null,
         pending: null,
       },
@@ -263,16 +279,37 @@ export function useFlags<F extends Flags = Flags>(
             headers: { "content-type": "application/json" },
             body: JSON.stringify(input.requestBody),
           })
-            .then(async (response) => {
-              const responseBody = (await response.json()) as EvaluationResponseBody<F>;
-              const outcome = { responseBody };
-              // responses to outdated requests are skipped in the reducer
-              dispatch({ type: "settle/success", input, outcome });
-            })
+            .then(
+              async (response) => {
+                const responseBody = (await response.json()) as EvaluationResponseBody<F>;
+                if (response.ok /* response.status is 200-299 */) {
+                  // responses to outdated requests are skipped in the reducer
+                  const outcome = { responseBody };
+                  dispatch({ type: "settle/success", input, outcome });
+                } else {
+                  dispatch({
+                    type: "settle/failure",
+                    input,
+                    error: "response-not-ok",
+                  });
+                }
+              },
+              () => {
+                dispatch({
+                  type: "settle/failure",
+                  input,
+                  error: "invalid-response-body",
+                });
+              }
+            )
             .catch((error) => {
               console.error("HappyKit: Failed to load flags");
               console.error(error);
-              dispatch({ type: "settle/failure", input });
+              dispatch({
+                type: "settle/failure",
+                input,
+                error: "network-error",
+              });
             });
         }
 
