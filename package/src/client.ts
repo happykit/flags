@@ -153,14 +153,18 @@ function reducer<F extends Flags>(
 
 export const cache = new ObjectMap<Input, Outcome<Flags>>();
 
+export type UseFlagsOptions<F extends Flags = Flags> =
+  | {
+      user?: FlagUser | null;
+      traits?: Traits | null;
+      initialState?: InitialFlagState<F>;
+      revalidateOnFocus?: boolean;
+      ready?: boolean;
+    }
+  | undefined;
+
 export function useFlags<F extends Flags = Flags>(
-  options: {
-    user?: FlagUser | null;
-    traits?: Traits | null;
-    initialState?: InitialFlagState<F>;
-    revalidateOnFocus?: boolean;
-    ready?: boolean;
-  } = {}
+  options: UseFlagsOptions<F> = {}
 ): FlagBag<F> {
   if (!isConfigured(config)) throw new MissingConfigurationError();
 
