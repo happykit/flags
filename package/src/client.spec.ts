@@ -5,7 +5,7 @@ import "@testing-library/jest-dom/extend-expect";
 import "@testing-library/jest-dom";
 import "jest-expect-message";
 import { renderHook } from "@testing-library/react-hooks";
-import { useFlags } from "./client";
+import { useFlags, cache, UseFlagsOptions } from "./client";
 import { configure, _resetConfig } from "./config";
 import * as fetchMock from "fetch-mock-jest";
 import { deleteAllCookies } from "../jest/delete-all-cookies";
@@ -16,6 +16,7 @@ beforeEach(() => {
   _resetConfig();
   fetchMock.reset();
   deleteAllCookies(window);
+  cache.clear();
 });
 
 it("exports a useFlags hook", () => {
@@ -595,6 +596,185 @@ describe("static site generation (hybrid)", () => {
       await expect(waitForNextUpdate({ timeout: 500 })).rejects.toThrow(
         "Timed out"
       );
+    });
+  });
+});
+
+describe("stories", () => {
+  describe("client-side rendering", () => {
+    it("works", async () => {
+      let generatedVisitorKey = null;
+      fetchMock.post(
+        {
+          url: "https://happykit.dev/api/flags/flags_pub_000000",
+          body: {
+            // there is a visitorKey but we don't know the value as it's generated
+            // visitorKey: expect.any(String),
+            user: null,
+            traits: null,
+            static: false,
+          },
+          matchPartialBody: true,
+        },
+        (url: string, options: RequestInit, request: Request) => {
+          // parse visitorKey so we can mirror it back
+          const body = JSON.parse(options.body as string);
+          generatedVisitorKey = body.visitorKey;
+          expect(typeof generatedVisitorKey).toBe("string");
+
+          return {
+            flags: {
+              ads: true,
+              checkout: "medium",
+              discount: 5,
+              purchaseButtonLabel: "Purchase",
+            },
+            visitor: { key: generatedVisitorKey },
+          };
+        }
+      );
+
+      configure({ envKey: "flags_pub_000000" });
+      expect(document.cookie).toEqual("");
+
+      const { result, waitForNextUpdate, rerender } = renderHook<
+        UseFlagsOptions,
+        FlagBag<Flags>
+      >((options) => useFlags(options), { initialProps: undefined });
+
+      const firstRenders = [
+        {
+          flags: null,
+          rawFlags: null,
+          fetching: false,
+          settled: false,
+          visitorKey: null,
+        },
+        {
+          flags: null,
+          rawFlags: null,
+          fetching: true,
+          settled: false,
+          visitorKey: expect.any(String),
+        },
+      ];
+      expect(result.all).toEqual(firstRenders);
+
+      await waitForNextUpdate();
+
+      const secondRenders = [
+        {
+          flags: {
+            ads: true,
+            checkout: "medium",
+            discount: 5,
+            purchaseButtonLabel: "Purchase",
+          },
+          rawFlags: {
+            ads: true,
+            checkout: "medium",
+            discount: 5,
+            purchaseButtonLabel: "Purchase",
+          },
+          fetching: false,
+          settled: true,
+          visitorKey: expect.any(String),
+        },
+      ];
+      expect(result.all).toEqual([...firstRenders, ...secondRenders]);
+
+      fetchMock.post(
+        {
+          url: "https://happykit.dev/api/flags/flags_pub_000000",
+          body: {
+            visitorKey: generatedVisitorKey,
+            user: { key: "george" },
+            traits: null,
+            static: false,
+          },
+        },
+        {
+          flags: {
+            ads: true,
+            checkout: "medium",
+            discount: 10,
+            purchaseButtonLabel: "Purchase",
+          },
+          visitor: { key: generatedVisitorKey },
+        },
+        { overwriteRoutes: true }
+      );
+
+      rerender({ user: { key: "george" } });
+      await waitForNextUpdate();
+
+      expect(result.all).toEqual([
+        ...firstRenders,
+        ...secondRenders,
+        // {
+        //   flags: null,
+        //   rawFlags: null,
+        //   fetching: true,
+        //   settled: false,
+        //   visitorKey: generatedVisitorKey,
+        // },
+        {
+          flags: {
+            ads: true,
+            checkout: "medium",
+            discount: 5,
+            purchaseButtonLabel: "Purchase",
+          },
+          rawFlags: {
+            ads: true,
+            checkout: "medium",
+            discount: 5,
+            purchaseButtonLabel: "Purchase",
+          },
+          fetching: false,
+          settled: true,
+          visitorKey: generatedVisitorKey,
+        },
+        {
+          flags: {
+            ads: true,
+            checkout: "medium",
+            discount: 5,
+            purchaseButtonLabel: "Purchase",
+          },
+          rawFlags: {
+            ads: true,
+            checkout: "medium",
+            discount: 5,
+            purchaseButtonLabel: "Purchase",
+          },
+          fetching: true,
+          settled: true,
+          visitorKey: generatedVisitorKey,
+        },
+        {
+          flags: {
+            ads: true,
+            checkout: "medium",
+            discount: 10,
+            purchaseButtonLabel: "Purchase",
+          },
+          rawFlags: {
+            ads: true,
+            checkout: "medium",
+            discount: 10,
+            purchaseButtonLabel: "Purchase",
+          },
+          fetching: false,
+          settled: true,
+          visitorKey: generatedVisitorKey,
+        },
+      ]);
+
+      expect(
+        (result.all[1] as FlagBag<any>).visitorKey,
+        "visitor key may not change"
+      ).toEqual((result.all[2] as FlagBag<any>).visitorKey);
     });
   });
 });

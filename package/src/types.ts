@@ -118,11 +118,16 @@ export interface FlagBag<F extends Flags> {
   /**
    * The resolved feature flags, extended with the defaults.
    *
-   * This is `null` while the flags are being loaded.
+   * These are shown on a best effort basis:
+   * - `null` while the flags are loading when the cache is empty
+   * - cached flags in case the flags were loaded before while loading
+   * - cached flags in case the flags were loaded before and the request fails
    */
   flags: F | null;
   /**
-   * The feature flags as loaded from the API, without default fallbacks.
+   * The feature flags as loaded without default defaults or cache.
+   *
+   * This is `null` while loading.
    */
   rawFlags: F | null;
   /**
@@ -133,14 +138,14 @@ export interface FlagBag<F extends Flags> {
    * Whether the initial loading of the feature flags has completed or not.
    *
    * This is true when the feature flags were loaded for the first time and
-   * stays true from then on. It is also true when the request to load the
-   * feature flags failed.
+   * stays true from then on, unless your inputs (`user`, `traits` or `visitorKey`) change.
    *
-   * If you have a cache or default flags, you might already have flags but
-   * this property will still be set to false until the initial request to load
-   * the feature flags resolves.
+   * It also turns true when the request to load the feature flags failed.
    *
-   * When you pass an `initialFlagState` to useFlags and when that
+   * If the cache contains a response to the inputs, `flags` might already contain flags,
+   * but `settled` stay false until the request to load the feature flags resolves.
+   *
+   * When you pass an `initialFlagState` to `useFlags` and when that
    * `initialFlagState` contains resolved flags, then `settled` will be `true`
    * even on the initial render.
    */
@@ -148,7 +153,8 @@ export interface FlagBag<F extends Flags> {
   /**
    * This is true whenever a flag evaluation request is currently in flight.
    *
-   * You probably want to use `settled` instead, as `settled` stays truthy
+   * In case you want to rendering UI depending on whether the flags were resolved,
+   * you probably want to use `settled` instead, as `settled` usually stays `true`
    * once the initial flags were loaded, while `fetching` can flip multiple times.
    */
   fetching: boolean;
