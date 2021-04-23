@@ -30,28 +30,16 @@ export type {
   Outcome,
 } from "./types";
 
-type State<F extends Flags> =
-  // useFlags() used without initialState (without getFlags())
-  //
-  // useFlags() used with getFlags(), but getFlags() failed
-  // or getFlags() and useFlags() failed both
-  //
-  // useFlags() used with getFlags(), and getFlags() was successful
-  //
-  // useFlags() used with getFlags() in static-site generation (refetching necessary)
-  //
-  // useFlags() used with getFlags() in server-side rendering (no refetching necessary)
-  {
-    current: null | {
-      prefilledFromCache: boolean;
-      input: Input;
-      outcome: Outcome<F> | null;
-    };
-    pending: null | { input: Input };
+type State<F extends Flags> = {
+  current: null | {
+    input: Input;
+    outcome: Outcome<F> | null;
   };
+  pending: null | { input: Input; cachedOutcome: Outcome<F> | null };
+};
 
 type Action<F extends Flags> =
-  | { type: "evaluate"; input: Input; ready?: boolean }
+  | { type: "evaluate"; input: Input }
   | { type: "settle/success"; input: Input; outcome: Outcome<F> }
   | { type: "settle/failure"; input: Input };
 
@@ -93,23 +81,8 @@ function reducer<F extends Flags>(
     case "evaluate": {
       const cachedOutcome = cache.get<Outcome<F>>(action.input);
 
-      const blocked =
-        typeof action.ready === "undefined" ? false : !action.ready;
-
-      if (blocked) return tuple;
-
       return [
-        {
-          ...state,
-          pending: { input: action.input },
-          current: cachedOutcome
-            ? {
-                input: action.input,
-                outcome: cachedOutcome,
-                prefilledFromCache: true,
-              }
-            : state.current,
-        },
+        { ...state, pending: { input: action.input, cachedOutcome } },
         [{ type: "fetch", input: action.input }],
       ];
     }
@@ -117,14 +90,16 @@ function reducer<F extends Flags>(
       // skip outdated responses
       if (state.pending?.input !== action.input) return tuple;
 
+      cache.set(action.input, action.outcome);
+
+      // update cookie if response contains visitor key
+      const visitorKey = action.outcome.responseBody.visitor?.key;
+      if (visitorKey) document.cookie = serializeVisitorKeyCookie(visitorKey);
+
       return [
         {
           ...state,
-          current: {
-            input: action.input,
-            outcome: action.outcome,
-            prefilledFromCache: false,
-          },
+          current: { input: action.input, outcome: action.outcome },
           pending: null,
         },
         [],
@@ -135,11 +110,7 @@ function reducer<F extends Flags>(
         ? [
             {
               ...state,
-              current: {
-                input: action.input,
-                outcome: null,
-                prefilledFromCache: false,
-              },
+              current: { input: action.input, outcome: null },
               pending: null,
             },
             [],
@@ -150,6 +121,9 @@ function reducer<F extends Flags>(
       return tuple;
   }
 }
+
+// When ready is undefined, it counts as true
+const isReady = (ready: undefined | boolean) => ready === undefined || ready;
 
 export const cache = new ObjectMap<Input, Outcome<Flags>>();
 
@@ -186,7 +160,6 @@ export function useFlags<F extends Flags = Flags>(
           ? {
               input: initialFlagState.input,
               outcome: initialFlagState.outcome,
-              prefilledFromCache: false,
             }
           : null,
         pending: null,
@@ -239,15 +212,15 @@ export function useFlags<F extends Flags = Flags>(
       },
     };
 
-    if (isEmergingInput(input, state)) {
-      dispatch({ type: "evaluate", input, ready: options.ready });
+    if (isEmergingInput(input, state) && isReady(options.ready)) {
+      dispatch({ type: "evaluate", input });
     }
 
     if (!shouldRevalidateOnFocus) return;
 
     function handleFocus() {
-      if (document.visibilityState === "visible") {
-        dispatch({ type: "evaluate", input, ready: options.ready });
+      if (document.visibilityState === "visible" && isReady(options.ready)) {
+        dispatch({ type: "evaluate", input });
       }
     }
 
@@ -282,19 +255,6 @@ export function useFlags<F extends Flags = Flags>(
               const outcome = { responseBody };
               // responses to outdated requests are skipped in the reducer
               dispatch({ type: "settle/success", input, outcome });
-
-              cache.set(input, outcome);
-
-              if (
-                // server hasn't set it
-                !response.headers.get("Set-Cookie")?.includes("hkvk=") &&
-                // response contains visitor key
-                responseBody.visitor?.key
-              ) {
-                document.cookie = serializeVisitorKeyCookie(
-                  responseBody.visitor.key
-                );
-              }
             })
             .catch((error) => {
               console.error("HappyKit: Failed to load flags");
@@ -312,26 +272,21 @@ export function useFlags<F extends Flags = Flags>(
   const defaultFlags = config.defaultFlags;
 
   const flagBag = React.useMemo<FlagBag<F>>(() => {
-    const outcomeFlags =
+    const rawFlags =
       (state.current?.outcome?.responseBody.flags as F | undefined) || null;
 
-    const flags = combineRawFlagsWithDefaultFlags<F>(
-      outcomeFlags,
-      defaultFlags
-    );
+    const flags = combineRawFlagsWithDefaultFlags<F>(rawFlags, defaultFlags);
 
     // When the outcome was generated for a static site, then no visitor key
     // is present on the outcome. In that case, the state can not be seen as
     // settled as another revalidation will happen in which a visitor key will
     // get generated.
     return {
-      flags: outcomeFlags ? flags : null,
-      rawFlags: state.current?.prefilledFromCache ? null : outcomeFlags,
+      flags: rawFlags ? flags : null,
+      rawFlags: rawFlags,
       fetching: Boolean(state.pending),
       settled: Boolean(
-        state.current &&
-          !state.current.input.requestBody.static &&
-          !state.current.prefilledFromCache
+        state.current && !state.current.input.requestBody.static
       ),
       visitorKey:
         state.current?.outcome?.responseBody.visitor?.key ||
