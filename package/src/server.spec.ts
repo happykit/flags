@@ -73,7 +73,7 @@ describe("server-side rendering (pure + hybrid)", () => {
               },
             },
             outcome: {
-              responseBody: {
+              data: {
                 flags: { meal: "large" },
                 visitor: { key: "V1StGXR8_Z5jdHi6B-myT" },
               },
@@ -140,7 +140,7 @@ describe("server-side rendering (pure + hybrid)", () => {
             },
           },
           outcome: {
-            responseBody: {
+            data: {
               flags: { meal: "large" },
               visitor: { key: "V1StGXR8_Z5jdHi6B-myT" },
             },
@@ -206,7 +206,7 @@ describe("server-side rendering (pure + hybrid)", () => {
             },
           },
           outcome: {
-            responseBody: {
+            data: {
               flags: { meal: "large" },
               visitor: { key: "V1StGXR8_Z5jdHi6B-myT" },
             },
@@ -257,7 +257,7 @@ describe("static site generation (pure + hybrid)", () => {
           },
         },
         outcome: {
-          responseBody: {
+          data: {
             flags: { meal: "large" },
             visitor: null,
           },
@@ -306,7 +306,7 @@ describe("static site generation (pure + hybrid)", () => {
             },
           },
           outcome: {
-            responseBody: {
+            data: {
               flags: { meal: "large" },
               visitor: null,
             },
@@ -356,7 +356,7 @@ describe("static site generation (pure + hybrid)", () => {
             },
           },
           outcome: {
-            responseBody: {
+            data: {
               flags: { meal: "large" },
               visitor: null,
             },

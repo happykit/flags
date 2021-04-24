@@ -11,7 +11,8 @@ import {
   Traits,
   FlagBag,
   EvaluationResponseBody,
-  ResolvingError,
+  SuccessOutcome,
+  ErrorOutcome,
 } from "./types";
 import {
   deepEqual,
@@ -36,23 +37,22 @@ type State<F extends Flags> = {
     | null
     | {
         input: Input;
-        outcome: Outcome<F>;
-        error?: never;
+        outcome: SuccessOutcome<F>;
+        cachedOutcome?: never;
       }
     | {
         input: Input;
-        outcome: null;
-        error: ResolvingError;
-        cachedOutcome: Outcome<F> | null;
+        outcome: ErrorOutcome;
+        cachedOutcome: SuccessOutcome<F> | null;
       };
-  pending: null | { input: Input; cachedOutcome: Outcome<F> | null };
+  pending: null | { input: Input; cachedOutcome: SuccessOutcome<F> | null };
 };
 
 type Action<F extends Flags> =
   | { type: "evaluate"; input: Input }
   | { type: "revalidate" }
-  | { type: "settle/success"; input: Input; outcome: Outcome<F> }
-  | { type: "settle/failure"; input: Input; error: ResolvingError };
+  | { type: "settle/success"; input: Input; outcome: SuccessOutcome<F> }
+  | { type: "settle/failure"; input: Input; outcome: ErrorOutcome };
 
 type Effect = { type: "fetch"; input: Input };
 
@@ -91,7 +91,7 @@ function reducer<F extends Flags>(
   switch (action.type) {
     // fail hard (turn flags into null if failing)
     case "evaluate": {
-      const cachedOutcome = cache.get<Outcome<F>>(action.input);
+      const cachedOutcome = cache.get<SuccessOutcome<F>>(action.input);
 
       return [
         { ...state, pending: { input: action.input, cachedOutcome } },
@@ -103,7 +103,7 @@ function reducer<F extends Flags>(
       const latestInput = state.pending?.input || state.current?.input;
       if (!latestInput) return tuple;
 
-      const cachedOutcome = cache.get<Outcome<F>>(latestInput);
+      const cachedOutcome = cache.get<SuccessOutcome<F>>(latestInput);
       return [
         { ...state, pending: { input: latestInput, cachedOutcome } },
         [{ type: "fetch", input: latestInput }],
@@ -116,7 +116,7 @@ function reducer<F extends Flags>(
       cache.set(action.input, action.outcome);
 
       // update cookie if response contains visitor key
-      const visitorKey = action.outcome.responseBody.visitor?.key;
+      const visitorKey = action.outcome.data.visitor?.key;
       if (visitorKey) document.cookie = serializeVisitorKeyCookie(visitorKey);
 
       return [
@@ -137,9 +137,8 @@ function reducer<F extends Flags>(
           ...state,
           current: {
             input: action.input,
-            outcome: null,
-            error: action.error,
-            cachedOutcome: cache.get<Outcome<F>>(action.input),
+            outcome: action.outcome,
+            cachedOutcome: cache.get<SuccessOutcome<F>>(action.input),
           },
           pending: null,
         },
@@ -185,16 +184,15 @@ export function useFlags<F extends Flags = Flags>(
     options.initialState,
     (initialFlagState): [State<F>, Effect[]] => [
       {
-        current: initialFlagState
-          ? initialFlagState.outcome
+        current: initialFlagState?.outcome
+          ? initialFlagState.outcome.data
             ? {
                 input: initialFlagState.input,
                 outcome: initialFlagState.outcome,
               }
             : {
                 input: initialFlagState.input,
-                outcome: null,
-                error: initialFlagState.error,
+                outcome: initialFlagState.outcome,
                 cachedOutcome: null,
               }
           : null,
@@ -231,8 +229,8 @@ export function useFlags<F extends Flags = Flags>(
       if (state.pending?.input.requestBody.visitorKey)
         return state.pending?.input.requestBody.visitorKey;
 
-      if (state.current?.outcome?.responseBody.visitor?.key)
-        return state.current?.outcome?.responseBody.visitor?.key;
+      if (state.current?.outcome.data?.visitor?.key)
+        return state.current?.outcome.data?.visitor?.key;
 
       return generatedVisitorKey;
     })();
@@ -288,16 +286,16 @@ export function useFlags<F extends Flags = Flags>(
           })
             .then(
               async (response) => {
-                const responseBody = (await response.json()) as EvaluationResponseBody<F>;
+                const data = (await response.json()) as EvaluationResponseBody<F>;
                 if (response.ok /* response.status is 200-299 */) {
                   // responses to outdated requests are skipped in the reducer
-                  const outcome = { responseBody };
+                  const outcome = { data };
                   dispatch({ type: "settle/success", input, outcome });
                 } else {
                   dispatch({
                     type: "settle/failure",
                     input,
-                    error: "response-not-ok",
+                    outcome: { error: "response-not-ok" },
                   });
                 }
               },
@@ -305,7 +303,7 @@ export function useFlags<F extends Flags = Flags>(
                 dispatch({
                   type: "settle/failure",
                   input,
-                  error: "invalid-response-body",
+                  outcome: { error: "invalid-response-body" },
                 });
               }
             )
@@ -315,7 +313,7 @@ export function useFlags<F extends Flags = Flags>(
               dispatch({
                 type: "settle/failure",
                 input,
-                error: "network-error",
+                outcome: { error: "network-error" },
               });
             });
         }
@@ -333,10 +331,68 @@ export function useFlags<F extends Flags = Flags>(
   ]);
 
   const flagBag = React.useMemo<FlagBag<F>>(() => {
+    state.current?.input;
+    state.current?.input.endpoint;
+    state.current?.input.envKey;
+    state.current?.input.requestBody;
+    state.current?.input.requestBody.static;
+    state.current?.input.requestBody.traits;
+    state.current?.input.requestBody.visitorKey;
+    state.current?.outcome.error;
+    state.current?.outcome.data?.flags;
+    state.current?.outcome.data?.visitor?.key;
+    state.current?.cachedOutcome?.data.flags;
+    state.current?.cachedOutcome?.data.visitor;
+    state.current?.cachedOutcome?.data.visitor?.key;
+
+    state.pending?.input.endpoint;
+    state.pending?.input.envKey;
+    state.pending?.input.requestBody;
+    state.pending?.input.requestBody.static;
+    state.pending?.input.requestBody.traits;
+    state.pending?.input.requestBody.user;
+    state.pending?.input.requestBody.visitorKey;
+
+    state.pending?.cachedOutcome?.data;
+    state.pending?.cachedOutcome?.data.flags;
+    state.pending?.cachedOutcome?.data.visitor;
+    state.pending?.cachedOutcome?.data.visitor?.key;
+
+    const fresh = Boolean(
+      state.current && !state.current.input.requestBody.static
+    );
+
+    const fetching = Boolean(state.pending);
+
+    const addDefaults = (flags: Flags | undefined) =>
+      flags
+        ? combineRawFlagsWithDefaultFlags<F>(flags as F, defaultFlags)
+        : null;
+
     const rawFlags =
-      (state.current?.outcome?.responseBody.flags as F | undefined) || null;
+      (state.current?.outcome.data?.flags as F | undefined) || null;
 
     const flags = combineRawFlagsWithDefaultFlags<F>(rawFlags, defaultFlags);
+
+    const error = {};
+
+    return {
+      flags,
+      // error if currently shown flags had to fall back to
+      // defaultFlags
+      error,
+      // true if the currently shown flags are up to date (not from any cache)
+      fresh,
+      //
+      // visitorKey of currently shown flags
+      visitorKey: null,
+      // ---
+      input: state.current?.input,
+      outcome: state.current?.outcome,
+      staleOutcome: state.current?.cachedOutcome,
+      pendingInput: state.pending?.input,
+      pendingStaleOutcome: state.pending?.cachedOutcome,
+    };
 
     // When the outcome was generated for a static site, then no visitor key
     // is present on the outcome. In that case, the state can not be seen as
@@ -350,7 +406,7 @@ export function useFlags<F extends Flags = Flags>(
         state.current && !state.current.input.requestBody.static
       ),
       visitorKey:
-        state.current?.outcome?.responseBody.visitor?.key ||
+        state.current?.outcome.data?.visitor?.key ||
         state.current?.input.requestBody.visitorKey ||
         state.pending?.input.requestBody.visitorKey ||
         null,

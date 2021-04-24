@@ -108,7 +108,7 @@ export async function getFlags<F extends Flags = Flags>(options: {
     return {
       flags: config.defaultFlags as F,
       rawFlags: null,
-      initialFlagState: { input, outcome: null, error: "response-not-ok" },
+      initialFlagState: { input, outcome: { error: "response-not-ok" } },
     };
 
   const workerResponseBody: EvaluationResponseBody<F> | null = await workerResponse
@@ -121,8 +121,7 @@ export async function getFlags<F extends Flags = Flags>(options: {
       rawFlags: null,
       initialFlagState: {
         input,
-        outcome: null,
-        error: "invalid-response-body",
+        outcome: { error: "invalid-response-body" },
       },
     };
   }
@@ -147,7 +146,7 @@ export async function getFlags<F extends Flags = Flags>(options: {
     rawFlags: flags,
     initialFlagState: {
       input,
-      outcome: { responseBody: workerResponseBody },
+      outcome: { data: workerResponseBody },
     },
   };
 }
