@@ -115,8 +115,10 @@ export class ObjectMap<Key extends any, Value extends any> {
   set(key: Key, value: Value) {
     const index = this._getIndex(key);
     if (index == -1) {
-      this.keys.push(key);
-      this.values.push(value);
+      // "push" to front of arrays as more recently values are more likely
+      // to be looked up again, and we want them to match early
+      this.keys = [key, ...this.keys];
+      this.values = [value, ...this.values];
     } else {
       this.values[index] = value;
     }
