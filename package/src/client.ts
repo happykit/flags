@@ -43,6 +43,7 @@ type State<F extends Flags> = {
         input: Input;
         outcome: null;
         error: ResolvingError;
+        cachedOutcome: Outcome<F> | null;
       };
   pending: null | { input: Input; cachedOutcome: Outcome<F> | null };
 };
@@ -134,7 +135,12 @@ function reducer<F extends Flags>(
       return [
         {
           ...state,
-          current: { input: action.input, outcome: null, error: action.error },
+          current: {
+            input: action.input,
+            outcome: null,
+            error: action.error,
+            cachedOutcome: cache.get<Outcome<F>>(action.input),
+          },
           pending: null,
         },
         [],
@@ -189,6 +195,7 @@ export function useFlags<F extends Flags = Flags>(
                 input: initialFlagState.input,
                 outcome: null,
                 error: initialFlagState.error,
+                cachedOutcome: null,
               }
           : null,
         pending: null,
