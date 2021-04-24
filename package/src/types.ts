@@ -28,9 +28,17 @@ export type Input = {
   requestBody: EvaluationRequestBody;
 };
 
-export type Outcome<F extends Flags> = {
-  responseBody: EvaluationResponseBody<F>;
+export type SuccessOutcome<F extends Flags> = {
+  data: EvaluationResponseBody<F>;
+  error?: never;
 };
+
+export type ErrorOutcome = {
+  data?: never;
+  error: ResolvingError;
+};
+
+export type Outcome<F extends Flags> = SuccessOutcome<F> | ErrorOutcome;
 
 /**
  * The fetch() request failed due to a network error (fetch itself threw).
@@ -65,12 +73,12 @@ export type EvaluationResponseBody<F extends Flags> = {
 export type InitialFlagState<F extends Flags> =
   | {
       input: Input;
-      outcome: Outcome<F>;
+      outcome: SuccessOutcome<F>;
+      error?: never;
     }
   | {
       input: Input;
-      outcome: null;
-      error: ResolvingError;
+      outcome: ErrorOutcome;
     };
 
 export class InvalidConfigurationError extends Error {
