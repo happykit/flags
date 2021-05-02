@@ -86,14 +86,14 @@ export default function Page(props: ServerSideProps) {
           see the four possible values alternate.
         </p>
         <pre>
-          purchaseButtonLabel: "{flagBag.flags.purchaseButtonLabel}"
+          purchaseButtonLabel: "{flagBag.flags?.purchaseButtonLabel}"
           <br />
           visitorKey: "{flagBag.visitorKey}"
         </pre>
         <p>
           Your <code>purchaseButtonLabel</code> is currently resolving to{" "}
           <span className="italic font-semibold">
-            "{flagBag.flags.purchaseButtonLabel}"
+            "{flagBag.flags?.purchaseButtonLabel}"
           </span>{" "}
           based on your <code>visitorKey</code>, which is set to{" "}
           <code>{flagBag.visitorKey}</code>.

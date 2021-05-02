@@ -2,16 +2,19 @@ import * as React from "react";
 import { GetServerSideProps } from "next";
 import { Layout } from "../../components/Layout";
 import { Result } from "../../components/Result";
-import { getFlags } from "@happykit/flags/server";
+import { getFlags, EvaluationResponseBody } from "@happykit/flags/server";
 import { AppFlags } from "../../types/AppFlags";
 
-type ServerSideProps = { flags: AppFlags; rawFlags: AppFlags | null };
+type ServerSideProps = {
+  flags: AppFlags | null;
+  data: EvaluationResponseBody<AppFlags> | null;
+};
 
 export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
   context
 ) => {
-  const { flags, rawFlags } = await getFlags<AppFlags>({ context });
-  return { props: { flags, rawFlags } };
+  const { flags, data } = await getFlags<AppFlags>({ context });
+  return { props: { flags, data } };
 };
 
 export default function Page(props: ServerSideProps) {
@@ -40,8 +43,8 @@ export default function Page(props: ServerSideProps) {
         </p>
         <Result
           key="server-side-rendering-pure-with-fallback-values"
-          label="Loaded Flags (without fallback values)"
-          value={props.rawFlags}
+          label="Loaded data (without fallback values)"
+          value={props.data}
         />
       </article>
     </Layout>
