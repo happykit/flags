@@ -54,23 +54,20 @@ export default function Home(props: ServerSideProps) {
       </Head>
 
       <main>
-        <button
-          type="button"
-          onClick={() => {
-            console.log("toggle user");
-            setUser((prev) => (prev ? null : { key: "jennyc" }));
-          }}
-        >
-          toggle user
+        <button type="button" onClick={() => setUser(null)}>
+          no user
         </button>{" "}
-        <button
-          type="button"
-          onClick={() => {
-            console.log("toggle traits");
-            setTraits((prev) => (prev ? null : { employee: true }));
-          }}
-        >
-          toggle traits
+        <button type="button" onClick={() => setUser({ key: "jennyc" })}>
+          user jennyc
+        </button>{" "}
+        <button type="button" onClick={() => setUser({ key: "greg" })}>
+          user greg
+        </button>{" "}
+        <button type="button" onClick={() => setTraits({ teamMember: true })}>
+          traits on
+        </button>{" "}
+        <button type="button" onClick={() => setTraits(null)}>
+          traits off
         </button>{" "}
         <p>
           {user ? "has user" : "no user"}, {traits ? "has traits" : "no traits"}
