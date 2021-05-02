@@ -146,52 +146,43 @@ export type DefaultConfiguration = {
   revalidateOnFocus: boolean;
 };
 
-export interface FlagBag<F extends Flags> {
-  /**
-   * The resolved feature flags, extended with the defaults.
-   *
-   * These are shown on a best effort basis:
-   * - `null` while the flags are loading when the cache is empty
-   * - cached flags in case the flags were loaded before while loading
-   * - cached flags in case the flags were loaded before and the request fails
-   */
-  flags: F | null;
-  /**
-   * The feature flags as loaded without default defaults or cache.
-   *
-   * This is `null` while loading.
-   */
-  rawFlags: F | null;
-  /**
-   * The visitor key the feature flags were fetched for.
-   */
-  visitorKey: string | null;
-  /**
-   * Whether the initial loading of the feature flags has completed or not.
-   *
-   * This is true when the feature flags were loaded for the first time and
-   * stays true from then on, unless your inputs (`user`, `traits` or `visitorKey`) change.
-   *
-   * It also turns true when the request to load the feature flags failed.
-   *
-   * If the cache contains a response to the inputs, `flags` might already contain flags,
-   * but `settled` stay false until the request to load the feature flags resolves.
-   *
-   * When you pass an `initialFlagState` to `useFlags` and when that
-   * `initialFlagState` contains resolved flags, then `settled` will be `true`
-   * even on the initial render.
-   */
-  settled: boolean;
-  /**
-   * This is true whenever a flag evaluation request is currently in flight.
-   *
-   * In case you want to rendering UI depending on whether the flags were resolved,
-   * you probably want to use `settled` instead, as `settled` usually stays `true`
-   * once the initial flags were loaded, while `fetching` can flip multiple times.
-   */
-  fetching: boolean;
-  /**
-   *
-   */
-  revalidate: () => void;
-}
+type Revalidate = () => void;
+
+export type FlagBag<F extends Flags> =
+  // no input
+  | {
+      flags: null;
+      data: null;
+      error: null;
+      settled: false;
+      fetching: false;
+      visitorKey: null;
+      revalidate: Revalidate;
+    }
+  // input, but no outcome yet
+  | {
+      flags: F | null;
+      data: null;
+      error: null;
+      fetching: true;
+      visitorKey: string;
+      revalidate: Revalidate;
+    }
+  // error while fetching
+  | {
+      flags: F | null;
+      data: null;
+      error: ResolvingError;
+      fetching: false;
+      visitorKey: string;
+      revalidate: Revalidate;
+    }
+  // successful fetch
+  | {
+      flags: F;
+      data: EvaluationResponseBody<F>;
+      error: null;
+      fetching: false;
+      visitorKey: string;
+      revalidate: Revalidate;
+    };

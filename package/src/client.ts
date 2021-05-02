@@ -32,21 +32,42 @@ export type {
   Outcome,
 } from "./types";
 
-type State<F extends Flags> = {
-  current:
-    | null
-    | {
-        input: Input;
-        outcome: SuccessOutcome<F>;
-        cachedOutcome?: never;
-      }
-    | {
-        input: Input;
-        outcome: ErrorOutcome;
-        cachedOutcome: SuccessOutcome<F> | null;
-      };
-  pending: null | { input: Input; cachedOutcome: SuccessOutcome<F> | null };
-};
+type State<F extends Flags> =
+  // not fetched, no input yet
+  | {
+      input: null;
+      outcome: null;
+      cachedOutcome?: never;
+      revalidating: false;
+    }
+  // received input, might have cache, no outcome yet
+  | {
+      input: Input;
+      outcome: null;
+      cachedOutcome: SuccessOutcome<F> | null;
+      revalidating: false;
+    }
+  // received input and loaded outcome successfully
+  | {
+      input: Input;
+      outcome: SuccessOutcome<F>;
+      cachedOutcome?: never;
+      revalidating: false;
+    }
+  // received input and failed to load outcome
+  | {
+      input: Input;
+      outcome: ErrorOutcome;
+      cachedOutcome: SuccessOutcome<F> | null;
+      revalidating: false;
+    }
+  // revalidating
+  | {
+      input: Input;
+      outcome: SuccessOutcome<F> | ErrorOutcome | null;
+      cachedOutcome: SuccessOutcome<F> | null;
+      revalidating: true;
+    };
 
 type Action<F extends Flags> =
   | { type: "evaluate"; input: Input }
@@ -54,23 +75,10 @@ type Action<F extends Flags> =
   | { type: "settle/success"; input: Input; outcome: SuccessOutcome<F> }
   | { type: "settle/failure"; input: Input; outcome: ErrorOutcome };
 
-type Effect = { type: "fetch"; input: Input };
-
-/**
- * Checks whether input is a brand new input.
- *
- * In case there is a pending input, it checks if the incoming input equals that.
- *
- * In case there is no pending input, it checks if the incoming input equals the current input.
- */
-function isEmergingInput<F extends Flags>(input: Input, state: State<F>) {
-  if (state.pending) {
-    if (deepEqual(state.pending.input, input)) return false;
-  } else if (state.current /* and not state.pending */) {
-    if (deepEqual(state.current.input, input)) return false;
-  }
-  return true;
-}
+type Effect<F extends Flags> =
+  | { type: "fetch"; input: Input }
+  | { type: "set-visitor-key"; payload: string }
+  | { type: "set-cache"; input: Input; outcome: SuccessOutcome<F> };
 
 /**
  * The reducer returns a tuple of [state, effects].
@@ -84,63 +92,69 @@ function isEmergingInput<F extends Flags>(input: Input, state: State<F>) {
  * We use a hand-rolled version to keep the size of this package minimal.
  */
 function reducer<F extends Flags>(
-  tuple: readonly [State<F>, Effect[]],
+  tuple: readonly [State<F>, Effect<F>[]],
   action: Action<F>
-): readonly [State<F>, Effect[]] {
+): readonly [State<F>, Effect<F>[]] {
   const [state /* and effects */] = tuple;
+  console.log(action.type);
   switch (action.type) {
     // fail hard (turn flags into null if failing)
     case "evaluate": {
       const cachedOutcome = cache.get<SuccessOutcome<F>>(action.input);
 
+      // action.input will always differ from state.input, because we do not
+      // dispatch "evaluate" otherwise
       return [
-        { ...state, pending: { input: action.input, cachedOutcome } },
+        {
+          input: action.input,
+          outcome: null,
+          cachedOutcome,
+          revalidating: false,
+        },
         [{ type: "fetch", input: action.input }],
       ];
     }
     // fail soft (keep previous flags if failing)
     case "revalidate": {
-      const latestInput = state.pending?.input || state.current?.input;
-      if (!latestInput) return tuple;
+      if (!state.input) return tuple;
 
-      const cachedOutcome = cache.get<SuccessOutcome<F>>(latestInput);
+      const cachedOutcome = cache.get<SuccessOutcome<F>>(state.input);
       return [
-        { ...state, pending: { input: latestInput, cachedOutcome } },
-        [{ type: "fetch", input: latestInput }],
+        {
+          input: state.input,
+          outcome: state.outcome,
+          cachedOutcome: cachedOutcome,
+          revalidating: true,
+        },
+        [{ type: "fetch", input: state.input }],
       ];
     }
     case "settle/success": {
       // skip outdated responses
-      if (!deepEqual(action.input, state.pending?.input)) return tuple;
+      if (!deepEqual(action.input, state.input)) return tuple;
 
-      cache.set(action.input, action.outcome);
-
-      // update cookie if response contains visitor key
       const visitorKey = action.outcome.data.visitor?.key;
-      if (visitorKey) document.cookie = serializeVisitorKeyCookie(visitorKey);
 
       return [
-        {
-          ...state,
-          current: { input: action.input, outcome: action.outcome },
-          pending: null,
-        },
-        [],
+        { input: action.input, outcome: action.outcome, revalidating: false },
+        ([
+          // update cookie if response contains visitor key
+          visitorKey ? { type: "set-visitor-key", payload: visitorKey } : null,
+          // update cache
+          { type: "set-cache", input: action.input, outcome: action.outcome },
+        ] as Effect<F>[]).filter(Boolean),
       ];
     }
     case "settle/failure": {
       // skip outdated responses
-      if (!deepEqual(action.input, state.pending?.input)) return tuple;
+      if (!deepEqual(action.input, state.input)) return tuple;
 
       return [
         {
-          ...state,
-          current: {
-            input: action.input,
-            outcome: action.outcome,
-            cachedOutcome: cache.get<SuccessOutcome<F>>(action.input),
-          },
-          pending: null,
+          input: action.input,
+          outcome: action.outcome,
+          cachedOutcome: cache.get<SuccessOutcome<F>>(action.input),
+          revalidating: false,
         },
         [],
       ];
@@ -182,71 +196,60 @@ export function useFlags<F extends Flags = Flags>(
   const [[state, effects], dispatch] = React.useReducer(
     reducer,
     options.initialState,
-    (initialFlagState): [State<F>, Effect[]] => [
-      {
-        current: initialFlagState?.outcome
-          ? initialFlagState.outcome.data
-            ? {
-                input: initialFlagState.input,
-                outcome: initialFlagState.outcome,
-              }
-            : {
-                input: initialFlagState.input,
-                outcome: initialFlagState.outcome,
-                cachedOutcome: null,
-              }
-          : null,
-        pending: null,
-      },
-      [] as Effect[],
-    ]
+    (initialFlagState): [State<F>, Effect<F>[]] =>
+      initialFlagState &&
+      initialFlagState.input &&
+      initialFlagState.outcome.data
+        ? [
+            {
+              input: initialFlagState.input,
+              outcome: initialFlagState.outcome,
+              revalidating: false,
+            },
+            // do not cache static requests as they'll always be passed in from the
+            // server anyhow, so they'd never be read from the cache
+            initialFlagState.input.requestBody.static
+              ? ([] as Effect<F>[])
+              : ([
+                  {
+                    type: "set-cache",
+                    input: initialFlagState.input,
+                    outcome: initialFlagState.outcome,
+                    revalidating: false,
+                  },
+                ] as Effect<F>[]),
+          ]
+        : [
+            { input: null, outcome: null, revalidating: false },
+            [] as Effect<F>[],
+          ]
   );
-
-  // add initialState to cache
-  React.useEffect(() => {
-    if (
-      options.initialState &&
-      // only cache successful requests
-      options.initialState.outcome &&
-      // do not cache static requests as they'll always be passed in from the
-      // server anyhow, so they'd never be read from the cache
-      !options.initialState.input.requestBody.static
-    ) {
-      cache.set(options.initialState.input, options.initialState.outcome);
-    }
-  }, [options.initialState]);
 
   React.useEffect(() => {
     if (!isConfigured(config)) throw new MissingConfigurationError();
-
-    const visitorKey = (() => {
-      const cookie =
-        typeof document !== "undefined"
-          ? getCookie(document.cookie, "hkvk")
-          : null;
-      if (cookie) return cookie;
-
-      if (state.pending?.input.requestBody.visitorKey)
-        return state.pending?.input.requestBody.visitorKey;
-
-      if (state.current?.outcome.data?.visitor?.key)
-        return state.current?.outcome.data?.visitor?.key;
-
-      return generatedVisitorKey;
-    })();
 
     const input: Input = {
       endpoint: config.endpoint,
       envKey: config.envKey,
       requestBody: {
-        visitorKey,
+        visitorKey: (() => {
+          const cookie =
+            typeof document !== "undefined"
+              ? getCookie(document.cookie, "hkvk")
+              : null;
+
+          return (
+            cookie || state.input?.requestBody.visitorKey || generatedVisitorKey
+          );
+        })(),
         user: currentUser,
         traits: currentTraits,
         static: false,
       },
     };
 
-    if (isEmergingInput(input, state) && isReady(options.ready)) {
+    // evaluate if the input has changed
+    if (!deepEqual(state.input, input) && isReady(options.ready)) {
       dispatch({ type: "evaluate", input });
     }
 
@@ -272,13 +275,17 @@ export function useFlags<F extends Flags = Flags>(
     options.ready,
   ]);
 
+  const revalidate = React.useCallback(() => dispatch({ type: "revalidate" }), [
+    dispatch,
+  ]);
+
   React.useEffect(() => {
     effects.forEach((effect) => {
       switch (effect.type) {
         // execute the effect
         case "fetch": {
           const { input } = effect;
-
+          console.log("toggle fetch");
           fetch([input.endpoint, input.envKey].join("/"), {
             method: "POST",
             headers: { "content-type": "application/json" },
@@ -316,7 +323,16 @@ export function useFlags<F extends Flags = Flags>(
                 outcome: { error: "network-error" },
               });
             });
+          break;
         }
+
+        case "set-visitor-key":
+          document.cookie = serializeVisitorKeyCookie(effect.payload);
+          break;
+
+        case "set-cache":
+          cache.set(effect.input, effect.outcome);
+          break;
 
         default:
           return;
@@ -324,94 +340,67 @@ export function useFlags<F extends Flags = Flags>(
     });
   }, [effects, dispatch]);
 
-  const defaultFlags = config.defaultFlags;
-
-  const revalidate = React.useCallback(() => dispatch({ type: "revalidate" }), [
-    dispatch,
-  ]);
+  const { defaultFlags } = config;
 
   const flagBag = React.useMemo<FlagBag<F>>(() => {
-    state.current?.input;
-    state.current?.input.endpoint;
-    state.current?.input.envKey;
-    state.current?.input.requestBody;
-    state.current?.input.requestBody.static;
-    state.current?.input.requestBody.traits;
-    state.current?.input.requestBody.visitorKey;
-    state.current?.outcome.error;
-    state.current?.outcome.data?.flags;
-    state.current?.outcome.data?.visitor?.key;
-    state.current?.cachedOutcome?.data.flags;
-    state.current?.cachedOutcome?.data.visitor;
-    state.current?.cachedOutcome?.data.visitor?.key;
+    if (!state.input)
+      return {
+        flags: null,
+        data: null,
+        error: null,
+        // settled: false,
+        fetching: false,
+        visitorKey: null,
+        revalidate,
+      } as FlagBag<F>;
 
-    state.pending?.input.endpoint;
-    state.pending?.input.envKey;
-    state.pending?.input.requestBody;
-    state.pending?.input.requestBody.static;
-    state.pending?.input.requestBody.traits;
-    state.pending?.input.requestBody.user;
-    state.pending?.input.requestBody.visitorKey;
+    if (!state.outcome) {
+      return {
+        flags: state.cachedOutcome?.data.flags
+          ? combineRawFlagsWithDefaultFlags<F>(
+              state.cachedOutcome.data.flags as F,
+              defaultFlags
+            )
+          : // no defaultFlags fallback while fetching
+            null,
+        data: null,
+        error: null,
+        // settled: !state.cachedOutcome,
+        fetching: true,
+        visitorKey: state.input.requestBody.visitorKey,
+        revalidate,
+      } as FlagBag<F>;
+    }
 
-    state.pending?.cachedOutcome?.data;
-    state.pending?.cachedOutcome?.data.flags;
-    state.pending?.cachedOutcome?.data.visitor;
-    state.pending?.cachedOutcome?.data.visitor?.key;
-
-    const fresh = Boolean(
-      state.current && !state.current.input.requestBody.static
-    );
-
-    const fetching = Boolean(state.pending);
-
-    const addDefaults = (flags: Flags | undefined) =>
-      flags
-        ? combineRawFlagsWithDefaultFlags<F>(flags as F, defaultFlags)
-        : null;
-
-    const rawFlags =
-      (state.current?.outcome.data?.flags as F | undefined) || null;
-
-    const flags = combineRawFlagsWithDefaultFlags<F>(rawFlags, defaultFlags);
-
-    const error = {};
+    if (state.outcome.error)
+      return {
+        flags: state.cachedOutcome?.data.flags
+          ? combineRawFlagsWithDefaultFlags<F>(
+              state.cachedOutcome.data.flags as F,
+              defaultFlags
+            )
+          : // defaultFlags fallback when errored
+            defaultFlags || null,
+        data: null,
+        error: state.outcome.error,
+        // settled: true,
+        fetching: state.revalidating,
+        visitorKey: state.input.requestBody.visitorKey,
+        revalidate,
+      } as FlagBag<F>;
 
     return {
-      flags,
-      // error if currently shown flags had to fall back to
-      // defaultFlags
-      error,
-      // true if the currently shown flags are up to date (not from any cache)
-      fresh,
-      //
-      // visitorKey of currently shown flags
-      visitorKey: null,
-      // ---
-      input: state.current?.input,
-      outcome: state.current?.outcome,
-      staleOutcome: state.current?.cachedOutcome,
-      pendingInput: state.pending?.input,
-      pendingStaleOutcome: state.pending?.cachedOutcome,
-    };
-
-    // When the outcome was generated for a static site, then no visitor key
-    // is present on the outcome. In that case, the state can not be seen as
-    // settled as another revalidation will happen in which a visitor key will
-    // get generated.
-    return {
-      flags: rawFlags ? flags : null,
-      rawFlags: rawFlags,
-      fetching: Boolean(state.pending),
-      settled: Boolean(
-        state.current && !state.current.input.requestBody.static
+      flags: combineRawFlagsWithDefaultFlags<F>(
+        state.outcome.data.flags as F,
+        defaultFlags
       ),
-      visitorKey:
-        state.current?.outcome.data?.visitor?.key ||
-        state.current?.input.requestBody.visitorKey ||
-        state.pending?.input.requestBody.visitorKey ||
-        null,
+      data: state.outcome.data,
+      error: null,
+      // settled: true,
+      fetching: state.revalidating,
+      visitorKey: state.input.requestBody.visitorKey,
       revalidate,
-    };
+    } as FlagBag<F>;
   }, [state, defaultFlags]);
 
   return flagBag;
