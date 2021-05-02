@@ -8,7 +8,6 @@ import {
   Traits,
   MissingConfigurationError,
   Flags,
-  InitialFlagState,
   SuccessInitialFlagState,
   ErrorInitialFlagState,
   EvaluationResponseBody,
@@ -21,6 +20,8 @@ import {
   serializeVisitorKeyCookie,
   combineRawFlagsWithDefaultFlags,
 } from "./utils";
+
+export type { EvaluationResponseBody } from "./types";
 
 function getRequestingIp(context: {
   req: IncomingMessage;

@@ -5,7 +5,7 @@ import { Result } from "../../components/Result";
 import { getFlags } from "@happykit/flags/server";
 import { AppFlags } from "../../types/AppFlags";
 
-type StaticProps = { flags: AppFlags };
+type StaticProps = { flags: AppFlags | null };
 
 export const getStaticProps: GetStaticProps<StaticProps> = async (context) => {
   const { flags } = await getFlags<AppFlags>({ context });

@@ -4,11 +4,12 @@ import { Result } from "../components/Result";
 
 // defined outside to guarantee a consistent ref
 const exampleFlagBag = {
-  flags: {},
-  rawFlags: {},
-  fetching: false,
-  visitorKey: "...",
-  settled: true,
+  flags: null,
+  data: null,
+  error: null,
+  fetching: true,
+  visitorKey: "example-visitor-key",
+  settled: false,
 };
 
 export default function Index() {
