@@ -70,16 +70,20 @@ export type EvaluationResponseBody<F extends Flags> = {
   flags: F;
 };
 
+export type SuccessInitialFlagState<F extends Flags> = {
+  input: Input;
+  outcome: SuccessOutcome<F>;
+  error?: never;
+};
+
+export type ErrorInitialFlagState = {
+  input: Input;
+  outcome: ErrorOutcome;
+};
+
 export type InitialFlagState<F extends Flags> =
-  | {
-      input: Input;
-      outcome: SuccessOutcome<F>;
-      error?: never;
-    }
-  | {
-      input: Input;
-      outcome: ErrorOutcome;
-    };
+  | SuccessInitialFlagState<F>
+  | ErrorInitialFlagState;
 
 export class InvalidConfigurationError extends Error {
   constructor() {

@@ -9,7 +9,10 @@ import {
   MissingConfigurationError,
   Flags,
   InitialFlagState,
+  SuccessInitialFlagState,
+  ErrorInitialFlagState,
   EvaluationResponseBody,
+  ResolvingError,
   Input,
 } from "./types";
 import {
@@ -37,27 +40,43 @@ export async function getFlags<F extends Flags = Flags>(options: {
     | GetStaticPropsContext;
   user?: FlagUser;
   traits?: Traits;
-}): Promise<{
-  /**
-   * The resolved flags
-   *
-   * In case the flags could not be loaded, you will see the default
-   * flags here (from config.defaultFlags)
-   *
-   * In case the default flags contain flags not present in the loaded
-   * flags, the missing flags will get added to the returned flags.
-   */
-  flags: F;
-  /**
-   * The actually loaded flags without any defaults applied, or null when
-   * the flags could not be loaded.
-   */
-  rawFlags: F | null;
-  /**
-   * The initial flag state that you can use to initialize useFlags()
-   */
-  initialFlagState: InitialFlagState<F>;
-}> {
+}): Promise<
+  | {
+      /**
+       * The resolved flags
+       *
+       * In case the default flags contain flags not present in the loaded flags,
+       * the missing flags will get added to the returned flags.
+       */
+      flags: F;
+      /**
+       * The actually loaded data without any defaults applied, or null when
+       * the flags could not be loaded.
+       */
+      data: EvaluationResponseBody<F> | null;
+      error: null;
+      initialFlagState: SuccessInitialFlagState<F>;
+    }
+  | {
+      /**
+       * The resolved flags
+       *
+       * In case the flags could not be loaded, you will see the default
+       * flags here (from config.defaultFlags)
+       */
+      flags: F | null;
+      /**
+       * The actually loaded data without any defaults applied, or null when
+       * the flags could not be loaded.
+       */
+      data: null;
+      error: ResolvingError;
+      /**
+       * The initial flag state that you can use to initialize useFlags()
+       */
+      initialFlagState: ErrorInitialFlagState;
+    }
+> {
   if (!isConfigured(config)) throw new MissingConfigurationError();
 
   // determine visitor key
@@ -107,7 +126,8 @@ export async function getFlags<F extends Flags = Flags>(options: {
   if (!workerResponse || !workerResponse.ok /* status not 200-299 */)
     return {
       flags: config.defaultFlags as F,
-      rawFlags: null,
+      data: null,
+      error: "response-not-ok",
       initialFlagState: { input, outcome: { error: "response-not-ok" } },
     };
 
@@ -118,11 +138,9 @@ export async function getFlags<F extends Flags = Flags>(options: {
   if (!workerResponseBody) {
     return {
       flags: config.defaultFlags as F,
-      rawFlags: null,
-      initialFlagState: {
-        input,
-        outcome: { error: "invalid-response-body" },
-      },
+      data: null,
+      error: "invalid-response-body",
+      initialFlagState: { input, outcome: { error: "invalid-response-body" } },
     };
   }
 
@@ -143,10 +161,8 @@ export async function getFlags<F extends Flags = Flags>(options: {
 
   return {
     flags: flagsWithDefaults,
-    rawFlags: flags,
-    initialFlagState: {
-      input,
-      outcome: { data: workerResponseBody },
-    },
+    data: workerResponseBody,
+    error: null,
+    initialFlagState: { input, outcome: { data: workerResponseBody } },
   };
 }

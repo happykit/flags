@@ -61,6 +61,11 @@ describe("server-side rendering (pure + hybrid)", () => {
       expect(await getFlags({ context, traits: { teamMember: true } })).toEqual(
         {
           flags: { meal: "large" },
+          data: {
+            flags: { meal: "large" },
+            visitor: { key: "V1StGXR8_Z5jdHi6B-myT" },
+          },
+          error: null,
           initialFlagState: {
             input: {
               endpoint: "https://happykit.dev/api/flags",
@@ -79,7 +84,6 @@ describe("server-side rendering (pure + hybrid)", () => {
               },
             },
           },
-          rawFlags: { meal: "large" },
         }
       );
 
@@ -128,6 +132,11 @@ describe("server-side rendering (pure + hybrid)", () => {
         })
       ).toEqual({
         flags: { meal: "large" },
+        data: {
+          flags: { meal: "large" },
+          visitor: { key: "V1StGXR8_Z5jdHi6B-myT" },
+        },
+        error: null,
         initialFlagState: {
           input: {
             endpoint: "https://happykit.dev/api/flags",
@@ -146,7 +155,6 @@ describe("server-side rendering (pure + hybrid)", () => {
             },
           },
         },
-        rawFlags: { meal: "large" },
       });
 
       expect(context.res!.setHeader).toHaveBeenCalledWith(
@@ -194,6 +202,11 @@ describe("server-side rendering (pure + hybrid)", () => {
 
       expect(await getFlags({ context })).toEqual({
         flags: { meal: "large" },
+        data: {
+          flags: { meal: "large" },
+          visitor: { key: "V1StGXR8_Z5jdHi6B-myT" },
+        },
+        error: null,
         initialFlagState: {
           input: {
             endpoint: "https://happykit.dev/api/flags",
@@ -212,7 +225,6 @@ describe("server-side rendering (pure + hybrid)", () => {
             },
           },
         },
-        rawFlags: { meal: "large" },
       });
 
       expect(context.res!.setHeader).toHaveBeenCalledWith(
@@ -245,6 +257,11 @@ describe("static site generation (pure + hybrid)", () => {
 
     expect(await getFlags({ context: {} as GetStaticPropsContext })).toEqual({
       flags: { meal: "large" },
+      data: {
+        flags: { meal: "large" },
+        visitor: null,
+      },
+      error: null,
       initialFlagState: {
         input: {
           endpoint: "https://happykit.dev/api/flags",
@@ -263,7 +280,6 @@ describe("static site generation (pure + hybrid)", () => {
           },
         },
       },
-      rawFlags: { meal: "large" },
     });
   });
 
@@ -294,6 +310,11 @@ describe("static site generation (pure + hybrid)", () => {
         })
       ).toEqual({
         flags: { meal: "large" },
+        data: {
+          flags: { meal: "large" },
+          visitor: null,
+        },
+        error: null,
         initialFlagState: {
           input: {
             endpoint: "https://happykit.dev/api/flags",
@@ -312,7 +333,6 @@ describe("static site generation (pure + hybrid)", () => {
             },
           },
         },
-        rawFlags: { meal: "large" },
       });
     });
   });
@@ -344,6 +364,11 @@ describe("static site generation (pure + hybrid)", () => {
         })
       ).toEqual({
         flags: { meal: "large" },
+        data: {
+          flags: { meal: "large" },
+          visitor: null,
+        },
+        error: null,
         initialFlagState: {
           input: {
             endpoint: "https://happykit.dev/api/flags",
@@ -362,7 +387,6 @@ describe("static site generation (pure + hybrid)", () => {
             },
           },
         },
-        rawFlags: { meal: "large" },
       });
     });
   });
