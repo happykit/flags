@@ -21,8 +21,7 @@ export function HelpBox() {
         </div>
         <div className="ml-3 flex-1 md:flex md:justify-between">
           <p className="text-sm text-blue-600">
-            In case something is unclear, feel free to send a DM to open an
-            issue at{" "}
+            In case something is unclear, feel free to open an issue at{" "}
             <a href="https://github.com/happykit/flags">
               github.com/happykit/flags
             </a>{" "}
