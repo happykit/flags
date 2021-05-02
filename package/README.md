@@ -152,9 +152,9 @@ This function returns an object we usually call [`flagBag`](#flagBag). It contai
 
 This object is returned from `useFlags()`.
 
-- `flags` _(object)_: The feature flags, with the defaults applied.
-- `data` _(object)_: The feature flags as loaded from HappyKit, with no defaults applied.
-- `error` _(object)_: The feature flags as loaded from HappyKit, with no defaults applied.
+- `flags` _(object | null)_: The feature flags, with the defaults applied.
+- `data` _(object | null)_: The feature flags as loaded from HappyKit, with no defaults applied. `null` if an error occurred while loading.
+- `error` _(string | null)_: A string describing the error that occurred while loading the feature flags, null otherwise.
 - `visitorKey` _(string | null)_: The visitor key the feature flags were fetched for.
 - `settled` _(boolean)_: Unless you are providing `initialState`, the client will need to fetch the feature flags from the API. In some cases, during static site generation, it will even need to fetch the feature flags from the API even though you provided `initialState`. The `settled` value will turn `true` once the flags have settled on the client. This means that the only way for the value of the flags to change from then on would be if you changed one of the feature flags, or provided different inputs (`user`, `traits`). Once `settled` has turned true, it will not turn back to false. You can use `settled` in case you want to wait for the "final" feature flag values before kicking of code splitting (or showing UI).
 - `fetching` _(boolean)_: This is `true` whenever the client is loading feature flags. This might happen initially, on rerenders with changed inputs (`user`, `traits`) or when the window regains focus and revaldiation is triggered. You probably want to use `settled` instead, as `settled` stays truthy once the flags were loaded, while `fetching` can flip multiple times.
