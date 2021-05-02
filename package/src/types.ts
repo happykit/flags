@@ -148,41 +148,72 @@ export type DefaultConfiguration = {
 
 type Revalidate = () => void;
 
+export type EmptyFlagBag = {
+  flags: null;
+  data: null;
+  error: null;
+  fetching: false;
+  settled: false;
+  revalidate: Revalidate;
+  visitorKey: null;
+};
+
+export type EvaluatingFlagBag<F extends Flags> = {
+  flags: null | F;
+  data: null;
+  error: null;
+  fetching: true;
+  settled: false;
+  revalidate: Revalidate;
+  visitorKey: string;
+};
+
+export type SucceededFlagBag<F extends Flags> = {
+  flags: F;
+  data: EvaluationResponseBody<F>;
+  error: null;
+  fetching: false;
+  // true, unless input is for a static page
+  settled: boolean;
+  revalidate: Revalidate;
+  visitorKey: string;
+};
+
+export type RevalidatingAfterSuccessFlagBag<F extends Flags> = {
+  flags: F;
+  data: EvaluationResponseBody<F>;
+  error: null;
+  fetching: true;
+  settled: boolean;
+  revalidate: Revalidate;
+  visitorKey: string;
+};
+
+export type FailedFlagBag<F extends Flags> = {
+  flags: F | null; // cached or default or null
+  data: null;
+  error: ResolvingError;
+  fetching: false;
+  // true, unless input is for a static page
+  settled: boolean;
+  revalidate: Revalidate;
+  visitorKey: string;
+};
+
+export type RevalidatingAfterErrorFlagBag<F extends Flags> = {
+  flags: F | null; // cached or default or null
+  data: null;
+  error: ResolvingError;
+  fetching: true;
+  settled: false;
+  revalidate: Revalidate;
+  visitorKey: string;
+};
+
 export type FlagBag<F extends Flags> =
-  // no input
-  | {
-      flags: null;
-      data: null;
-      error: null;
-      settled: false;
-      fetching: false;
-      visitorKey: null;
-      revalidate: Revalidate;
-    }
-  // input, but no outcome yet
-  | {
-      flags: F | null;
-      data: null;
-      error: null;
-      fetching: true;
-      visitorKey: string;
-      revalidate: Revalidate;
-    }
-  // error while fetching
-  | {
-      flags: F | null;
-      data: null;
-      error: ResolvingError;
-      fetching: false;
-      visitorKey: string;
-      revalidate: Revalidate;
-    }
-  // successful fetch
-  | {
-      flags: F;
-      data: EvaluationResponseBody<F>;
-      error: null;
-      fetching: false;
-      visitorKey: string;
-      revalidate: Revalidate;
-    };
+  | EmptyFlagBag
+  | EvaluatingFlagBag<F>
+  | SucceededFlagBag<F>
+  | RevalidatingAfterSuccessFlagBag<F>
+  | FailedFlagBag<F>
+  | RevalidatingAfterErrorFlagBag<F>;
