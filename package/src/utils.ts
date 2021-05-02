@@ -105,8 +105,13 @@ export function deepEqual(objA: any, objB: any) {
 }
 
 export class ObjectMap<Key extends any, Value extends any> {
-  keys: Key[] = [];
-  values: Value[] = [];
+  keys: Key[];
+  values: Value[];
+
+  constructor() {
+    this.keys = [];
+    this.values = [];
+  }
 
   private _getIndex(key: Key) {
     return this.keys.findIndex((storedKey) => deepEqual(key, storedKey));
