@@ -158,6 +158,7 @@ This object is returned from `useFlags()`.
 - `visitorKey` _(string | null)_: The visitor key the feature flags were fetched for.
 - `settled` _(boolean)_: Unless you are providing `initialState`, the client will need to fetch the feature flags from the API. In some cases, during static site generation, it will even need to fetch the feature flags from the API even though you provided `initialState`. The `settled` value will turn `true` once the flags have settled on the client. This means that the only way for the value of the flags to change from then on would be if you changed one of the feature flags, or provided different inputs (`user`, `traits`). Once `settled` has turned true, it will not turn back to false. You can use `settled` in case you want to wait for the "final" feature flag values before kicking of code splitting (or showing UI).
 - `fetching` _(boolean)_: This is `true` whenever the client is loading feature flags. This might happen initially, on rerenders with changed inputs (`user`, `traits`) or when the window regains focus and revaldiation is triggered. You probably want to use `settled` instead, as `settled` stays truthy once the flags were loaded, while `fetching` can flip multiple times.
+- `revalidate` _(function)_: A function you can call to revalidate the flags based on the values currently passed into the `useFlags` hook.
 
 #### Supported user attributes
 
