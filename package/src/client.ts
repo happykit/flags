@@ -108,7 +108,6 @@ function reducer<F extends Flags>(
   action: Action<F>
 ): readonly [State<F>, Effect<F>[]] {
   const [state /* and effects */] = tuple;
-  console.log({ state: state.name, action: action.type });
 
   switch (action.type) {
     case "evaluate": {

@@ -33,6 +33,7 @@ it("it warns on missing config", () => {
 describe("client-side rendering", () => {
   describe("when cookie is not set", () => {
     it("generates a visitor key", async () => {
+      let visitorKey;
       // mock incoming post request...
       fetchMock.post(
         // ...when it matches this...
@@ -51,7 +52,7 @@ describe("client-side rendering", () => {
         (url: string, options: RequestInit, request: Request) => {
           // parse visitorKey so we can mirror it back
           const body = JSON.parse(options.body as string);
-          const visitorKey = body.visitorKey;
+          visitorKey = body.visitorKey;
           expect(typeof visitorKey).toBe("string");
 
           return {
@@ -78,7 +79,8 @@ describe("client-side rendering", () => {
       expect(result.all).toEqual([
         {
           flags: null,
-          rawFlags: null,
+          data: null,
+          error: null,
           fetching: false,
           settled: false,
           visitorKey: null,
@@ -86,10 +88,11 @@ describe("client-side rendering", () => {
         },
         {
           flags: null,
-          rawFlags: null,
+          data: null,
+          error: null,
           fetching: true,
           settled: false,
-          visitorKey: expect.any(String),
+          visitorKey: visitorKey,
           revalidate: expect.any(Function),
         },
         {
@@ -99,15 +102,19 @@ describe("client-side rendering", () => {
             discount: 5,
             purchaseButtonLabel: "Purchase",
           },
-          rawFlags: {
-            ads: true,
-            checkout: "medium",
-            discount: 5,
-            purchaseButtonLabel: "Purchase",
+          data: {
+            flags: {
+              ads: true,
+              checkout: "medium",
+              discount: 5,
+              purchaseButtonLabel: "Purchase",
+            },
+            visitor: { key: visitorKey },
           },
+          error: null,
           fetching: false,
           settled: true,
-          visitorKey: expect.any(String),
+          visitorKey: visitorKey,
           revalidate: expect.any(Function),
         },
       ]);
@@ -164,7 +171,8 @@ describe("client-side rendering", () => {
       expect(result.all).toEqual([
         {
           flags: null,
-          rawFlags: null,
+          data: null,
+          error: null,
           fetching: false,
           settled: false,
           visitorKey: null,
@@ -172,7 +180,8 @@ describe("client-side rendering", () => {
         },
         {
           flags: null,
-          rawFlags: null,
+          data: null,
+          error: null,
           fetching: true,
           settled: false,
           visitorKey: visitorKeyInCookie,
@@ -186,12 +195,16 @@ describe("client-side rendering", () => {
             discount: 5,
             purchaseButtonLabel: "Purchase",
           },
-          rawFlags: {
-            ads: true,
-            checkout: "medium",
-            discount: 5,
-            purchaseButtonLabel: "Purchase",
+          data: {
+            flags: {
+              ads: true,
+              checkout: "medium",
+              discount: 5,
+              purchaseButtonLabel: "Purchase",
+            },
+            visitor: { key: visitorKeyInCookie },
           },
+          error: null,
           settled: true,
           visitorKey: visitorKeyInCookie,
           revalidate: expect.any(Function),
@@ -222,7 +235,7 @@ describe("server-side rendering (hybrid)", () => {
           },
         },
         outcome: {
-          responseBody: {
+          data: {
             flags: {
               ads: true,
               checkout: "short",
@@ -246,12 +259,16 @@ describe("server-side rendering (hybrid)", () => {
             discount: 5,
             purchaseButtonLabel: "Buy now",
           },
-          rawFlags: {
-            ads: true,
-            checkout: "short",
-            discount: 5,
-            purchaseButtonLabel: "Buy now",
+          data: {
+            flags: {
+              ads: true,
+              checkout: "short",
+              discount: 5,
+              purchaseButtonLabel: "Buy now",
+            },
+            visitor: { key: generatedVisitorKey },
           },
+          error: null,
           fetching: false,
           settled: true,
           visitorKey: generatedVisitorKey,
@@ -295,7 +312,7 @@ describe("server-side rendering (hybrid)", () => {
           },
         },
         outcome: {
-          responseBody: {
+          data: {
             flags: {
               ads: true,
               checkout: "short",
@@ -323,12 +340,16 @@ describe("server-side rendering (hybrid)", () => {
             discount: 5,
             purchaseButtonLabel: "Buy now",
           },
-          rawFlags: {
-            ads: true,
-            checkout: "short",
-            discount: 5,
-            purchaseButtonLabel: "Buy now",
+          data: {
+            flags: {
+              ads: true,
+              checkout: "short",
+              discount: 5,
+              purchaseButtonLabel: "Buy now",
+            },
+            visitor: { key: visitorKeyInCookie },
           },
+          error: null,
           settled: true,
           visitorKey: visitorKeyInCookie,
           revalidate: expect.any(Function),
@@ -341,7 +362,6 @@ describe("server-side rendering (hybrid)", () => {
 describe("static site generation (hybrid)", () => {
   describe("when cookie is not set", () => {
     it("generates a visitorKey", async () => {
-      // prepare cookie before test
       let generatedVisitorKey;
 
       fetchMock.post(
@@ -391,7 +411,7 @@ describe("static site generation (hybrid)", () => {
           },
         },
         outcome: {
-          responseBody: {
+          data: {
             flags: {
               ads: true,
               checkout: null,
@@ -429,12 +449,16 @@ describe("static site generation (hybrid)", () => {
             discount: 5,
             purchaseButtonLabel: null,
           },
-          rawFlags: {
-            ads: true,
-            checkout: null,
-            discount: 5,
-            purchaseButtonLabel: null,
+          data: {
+            flags: {
+              ads: true,
+              checkout: null,
+              discount: 5,
+              purchaseButtonLabel: null,
+            },
+            visitor: null,
           },
+          error: null,
           fetching: false,
           settled: false,
           visitorKey: null,
@@ -447,15 +471,19 @@ describe("static site generation (hybrid)", () => {
             discount: 5,
             purchaseButtonLabel: null,
           },
-          rawFlags: {
-            ads: true,
-            checkout: null,
-            discount: 5,
-            purchaseButtonLabel: null,
+          data: {
+            flags: {
+              ads: true,
+              checkout: null,
+              discount: 5,
+              purchaseButtonLabel: null,
+            },
+            visitor: null,
           },
+          error: null,
           fetching: true,
           settled: false,
-          visitorKey: generatedVisitorKey,
+          visitorKey: null,
           revalidate: expect.any(Function),
         },
         {
@@ -465,12 +493,16 @@ describe("static site generation (hybrid)", () => {
             discount: 5,
             purchaseButtonLabel: "Purchase",
           },
-          rawFlags: {
-            ads: true,
-            checkout: "short",
-            discount: 5,
-            purchaseButtonLabel: "Purchase",
+          data: {
+            flags: {
+              ads: true,
+              checkout: "short",
+              discount: 5,
+              purchaseButtonLabel: "Purchase",
+            },
+            visitor: { key: generatedVisitorKey },
           },
+          error: null,
           fetching: false,
           settled: true,
           visitorKey: generatedVisitorKey,
@@ -528,7 +560,7 @@ describe("static site generation (hybrid)", () => {
           },
         },
         outcome: {
-          responseBody: {
+          data: {
             flags: {
               ads: true,
               checkout: null,
@@ -557,12 +589,16 @@ describe("static site generation (hybrid)", () => {
             discount: 5,
             purchaseButtonLabel: null,
           },
-          rawFlags: {
-            ads: true,
-            checkout: null,
-            discount: 5,
-            purchaseButtonLabel: null,
+          data: {
+            flags: {
+              ads: true,
+              checkout: null,
+              discount: 5,
+              purchaseButtonLabel: null,
+            },
+            visitor: null,
           },
+          error: null,
           fetching: false,
           settled: false,
           visitorKey: null,
@@ -575,15 +611,19 @@ describe("static site generation (hybrid)", () => {
             discount: 5,
             purchaseButtonLabel: null,
           },
-          rawFlags: {
-            ads: true,
-            checkout: null,
-            discount: 5,
-            purchaseButtonLabel: null,
+          data: {
+            flags: {
+              ads: true,
+              checkout: null,
+              discount: 5,
+              purchaseButtonLabel: null,
+            },
+            visitor: null,
           },
+          error: null,
           fetching: true,
           settled: false,
-          visitorKey: visitorKeyInCookie,
+          visitorKey: null,
           revalidate: expect.any(Function),
         },
         {
@@ -593,12 +633,16 @@ describe("static site generation (hybrid)", () => {
             discount: 5,
             purchaseButtonLabel: "Purchase",
           },
-          rawFlags: {
-            ads: true,
-            checkout: "short",
-            discount: 5,
-            purchaseButtonLabel: "Purchase",
+          data: {
+            flags: {
+              ads: true,
+              checkout: "short",
+              discount: 5,
+              purchaseButtonLabel: "Purchase",
+            },
+            visitor: { key: visitorKeyInCookie },
           },
+          error: null,
           fetching: false,
           settled: true,
           visitorKey: visitorKeyInCookie,
@@ -616,7 +660,7 @@ describe("static site generation (hybrid)", () => {
 
 describe("stories", () => {
   describe("client-side rendering", () => {
-    it("works", async () => {
+    it.only("works", async () => {
       let generatedVisitorKey = null;
       fetchMock.post(
         {
@@ -656,10 +700,11 @@ describe("stories", () => {
         FlagBag<Flags>
       >((options) => useFlags(options), { initialProps: undefined });
 
-      const firstRenders = [
+      const rendersBeforeFirstSettlement = [
         {
           flags: null,
-          rawFlags: null,
+          data: null,
+          error: null,
           fetching: false,
           settled: false,
           visitorKey: null,
@@ -667,18 +712,19 @@ describe("stories", () => {
         },
         {
           flags: null,
-          rawFlags: null,
+          data: null,
+          error: null,
           fetching: true,
           settled: false,
-          visitorKey: expect.any(String),
+          visitorKey: generatedVisitorKey,
           revalidate: expect.any(Function),
         },
       ];
-      expect(result.all).toEqual(firstRenders);
+      expect(result.all).toEqual(rendersBeforeFirstSettlement);
 
       await waitForNextUpdate();
 
-      const secondRenders = [
+      const rendersOnFirstSettlement = [
         {
           flags: {
             ads: true,
@@ -686,19 +732,27 @@ describe("stories", () => {
             discount: 5,
             purchaseButtonLabel: "Purchase",
           },
-          rawFlags: {
-            ads: true,
-            checkout: "medium",
-            discount: 5,
-            purchaseButtonLabel: "Purchase",
+          data: {
+            flags: {
+              ads: true,
+              checkout: "medium",
+              discount: 5,
+              purchaseButtonLabel: "Purchase",
+            },
+            visitor: { key: generatedVisitorKey },
           },
+          error: null,
           fetching: false,
           settled: true,
           visitorKey: expect.any(String),
           revalidate: expect.any(Function),
         },
       ];
-      expect(result.all).toEqual([...firstRenders, ...secondRenders]);
+
+      expect(result.all).toEqual([
+        ...rendersBeforeFirstSettlement,
+        ...rendersOnFirstSettlement,
+      ]);
 
       fetchMock.post(
         {
@@ -723,71 +777,47 @@ describe("stories", () => {
       );
 
       rerender({ user: { key: "george" } });
+
+      expect(result.all).toHaveLength(5);
+
       await waitForNextUpdate();
 
       expect(result.all).toEqual([
-        ...firstRenders,
-        ...secondRenders,
-        // {
-        //   flags: null,
-        //   rawFlags: null,
-        //   fetching: true,
-        //   settled: false,
-        //   visitorKey: generatedVisitorKey,
-        // },
+        ...rendersBeforeFirstSettlement,
+        ...rendersOnFirstSettlement,
+        // for some reason this is rendered again, I suspect it's because
+        // of the "rerender" call?
+        ...rendersOnFirstSettlement,
         {
-          flags: {
-            ads: true,
-            checkout: "medium",
-            discount: 5,
-            purchaseButtonLabel: "Purchase",
-          },
-          rawFlags: {
-            ads: true,
-            checkout: "medium",
-            discount: 5,
-            purchaseButtonLabel: "Purchase",
-          },
-          fetching: false,
-          settled: true,
-          visitorKey: generatedVisitorKey,
-          revalidate: expect.any(Function),
-        },
-        {
-          flags: {
-            ads: true,
-            checkout: "medium",
-            discount: 5,
-            purchaseButtonLabel: "Purchase",
-          },
-          rawFlags: {
-            ads: true,
-            checkout: "medium",
-            discount: 5,
-            purchaseButtonLabel: "Purchase",
-          },
+          data: null,
+          error: null,
           fetching: true,
-          settled: true,
-          visitorKey: generatedVisitorKey,
+          flags: null,
           revalidate: expect.any(Function),
+          settled: false,
+          visitorKey: generatedVisitorKey,
         },
         {
+          data: {
+            flags: {
+              ads: true,
+              checkout: "medium",
+              discount: 10,
+              purchaseButtonLabel: "Purchase",
+            },
+            visitor: { key: generatedVisitorKey },
+          },
+          error: null,
+          fetching: false,
           flags: {
             ads: true,
             checkout: "medium",
             discount: 10,
             purchaseButtonLabel: "Purchase",
           },
-          rawFlags: {
-            ads: true,
-            checkout: "medium",
-            discount: 10,
-            purchaseButtonLabel: "Purchase",
-          },
-          fetching: false,
+          revalidate: expect.any(Function),
           settled: true,
           visitorKey: generatedVisitorKey,
-          revalidate: expect.any(Function),
         },
       ]);
 
