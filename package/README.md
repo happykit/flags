@@ -137,6 +137,7 @@ export default function FooPage(props) {
 - `configure(options)`
   - `options.envKey` _(string)_ _required_: Your HappyKit Flags Client Id
   - `options.defaultFlags` _(object)_ _optional_: Key-value pairs of flags and their values. These values are used as fallbacks in `useFlags` and `getFlags`. The fallbacks are used while the actual flags are loaded, in case a flag is missing or when the request loading the flags fails for unexpected reasons. If you don't declare `defaultFlags`, then the flag values will be `undefined`.
+  - `options.endpoint` _(string)_ _optional_: The endpoint to load flags from. This defaults to `https://happykit.dev/api/flags` and does not usually need to be changed.
 
 ### `useFlags`
 
@@ -156,7 +157,7 @@ This object is returned from `useFlags()`.
 - `data` _(object | null)_: The feature flags as loaded from HappyKit, with no defaults applied. `null` if an error occurred while loading.
 - `error` _(string | null)_: A string describing the error that occurred while loading the feature flags, null otherwise.
 - `visitorKey` _(string | null)_: The visitor key the feature flags were fetched for.
-- `settled` _(boolean)_: Unless you are providing `initialState`, the client will need to fetch the feature flags from the API. In some cases, during static site generation, it will even need to fetch the feature flags from the API even though you provided `initialState`. The `settled` value will turn `true` once the flags have settled on the client. This means that the only way for the value of the flags to change from then on would be if you changed one of the feature flags, or provided different inputs (`user`, `traits`). Once `settled` has turned true, it will not turn back to false. You can use `settled` in case you want to wait for the "final" feature flag values before kicking of code splitting (or showing UI).
+- `settled` _(boolean)_: Unless you are providing `initialState`, the client will need to fetch the feature flags from the API on mount. In some cases, during static site generation, it will even need to fetch the feature flags from the API even though you provided `initialState`. The `settled` value will turn `true` once the flags have settled on the client. This means that the only way for the value of the flags to change from then on would be if you changed one of the feature flag definitions, or provided different inputs (`user`, `traits`). Once `settled` has turned true, it will not turn back to false. You can use `settled` in case you want to wait for the "final" feature flag values before kicking of code splitting.
 - `fetching` _(boolean)_: This is `true` whenever the client is loading feature flags. This might happen initially, on rerenders with changed inputs (`user`, `traits`) or when the window regains focus and revaldiation is triggered. You probably want to use `settled` instead, as `settled` stays truthy once the flags were loaded, while `fetching` can flip multiple times.
 - `revalidate` _(function)_: A function you can call to revalidate the flags based on the values currently passed into the `useFlags` hook.
 
@@ -185,7 +186,7 @@ This function returns a promise resolving to an object that looks like this:
   flags: { /* Evaluated flags, combined with the configured fallbacks */ },
   data: { /* Evaluated flags, as loaded from the API (no fallbacks applied) */ },
   error: { /* Evaluated flags, as loaded from the API (no fallbacks applied) */ },
-  initialFlagState: { /* Information about the loaded flags, which can be provided to useFlags({ initialState }) */ }
+  initialFlagState: {/* The preloaded response, which can be provided to useFlags({ initialState }) */ }
 }
 ```
 
