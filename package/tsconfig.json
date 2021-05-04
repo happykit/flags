@@ -12,6 +12,7 @@
     "strictNullChecks": true,
     "preserveConstEnums": true,
     "sourceMap": true,
+    "isolatedModules": true,
     "lib": ["es2015", "es2016", "dom"],
     "types": ["node", "jest"]
   },
