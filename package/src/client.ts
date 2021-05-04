@@ -416,7 +416,7 @@ export function useFlags<F extends Flags = Flags>(
               ? new AbortController()
               : null;
 
-          let timeoutId: NodeJS.Timeout;
+          let timeoutId: ReturnType<typeof setTimeout>;
           if (controller && currentLoadingTimeout) {
             timeoutId = setTimeout(
               () => controller.abort(),
