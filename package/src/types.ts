@@ -52,11 +52,16 @@ type InvalidResponseBodyError = "invalid-response-body";
  * The HTTP Status Code was not 200-299, so the response was not ok.
  */
 type ResponseNotOkError = "response-not-ok";
+/**
+ * The request was aborted because it reached the loadingTimeout.
+ */
+type RequestTimeoutError = "request-timed-out";
 
 export type ResolvingError =
   | NetworkError
   | InvalidResponseBodyError
-  | ResponseNotOkError;
+  | ResponseNotOkError
+  | RequestTimeoutError;
 
 export type EvaluationRequestBody = {
   visitorKey: string | null;
@@ -142,12 +147,14 @@ export type IncomingConfiguration<F extends Flags> = {
    * regains focus. You can disable this by passing `revalidateOnFocus: false`.
    */
   revalidateOnFocus?: boolean;
+  loadingTimeout?: number;
 };
 
 export type DefaultConfiguration = {
   endpoint: string;
   defaultFlags: Flags;
   revalidateOnFocus: boolean;
+  loadingTimeout: number;
 };
 
 type Revalidate = () => void;

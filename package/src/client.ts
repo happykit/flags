@@ -26,6 +26,7 @@ import {
   serializeVisitorKeyCookie,
   combineRawFlagsWithDefaultFlags,
   ObjectMap,
+  has,
 } from "./utils";
 
 export type {
@@ -293,6 +294,7 @@ export type UseFlagsOptions<F extends Flags = Flags> =
       initialState?: InitialFlagState<F>;
       revalidateOnFocus?: boolean;
       pause?: boolean;
+      loadingTimeout?: number | false;
     }
   | undefined;
 
@@ -310,6 +312,10 @@ export function useFlags<F extends Flags = Flags>(
     options.revalidateOnFocus === undefined
       ? config.revalidateOnFocus
       : options.revalidateOnFocus;
+
+  const currentLoadingTimeout = has(options, "loadingTimeout")
+    ? options.loadingTimeout
+    : config.loadingTimeout || 0;
 
   const [[state, effects], dispatch] = React.useReducer(
     reducer,
@@ -404,12 +410,29 @@ export function useFlags<F extends Flags = Flags>(
         // execute the effect
         case "fetch": {
           const { input } = effect;
+
+          const controller =
+            typeof AbortController !== "undefined"
+              ? new AbortController()
+              : null;
+
+          let timeoutId: NodeJS.Timeout;
+          if (controller && currentLoadingTimeout) {
+            timeoutId = setTimeout(
+              () => controller.abort(),
+              currentLoadingTimeout
+            );
+          }
+
           fetch([input.endpoint, input.envKey].join("/"), {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify(input.requestBody),
+            signal: controller?.signal,
           }).then(
             (response) => {
+              clearTimeout(timeoutId);
+
               if (!response.ok /* response.status is not 200-299 */) {
                 dispatch({
                   type: "settle/failure",
@@ -441,11 +464,25 @@ export function useFlags<F extends Flags = Flags>(
             (error) => {
               console.error("HappyKit: Failed to load flags");
               console.error(error);
-              dispatch({
-                type: "settle/failure",
-                input,
-                outcome: { error: "network-error" },
-              });
+
+              // aborted from controller due to timeout
+              if (
+                error instanceof DOMException &&
+                error.name === "AbortError"
+              ) {
+                dispatch({
+                  type: "settle/failure",
+                  input,
+                  outcome: { error: "request-timed-out" },
+                });
+              } else {
+                dispatch({
+                  type: "settle/failure",
+                  input,
+                  outcome: { error: "network-error" },
+                });
+              }
+
               return null;
             }
           );
