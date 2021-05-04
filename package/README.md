@@ -148,7 +148,7 @@ export default function FooPage(props) {
   - `options.revalidateOnFocus` _(object)_ _optional_: By default the client will revalidate all feature flags when the browser window regains focus. Pass `revalidateOnFocus: false` to skip this behaviour.
   - `options.pause` _(boolean)_ _optional_: Set this to `true` to delay fetching of the passed inputs. This is useful in case you need to wait for your `user` or `traits` to be loaded before kicking off the feature flag evaluation request. 
 
-This function returns an object we usually call [`flagBag`](#flagBag). It contains the requested flags and other information.
+The `useFlags` function returns an object we usually call [`flagBag`](#flagBag). It contains the requested flags and other information.
 
 #### `flagBag`
 
