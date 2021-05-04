@@ -1,5 +1,5 @@
-import { nanoid } from "nanoid";
 import * as React from "react";
+import { nanoid } from "nanoid";
 import { isConfigured, config, Configuration } from "./config";
 import {
   InitialFlagState,
@@ -128,6 +128,7 @@ function reducer<F extends Flags>(
       if (state.name === "empty") return tuple;
 
       const input = action.input || state.input;
+      const effects: Effect<F>[] = [{ effect: "fetch", input }];
 
       if (state.name === "succeeded")
         return [
@@ -137,7 +138,7 @@ function reducer<F extends Flags>(
             outcome: state.outcome,
             cachedOutcome: state.cachedOutcome,
           },
-          [{ effect: "fetch", input }],
+          effects,
         ];
 
       if (state.name === "failed")
@@ -148,7 +149,7 @@ function reducer<F extends Flags>(
             outcome: state.outcome,
             cachedOutcome: state.cachedOutcome,
           },
-          [{ effect: "fetch", input }],
+          effects,
         ];
 
       if (state.name === "evaluating")
@@ -159,7 +160,7 @@ function reducer<F extends Flags>(
             outcome: state.outcome,
             cachedOutcome: state.cachedOutcome,
           },
-          [{ effect: "fetch", input }],
+          effects,
         ];
 
       return tuple;
