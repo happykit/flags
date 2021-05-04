@@ -146,6 +146,7 @@ export default function FooPage(props) {
   - `options.traits` _(object)_ _optional_: An object which you have access to in the flag's rules. You can target users based on traits.
   - `options.initialState` _(object)_ _optional_: In case you preloaded your flags during server-side rendering using `getFlags()`, provide the returned state as `initialState`. The client will then skip the first request whenever possible and use the provided flags instead. This allows you to get rid of loading states and on the client.
   - `options.revalidateOnFocus` _(object)_ _optional_: By default the client will revalidate all feature flags when the browser window regains focus. Pass `revalidateOnFocus: false` to skip this behaviour.
+  - `options.pause` _(boolean)_ _optional_: Set this to `true` to delay fetching of the passed inputs. This is useful in case you need to wait for your `user` or `traits` to be loaded before kicking off the feature flag evaluation request. 
 
 This function returns an object we usually call [`flagBag`](#flagBag). It contains the requested flags and other information.
 

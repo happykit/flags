@@ -228,9 +228,6 @@ function reducer<F extends Flags>(
   }
 }
 
-// When ready is undefined, it counts as true
-const isReady = (ready: undefined | boolean) => ready === undefined || ready;
-
 function getInput<F extends Flags>({
   config,
   visitorKeyInState,
@@ -294,7 +291,7 @@ export type UseFlagsOptions<F extends Flags = Flags> =
       traits?: Traits | null;
       initialState?: InitialFlagState<F>;
       revalidateOnFocus?: boolean;
-      ready?: boolean;
+      pause?: boolean;
     }
   | undefined;
 
@@ -372,14 +369,14 @@ export function useFlags<F extends Flags = Flags>(
 
     // evaluate if the input has changed, but not if the current input is
     // static as that will be revalidated on initialisation
-    if (isReady(options.ready) && !isAlmostEqual(state.input, input)) {
+    if (!options.pause && !isAlmostEqual(state.input, input)) {
       dispatch({ type: "evaluate", input });
     }
 
     if (!shouldRevalidateOnFocus) return;
 
     function handleFocus() {
-      if (document.visibilityState === "visible" && isReady(options.ready)) {
+      if (document.visibilityState === "visible" && !options.pause) {
         dispatch({ type: "revalidate" });
       }
     }
@@ -395,7 +392,7 @@ export function useFlags<F extends Flags = Flags>(
     currentUser,
     currentTraits,
     shouldRevalidateOnFocus,
-    options.ready,
+    options.pause,
   ]);
 
   const revalidate = React.useCallback(() => dispatch({ type: "revalidate" }), [

@@ -36,6 +36,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
 };
 
 export default function Home(props: ServerSideProps) {
+  const [ready, setReady] = React.useState<boolean>(false);
   const [user, setUser] = React.useState<null | FlagUser>(props.initialUser);
   const [traits, setTraits] = React.useState<null | Traits>(
     props.initialTraits
@@ -45,6 +46,7 @@ export default function Home(props: ServerSideProps) {
     initialState: props.initialFlagState,
     user,
     traits,
+    pause: !ready,
   });
 
   return (
@@ -54,6 +56,12 @@ export default function Home(props: ServerSideProps) {
       </Head>
 
       <main>
+        <button type="button" onClick={() => setReady(false)}>
+          ready off
+        </button>{" "}
+        <button type="button" onClick={() => setReady(true)}>
+          ready on
+        </button>{" "}
         <button type="button" onClick={() => setUser(null)}>
           no user
         </button>{" "}
