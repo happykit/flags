@@ -35,50 +35,52 @@ function getRequestingIp(context: {
   return null;
 }
 
-export async function getFlags<F extends Flags = Flags>(options: {
+type GetFlagsSuccessBag<F extends Flags> = {
+  /**
+   * The resolved flags
+   *
+   * In case the default flags contain flags not present in the loaded flags,
+   * the missing flags will get added to the returned flags.
+   */
+  flags: F;
+  /**
+   * The actually loaded data without any defaults applied, or null when
+   * the flags could not be loaded.
+   */
+  data: EvaluationResponseBody<F> | null;
+  error: null;
+  initialFlagState: SuccessInitialFlagState<F>;
+};
+
+type GetFlagsErrorBag<F extends Flags> = {
+  /**
+   * The resolved flags
+   *
+   * In case the flags could not be loaded, you will see the default
+   * flags here (from config.defaultFlags)
+   */
+  flags: F | null;
+  /**
+   * The actually loaded data without any defaults applied, or null when
+   * the flags could not be loaded.
+   */
+  data: null;
+  error: ResolvingError;
+  /**
+   * The initial flag state that you can use to initialize useFlags()
+   */
+  initialFlagState: ErrorInitialFlagState;
+};
+
+export function getFlags<F extends Flags = Flags>(options: {
   context:
     | Pick<GetServerSidePropsContext, "req" | "res">
     | GetStaticPropsContext;
   user?: FlagUser;
   traits?: Traits;
-}): Promise<
-  | {
-      /**
-       * The resolved flags
-       *
-       * In case the default flags contain flags not present in the loaded flags,
-       * the missing flags will get added to the returned flags.
-       */
-      flags: F;
-      /**
-       * The actually loaded data without any defaults applied, or null when
-       * the flags could not be loaded.
-       */
-      data: EvaluationResponseBody<F> | null;
-      error: null;
-      initialFlagState: SuccessInitialFlagState<F>;
-    }
-  | {
-      /**
-       * The resolved flags
-       *
-       * In case the flags could not be loaded, you will see the default
-       * flags here (from config.defaultFlags)
-       */
-      flags: F | null;
-      /**
-       * The actually loaded data without any defaults applied, or null when
-       * the flags could not be loaded.
-       */
-      data: null;
-      error: ResolvingError;
-      /**
-       * The initial flag state that you can use to initialize useFlags()
-       */
-      initialFlagState: ErrorInitialFlagState;
-    }
-> {
+}): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
   if (!isConfigured(config)) throw new MissingConfigurationError();
+  const staticConfig = config;
 
   // determine visitor key
   const visitorKeyFromCookie = has(options.context, "req")
@@ -115,55 +117,74 @@ export async function getFlags<F extends Flags = Flags>(options: {
       { "x-forwarded-for": requestingIp }
     : {};
 
-  const workerResponse = await fetch([input.endpoint, input.envKey].join("/"), {
+  return fetch([input.endpoint, input.envKey].join("/"), {
     method: "POST",
     headers: Object.assign(
       { "content-type": "application/json" },
       xForwardedForHeader
     ),
     body: JSON.stringify(input.requestBody),
-  }).catch(() => null);
+  }).then(
+    (
+      workerResponse
+    ):
+      | Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>>
+      | GetFlagsErrorBag<F> => {
+      if (!workerResponse.ok /* status not 200-299 */) {
+        return {
+          flags: staticConfig.defaultFlags as F,
+          data: null,
+          error: "response-not-ok",
+          initialFlagState: { input, outcome: { error: "response-not-ok" } },
+        };
+      }
 
-  if (!workerResponse || !workerResponse.ok /* status not 200-299 */)
-    return {
-      flags: config.defaultFlags as F,
-      data: null,
-      error: "response-not-ok",
-      initialFlagState: { input, outcome: { error: "response-not-ok" } },
-    };
+      return workerResponse.json().then(
+        (workerResponseBody: EvaluationResponseBody<F>) => {
+          if (has(options.context, "req") && workerResponseBody.visitor?.key) {
+            // always set the cookie so its max age refreshes
+            options.context.res.setHeader(
+              "Set-Cookie",
+              serializeVisitorKeyCookie(workerResponseBody.visitor.key)
+            );
+          }
 
-  const workerResponseBody: EvaluationResponseBody<F> | null = await workerResponse
-    .json()
-    .catch(() => null);
+          // add defaults to flags here, but not in initialFlagState
+          const flags = workerResponseBody.flags
+            ? workerResponseBody.flags
+            : null;
+          const flagsWithDefaults = combineRawFlagsWithDefaultFlags<F>(
+            flags,
+            staticConfig.defaultFlags
+          );
 
-  if (!workerResponseBody) {
-    return {
-      flags: config.defaultFlags as F,
-      data: null,
-      error: "invalid-response-body",
-      initialFlagState: { input, outcome: { error: "invalid-response-body" } },
-    };
-  }
-
-  if (has(options.context, "req") && workerResponseBody.visitor?.key) {
-    // always set the cookie so its max age refreshes
-    options.context.res.setHeader(
-      "Set-Cookie",
-      serializeVisitorKeyCookie(workerResponseBody.visitor.key)
-    );
-  }
-
-  // add defaults to flags here, but not in initialFlagState
-  const flags = workerResponseBody.flags ? workerResponseBody.flags : null;
-  const flagsWithDefaults = combineRawFlagsWithDefaultFlags<F>(
-    flags,
-    config.defaultFlags
+          return {
+            flags: flagsWithDefaults,
+            data: workerResponseBody,
+            error: null,
+            initialFlagState: { input, outcome: { data: workerResponseBody } },
+          };
+        },
+        () => {
+          return {
+            flags: staticConfig.defaultFlags as F,
+            data: null,
+            error: "invalid-response-body",
+            initialFlagState: {
+              input,
+              outcome: { error: "invalid-response-body" },
+            },
+          };
+        }
+      );
+    },
+    () => {
+      return {
+        flags: staticConfig.defaultFlags as F,
+        data: null,
+        error: "network-error",
+        initialFlagState: { input, outcome: { error: "network-error" } },
+      };
+    }
   );
-
-  return {
-    flags: flagsWithDefaults,
-    data: workerResponseBody,
-    error: null,
-    initialFlagState: { input, outcome: { data: workerResponseBody } },
-  };
 }

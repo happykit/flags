@@ -20,7 +20,7 @@ beforeEach(() => {
 
 describe("when called without configure", () => {
   it("should throw", async () => {
-    await expect(getFlags({ context: {} as any })).rejects.toThrow(
+    expect(() => getFlags({ context: {} as any })).toThrow(
       Error("@happykit/flags: Missing configuration. Call configure() first.")
     );
   });

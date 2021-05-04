@@ -299,6 +299,7 @@ export function useFlags<F extends Flags = Flags>(
   options: UseFlagsOptions<F> = {}
 ): FlagBag<F> {
   if (!isConfigured(config)) throw new MissingConfigurationError();
+  const staticConfig = config;
 
   const [generatedVisitorKey] = React.useState(nanoid);
 
@@ -313,11 +314,10 @@ export function useFlags<F extends Flags = Flags>(
     reducer,
     options.initialState,
     (initialFlagState): [State<F>, Effect<F>[]] => {
-      if (!isConfigured(config)) throw new MissingConfigurationError();
       if (!initialFlagState?.input) return [{ name: "empty" }, []];
 
       const input = getInput({
-        config,
+        config: staticConfig,
         visitorKeyInState: initialFlagState.input.requestBody.visitorKey,
         generatedVisitorKey,
         user: currentUser,
@@ -357,10 +357,8 @@ export function useFlags<F extends Flags = Flags>(
   );
 
   React.useEffect(() => {
-    if (!isConfigured(config)) throw new MissingConfigurationError();
-
     const input = getInput({
-      config,
+      config: staticConfig,
       visitorKeyInState: state.input?.requestBody.visitorKey,
       generatedVisitorKey,
       user: currentUser,
@@ -409,31 +407,37 @@ export function useFlags<F extends Flags = Flags>(
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify(input.requestBody),
-          })
-            .then(
-              async (response) => {
-                const data = (await response.json()) as EvaluationResponseBody<F>;
-                if (response.ok /* response.status is 200-299 */) {
-                  // responses to outdated requests are skipped in the reducer
-                  const outcome = { data };
-                  dispatch({ type: "settle/success", input, outcome });
-                } else {
-                  dispatch({
-                    type: "settle/failure",
-                    input,
-                    outcome: { error: "response-not-ok" },
-                  });
-                }
-              },
-              () => {
+          }).then(
+            (response) => {
+              if (!response.ok /* response.status is not 200-299 */) {
                 dispatch({
                   type: "settle/failure",
                   input,
-                  outcome: { error: "invalid-response-body" },
+                  outcome: { error: "response-not-ok" },
                 });
+                return null;
               }
-            )
-            .catch((error) => {
+
+              return response.json().then(
+                (data: EvaluationResponseBody<F>) => {
+                  // responses to outdated requests are skipped in the reducer
+                  dispatch({
+                    type: "settle/success",
+                    input,
+                    outcome: { data },
+                  });
+                },
+                () => {
+                  dispatch({
+                    type: "settle/failure",
+                    input,
+                    outcome: { error: "invalid-response-body" },
+                  });
+                  return null;
+                }
+              );
+            },
+            (error) => {
               console.error("HappyKit: Failed to load flags");
               console.error(error);
               dispatch({
@@ -441,7 +445,9 @@ export function useFlags<F extends Flags = Flags>(
                 input,
                 outcome: { error: "network-error" },
               });
-            });
+              return null;
+            }
+          );
           break;
         }
 
