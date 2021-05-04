@@ -5,7 +5,7 @@ import { useFlags } from "@happykit/flags/client";
 import { AppFlags } from "../../types/AppFlags";
 
 export default function Page() {
-  const flagBag = useFlags<AppFlags>();
+  const flagBag = useFlags<AppFlags>({ loadingTimeout: 3000 });
 
   return (
     <Layout

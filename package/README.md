@@ -61,6 +61,8 @@ Add Feature Flags to your Next.js application with a single React Hook. This pac
     - [Default Types](#default-types)
     - [Custom Flag Type](#custom-flag-type)
   - [Code splitting](#code-splitting)
+- [FAQs](#faqs)
+  - [Why should I only ever render the `useFlags` hook once per page?](#why-should-i-only-ever-render-the-useflags-hook-once-per-page)
 
 <br />
 
@@ -136,19 +138,25 @@ export default function FooPage(props) {
 
 - `configure(options)`
   - `options.envKey` _(string)_ _required_: Your HappyKit Flags Client Id
-  - `options.defaultFlags` _(object)_ _optional_: Key-value pairs of flags and their values. These values are used as fallbacks in `useFlags` and `getFlags`. The fallbacks are used while the actual flags are loaded, in case a flag is missing or when the request loading the flags fails for unexpected reasons. If you don't declare `defaultFlags`, then the flag values will be `undefined`.
-  - `options.endpoint` _(string)_ _optional_: The endpoint to load flags from. This defaults to `https://happykit.dev/api/flags` and does not usually need to be changed.
+  - `options.defaultFlags = undefined` _(object)_ _optional_: Key-value pairs of flags and their values. These values are used as fallbacks in `useFlags` and `getFlags`. The fallbacks are used while the actual flags are loaded, in case a flag is missing or when the request loading the flags fails for unexpected reasons. If you don't declare `defaultFlags`, then the flag values will be `undefined`.
+  - `options.endpoint = "https://happykit.dev/api/flags"` _(string)_ _optional_: The endpoint to load flags from. This does not usually need to be changed.
+  - `options.loadingTimeout = 3000` _(string)_ _optional_: A timeout in milliseconds after which any client-side evaluation requests will be aborted. Pass `false` to disable this feature. This feature is only supported in [browsers which support](https://caniuse.com/abortcontroller) the [`AbortController`](https://developer.mozilla.org/en-US/docs/Web/API/AbortController).
 
 ### `useFlags`
+
+This hook loads the flags on the client.
+
+> **This hook should only ever be rendered once per page.**
 
 - `useFlag(options)`
   - `options.user` _(object)_ _optional_: A user to load the flags for. A user must at least have a `key`. See the supported user attributes [here](#supported-user-attributes). The user information you pass can be used for [individual targeting](#with-user-targeting) or rules. You can set the `persist` attribute on the user to store them in HappyKit for future reference.
   - `options.traits` _(object)_ _optional_: An object which you have access to in the flag's rules. You can target users based on traits.
   - `options.initialState` _(object)_ _optional_: In case you preloaded your flags during server-side rendering using `getFlags()`, provide the returned state as `initialState`. The client will then skip the first request whenever possible and use the provided flags instead. This allows you to get rid of loading states and on the client.
   - `options.revalidateOnFocus` _(object)_ _optional_: By default the client will revalidate all feature flags when the browser window regains focus. Pass `revalidateOnFocus: false` to skip this behaviour.
-  - `options.pause` _(boolean)_ _optional_: Set this to `true` to delay fetching of the passed inputs. This is useful in case you need to wait for your `user` or `traits` to be loaded before kicking off the feature flag evaluation request. 
+  - `options.pause` _(boolean)_ _optional_: Set this to `true` to delay fetching of the passed inputs. This is useful in case you need to wait for your `user` or `traits` to be loaded before kicking off the feature flag evaluation request.
+  - `options.loadingTimeout = 3000` _(string)_ _optional_: A timeout in milliseconds after which any client-side evaluation requests will be aborted. Pass `false` to disable this feature. This feature is only supported in [browsers which support](https://caniuse.com/abortcontroller) the [`AbortController`](https://developer.mozilla.org/en-US/docs/Web/API/AbortController).
 
-The `useFlags` function returns an object we usually call [`flagBag`](#flagBag). It contains the requested flags and other information.
+The `useFlags` function returns an object we usually call [`flagBag`](#flagBag). The returned `flagBag` is described [below](#flagbag).
 
 #### `flagBag`
 
@@ -548,3 +556,13 @@ export default function Page(props) {
 ```
 
 *This technique of removing the loading state works only with `getServerSideProps`. If you use `getStaticProps`, the server has no concept of the current visitor, but a visitor could influence flag rollouts. The client thus needs to reevaluate the flags and will only settle (pass `settled: true`) once the client-side reevaluation has completed.*
+
+## FAQs
+
+### Why should I only ever render the `useFlags` hook once per page?
+
+The `useFlags()` handles loading of the feature flags. Since HappyKit supports all rendering modes (server-side rendering, client-side rendering, static site generation) each individual Next.js page route is the best place to call the `useFlags()` hook.
+
+Depending on the rendering mode, you might need to pass some `initialState` to the `useFlags()` hook. The best place to do this is right inside the Next.js page, at the top level.
+
+From there it's best to pass the returned `flagBag` to each component that needs it. You can do so directly or by using `@happykit/flags/context`. 
