@@ -10,7 +10,7 @@ import { configure, _resetConfig } from "./config";
 import * as fetchMock from "fetch-mock-jest";
 import { deleteAllCookies } from "../jest/delete-all-cookies";
 import { nanoid } from "nanoid";
-import { FlagBag, Flags, InitialFlagState } from "./types";
+import { FlagBag, Flags } from "./types";
 
 beforeEach(() => {
   _resetConfig();
@@ -60,7 +60,7 @@ describe("when cookie is not set", () => {
 
     const { result, waitForNextUpdate } = renderHook(() => useFlags());
 
-    expect(result.all).toHaveLength(2);
+    expect(result.all).toHaveLength(3);
 
     await waitForNextUpdate();
 
@@ -72,6 +72,15 @@ describe("when cookie is not set", () => {
         fetching: false,
         settled: false,
         visitorKey: null,
+        revalidate: expect.any(Function),
+      },
+      {
+        flags: null,
+        data: null,
+        error: null,
+        fetching: true,
+        settled: false,
+        visitorKey: visitorKey,
         revalidate: expect.any(Function),
       },
       {
@@ -106,6 +115,9 @@ describe("when cookie is not set", () => {
         revalidate: expect.any(Function),
       },
     ]);
+
+    // ensure strict equality between rerenders
+    expect(result.all[1]).toBe(result.all[2]);
 
     expect(
       (result.all[1] as FlagBag<any>).visitorKey,
@@ -152,7 +164,7 @@ describe("when cookie is set", () => {
     // start actual testing
     const { result, waitForNextUpdate } = renderHook(() => useFlags());
 
-    expect(result.all).toHaveLength(2);
+    expect(result.all).toHaveLength(3);
 
     await waitForNextUpdate();
 
@@ -164,6 +176,15 @@ describe("when cookie is set", () => {
         fetching: false,
         settled: false,
         visitorKey: null,
+        revalidate: expect.any(Function),
+      },
+      {
+        flags: null,
+        data: null,
+        error: null,
+        fetching: true,
+        settled: false,
+        visitorKey: visitorKeyInCookie,
         revalidate: expect.any(Function),
       },
       {
@@ -198,12 +219,15 @@ describe("when cookie is set", () => {
         revalidate: expect.any(Function),
       },
     ]);
+
+    // ensure strict equality between rerenders
+    expect(result.all[1]).toBe(result.all[2]);
   });
 });
 
 describe("stories", () => {
   describe("client-side rendering", () => {
-    it.only("works", async () => {
+    it("works", async () => {
       let generatedVisitorKey = null;
       fetchMock.post(
         {
@@ -243,59 +267,11 @@ describe("stories", () => {
         FlagBag<Flags>
       >((options) => useFlags(options), { initialProps: undefined });
 
-      const rendersBeforeFirstSettlement = [
-        {
-          flags: null,
-          data: null,
-          error: null,
-          fetching: false,
-          settled: false,
-          visitorKey: null,
-          revalidate: expect.any(Function),
-        },
-        {
-          flags: null,
-          data: null,
-          error: null,
-          fetching: true,
-          settled: false,
-          visitorKey: generatedVisitorKey,
-          revalidate: expect.any(Function),
-        },
-      ];
-      expect(result.all).toEqual(rendersBeforeFirstSettlement);
+      expect(result.all).toHaveLength(3);
 
       await waitForNextUpdate();
 
-      const rendersOnFirstSettlement = [
-        {
-          flags: {
-            ads: true,
-            checkout: "medium",
-            discount: 5,
-            purchaseButtonLabel: "Purchase",
-          },
-          data: {
-            flags: {
-              ads: true,
-              checkout: "medium",
-              discount: 5,
-              purchaseButtonLabel: "Purchase",
-            },
-            visitor: { key: generatedVisitorKey },
-          },
-          error: null,
-          fetching: false,
-          settled: true,
-          visitorKey: expect.any(String),
-          revalidate: expect.any(Function),
-        },
-      ];
-
-      expect(result.all).toEqual([
-        ...rendersBeforeFirstSettlement,
-        ...rendersOnFirstSettlement,
-      ]);
+      expect(result.all).toHaveLength(4);
 
       fetchMock.post(
         {
@@ -321,26 +297,111 @@ describe("stories", () => {
 
       rerender({ user: { key: "george" } });
 
-      expect(result.all).toHaveLength(5);
+      expect(result.all).toHaveLength(7);
 
       await waitForNextUpdate();
 
       expect(result.all).toEqual([
-        ...rendersBeforeFirstSettlement,
-        ...rendersOnFirstSettlement,
-        // for some reason this is rendered again, I suspect it's because
-        // of the "rerender" call?
-        ...rendersOnFirstSettlement,
         {
+          flags: null,
+          data: null,
+          error: null,
+          fetching: false,
+          settled: false,
+          visitorKey: null,
+          revalidate: expect.any(Function),
+        },
+        {
+          flags: null,
           data: null,
           error: null,
           fetching: true,
-          flags: null,
-          revalidate: expect.any(Function),
           settled: false,
           visitorKey: generatedVisitorKey,
+          revalidate: expect.any(Function),
         },
         {
+          flags: null,
+          data: null,
+          error: null,
+          fetching: true,
+          settled: false,
+          visitorKey: generatedVisitorKey,
+          revalidate: expect.any(Function),
+        },
+        {
+          flags: {
+            ads: true,
+            checkout: "medium",
+            discount: 5,
+            purchaseButtonLabel: "Purchase",
+          },
+          data: {
+            flags: {
+              ads: true,
+              checkout: "medium",
+              discount: 5,
+              purchaseButtonLabel: "Purchase",
+            },
+            visitor: {
+              key: generatedVisitorKey,
+            },
+          },
+          error: null,
+          fetching: false,
+          settled: true,
+          visitorKey: generatedVisitorKey,
+          revalidate: expect.any(Function),
+        },
+        {
+          flags: {
+            ads: true,
+            checkout: "medium",
+            discount: 5,
+            purchaseButtonLabel: "Purchase",
+          },
+          data: {
+            flags: {
+              ads: true,
+              checkout: "medium",
+              discount: 5,
+              purchaseButtonLabel: "Purchase",
+            },
+            visitor: {
+              key: generatedVisitorKey,
+            },
+          },
+          error: null,
+          fetching: false,
+          settled: true,
+          visitorKey: generatedVisitorKey,
+          revalidate: expect.any(Function),
+        },
+        {
+          flags: null,
+          data: null,
+          error: null,
+          fetching: true,
+          settled: false,
+          visitorKey: generatedVisitorKey,
+          revalidate: expect.any(Function),
+        },
+        {
+          flags: null,
+          data: null,
+          error: null,
+          fetching: true,
+          settled: false,
+          visitorKey: generatedVisitorKey,
+          revalidate: expect.any(Function),
+        },
+        {
+          flags: {
+            ads: true,
+            checkout: "medium",
+            discount: 10,
+            purchaseButtonLabel: "Purchase",
+          },
           data: {
             flags: {
               ads: true,
@@ -348,19 +409,15 @@ describe("stories", () => {
               discount: 10,
               purchaseButtonLabel: "Purchase",
             },
-            visitor: { key: generatedVisitorKey },
+            visitor: {
+              key: generatedVisitorKey,
+            },
           },
           error: null,
           fetching: false,
-          flags: {
-            ads: true,
-            checkout: "medium",
-            discount: 10,
-            purchaseButtonLabel: "Purchase",
-          },
-          revalidate: expect.any(Function),
           settled: true,
           visitorKey: generatedVisitorKey,
+          revalidate: expect.any(Function),
         },
       ]);
 

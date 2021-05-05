@@ -86,7 +86,7 @@ describe("when cookie is not set", () => {
       useFlags({ initialState: initialStateFromProps })
     );
 
-    expect(result.all).toHaveLength(2);
+    expect(result.all).toHaveLength(3);
     expect(document.cookie).toEqual("");
     await waitForNextUpdate();
     expect(document.cookie).toEqual(`hkvk=${generatedVisitorKey}`);
@@ -148,6 +148,28 @@ describe("when cookie is not set", () => {
       {
         flags: {
           ads: true,
+          checkout: null,
+          discount: 5,
+          purchaseButtonLabel: null,
+        },
+        data: {
+          flags: {
+            ads: true,
+            checkout: null,
+            discount: 5,
+            purchaseButtonLabel: null,
+          },
+          visitor: null,
+        },
+        error: null,
+        fetching: true,
+        settled: false,
+        visitorKey: null,
+        revalidate: expect.any(Function),
+      },
+      {
+        flags: {
+          ads: true,
           checkout: "short",
           discount: 5,
           purchaseButtonLabel: "Purchase",
@@ -168,6 +190,9 @@ describe("when cookie is not set", () => {
         revalidate: expect.any(Function),
       },
     ]);
+
+    // ensure strict equality between rerenders
+    expect(result.all[1]).toBe(result.all[2]);
 
     // ensure there are no further updates
     await expect(waitForNextUpdate({ timeout: 500 })).rejects.toThrow(
@@ -235,7 +260,7 @@ describe("when cookie is set", () => {
       useFlags({ initialState: initialStateFromProps })
     );
 
-    expect(result.all).toHaveLength(2);
+    expect(result.all).toHaveLength(3);
     expect(document.cookie).toEqual(`hkvk=${visitorKeyInCookie}`);
     await waitForNextUpdate();
     expect(document.cookie).toEqual(`hkvk=${visitorKeyInCookie}`);
@@ -288,6 +313,28 @@ describe("when cookie is set", () => {
       {
         flags: {
           ads: true,
+          checkout: null,
+          discount: 5,
+          purchaseButtonLabel: null,
+        },
+        data: {
+          flags: {
+            ads: true,
+            checkout: null,
+            discount: 5,
+            purchaseButtonLabel: null,
+          },
+          visitor: null,
+        },
+        error: null,
+        fetching: true,
+        settled: false,
+        visitorKey: null,
+        revalidate: expect.any(Function),
+      },
+      {
+        flags: {
+          ads: true,
           checkout: "short",
           discount: 5,
           purchaseButtonLabel: "Purchase",
@@ -308,6 +355,9 @@ describe("when cookie is set", () => {
         revalidate: expect.any(Function),
       },
     ]);
+
+    // ensure strict equality between rerenders
+    expect(result.all[1]).toBe(result.all[2]);
 
     // ensure there are no further updates
     await expect(waitForNextUpdate({ timeout: 500 })).rejects.toThrow(
