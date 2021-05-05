@@ -39,14 +39,34 @@ export type {
   Outcome,
 } from "./types";
 
+type Id = number;
+let getId = (() => {
+  let id = 0;
+  return (): Id => id++;
+})();
+
+type Pending = {
+  id: Id;
+  promise: Promise<any>;
+  // null in case the browser doesn't support it
+  controller: AbortController | null;
+};
+
 type State<F extends Flags> =
   // initial state candidate for csr
-  | { name: "empty"; input?: never; outcome?: never; cachedOutcome?: never }
+  | {
+      name: "empty";
+      input?: never;
+      outcome?: never;
+      cachedOutcome?: never;
+      pending?: never;
+    }
   | {
       name: "evaluating";
       input: Input;
       outcome?: never;
       cachedOutcome: SuccessOutcome<F> | null;
+      pending: Pending | null;
     }
   // initial state candidate for ssr
   | {
@@ -54,6 +74,7 @@ type State<F extends Flags> =
       input: Input;
       outcome: SuccessOutcome<F>;
       cachedOutcome?: never;
+      pending?: never;
     }
   | {
       name: "revalidating-after-success";
@@ -61,6 +82,7 @@ type State<F extends Flags> =
       // the previous outcome
       outcome: SuccessOutcome<F>;
       cachedOutcome?: never;
+      pending: Pending | null;
     }
   // initial state candidate for ssr
   | {
@@ -68,6 +90,7 @@ type State<F extends Flags> =
       input: Input;
       outcome: ErrorOutcome;
       cachedOutcome: SuccessOutcome<F> | null;
+      pending?: never;
     }
   | {
       name: "revalidating-after-failure";
@@ -75,18 +98,39 @@ type State<F extends Flags> =
       // the previous outcome
       outcome: ErrorOutcome;
       cachedOutcome: SuccessOutcome<F> | null;
+      pending: Pending | null;
     };
 
 type Action<F extends Flags> =
+  // evaluate is for new inputs; the data and error get cleared
   | { type: "evaluate"; input: Input }
-  // revalidate generally revalidates the same input, except for ssg when
-  // initial state is passed in
+  // revalidate is for the same inputs; the data and error aren't cleared
+  // it generally revalidates the same input, except for ssg when initial state
+  // is passed in
   | { type: "revalidate"; input?: Input }
-  | { type: "settle/success"; input: Input; outcome: SuccessOutcome<F> }
-  | { type: "settle/failure"; input: Input; outcome: ErrorOutcome };
+  | {
+      type: "settle/start";
+      id: Id;
+      promise: Promise<any>;
+      controller: AbortController | null;
+    }
+  | {
+      type: "settle/success";
+      id: Id;
+      input: Input;
+      outcome: SuccessOutcome<F>;
+    }
+  | {
+      type: "settle/failure";
+      id: Id;
+      input: Input;
+      outcome: ErrorOutcome;
+      thrownError: any;
+    };
 
 type Effect<F extends Flags> =
   | { effect: "fetch"; input: Input }
+  | { effect: "abort-pending-request"; controller: AbortController }
   // revalidate generally revalidates the same input, except for ssg when
   // initial state is passed in
   | { effect: "revalidate-input"; input?: Input }
@@ -121,6 +165,7 @@ function reducer<F extends Flags>(
           name: "evaluating",
           input: action.input,
           cachedOutcome,
+          pending: state.pending || null,
         },
         [{ effect: "fetch", input: action.input }],
       ];
@@ -129,7 +174,7 @@ function reducer<F extends Flags>(
       if (state.name === "empty") return tuple;
 
       const input = action.input || state.input;
-      const effects: Effect<F>[] = [{ effect: "fetch", input }];
+      const nextEffects: Effect<F>[] = [{ effect: "fetch", input }];
 
       if (state.name === "succeeded")
         return [
@@ -138,8 +183,9 @@ function reducer<F extends Flags>(
             input: state.input,
             outcome: state.outcome,
             cachedOutcome: state.cachedOutcome,
+            pending: state.pending || null,
           },
-          effects,
+          nextEffects,
         ];
 
       if (state.name === "failed")
@@ -149,8 +195,9 @@ function reducer<F extends Flags>(
             input: state.input,
             outcome: state.outcome,
             cachedOutcome: state.cachedOutcome,
+            pending: state.pending || null,
           },
-          effects,
+          nextEffects,
         ];
 
       if (state.name === "evaluating")
@@ -160,11 +207,39 @@ function reducer<F extends Flags>(
             input: state.input,
             outcome: state.outcome,
             cachedOutcome: state.cachedOutcome,
+            pending: state.pending || null,
           },
-          effects,
+          nextEffects,
         ];
 
       return tuple;
+    }
+    case "settle/start": {
+      if (
+        state.name !== "evaluating" &&
+        state.name !== "revalidating-after-failure" &&
+        state.name !== "revalidating-after-success"
+      )
+        return tuple;
+
+      return [
+        {
+          ...state,
+          pending: {
+            id: action.id,
+            promise: action.promise,
+            controller: action.controller,
+          },
+        },
+        state.pending?.controller
+          ? [
+              {
+                effect: "abort-pending-request",
+                controller: state.pending.controller,
+              },
+            ]
+          : [],
+      ];
     }
     case "settle/failure": {
       if (
@@ -175,9 +250,12 @@ function reducer<F extends Flags>(
         return tuple;
 
       // ignore outdated responses
-      // this does not need to handle static inputs, as the static input
-      // will have been replaced at the beginning of the fetch request
-      if (!deepEqual(state.input, action.input)) return tuple;
+      if (state.pending?.id !== action.id) return tuple;
+
+      if (action.thrownError) {
+        console.error("HappyKit: Failed to load flags");
+        console.error(action.thrownError);
+      }
 
       const cachedOutcome = cache.get<SuccessOutcome<F>>(action.input);
       return [
@@ -199,7 +277,7 @@ function reducer<F extends Flags>(
         return tuple;
 
       // ignore outdated responses
-      if (!isAlmostEqual(state.input, action.input)) return tuple;
+      if (state.pending?.id !== action.id) return tuple;
 
       const setCacheEffect: Effect<F> = {
         effect: "set-cache",
@@ -424,7 +502,9 @@ export function useFlags<F extends Flags = Flags>(
             );
           }
 
-          fetch([input.endpoint, input.envKey].join("/"), {
+          const id = getId();
+
+          const promise = fetch([input.endpoint, input.envKey].join("/"), {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify(input.requestBody),
@@ -436,8 +516,10 @@ export function useFlags<F extends Flags = Flags>(
               if (!response.ok /* response.status is not 200-299 */) {
                 dispatch({
                   type: "settle/failure",
+                  id,
                   input,
                   outcome: { error: "response-not-ok" },
+                  thrownError: new Error("Response not ok"),
                 });
                 return null;
               }
@@ -447,24 +529,24 @@ export function useFlags<F extends Flags = Flags>(
                   // responses to outdated requests are skipped in the reducer
                   dispatch({
                     type: "settle/success",
+                    id,
                     input,
                     outcome: { data },
                   });
                 },
-                () => {
+                (thrownError) => {
                   dispatch({
                     type: "settle/failure",
+                    id,
                     input,
                     outcome: { error: "invalid-response-body" },
+                    thrownError,
                   });
                   return null;
                 }
               );
             },
             (error) => {
-              console.error("HappyKit: Failed to load flags");
-              console.error(error);
-
               // aborted from controller due to timeout
               if (
                 error instanceof DOMException &&
@@ -472,20 +554,27 @@ export function useFlags<F extends Flags = Flags>(
               ) {
                 dispatch({
                   type: "settle/failure",
+                  id,
                   input,
                   outcome: { error: "request-timed-out" },
+                  thrownError: error,
                 });
               } else {
                 dispatch({
                   type: "settle/failure",
+                  id,
                   input,
                   outcome: { error: "network-error" },
+                  thrownError: error,
                 });
               }
 
               return null;
             }
           );
+
+          dispatch({ type: "settle/start", id, promise, controller });
+
           break;
         }
 
@@ -499,6 +588,10 @@ export function useFlags<F extends Flags = Flags>(
 
         case "revalidate-input":
           dispatch({ type: "revalidate", input: effect.input });
+          break;
+
+        case "abort-pending-request":
+          effect.controller.abort();
           break;
 
         default:
@@ -594,7 +687,15 @@ export function useFlags<F extends Flags = Flags>(
           visitorKey: null,
         } as EmptyFlagBag;
     }
-  }, [state, defaultFlags, revalidate]);
+  }, [
+    // all of state except for "pending"
+    state.name,
+    state.input,
+    state.outcome,
+    state.cachedOutcome,
+    defaultFlags,
+    revalidate,
+  ]);
 
   return flagBag;
 }
