@@ -36,7 +36,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
 };
 
 export default function Home(props: ServerSideProps) {
-  const [ready, setReady] = React.useState<boolean>(false);
+  const [ready, setReady] = React.useState<boolean>(true);
   const [user, setUser] = React.useState<null | FlagUser>(props.initialUser);
   const [traits, setTraits] = React.useState<null | Traits>(
     props.initialTraits
