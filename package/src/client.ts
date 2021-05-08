@@ -165,6 +165,14 @@ function createFetchEffects<F extends Flags>(
   ];
 }
 
+function canSettle<F extends Flags>(state: State<F>) {
+  return (
+    state.name === "evaluating" ||
+    state.name === "revalidating-after-success" ||
+    state.name === "revalidating-after-failure"
+  );
+}
+
 /**
  * The reducer returns a tuple of [state, effects].
  *
@@ -248,12 +256,7 @@ function reducer<F extends Flags>(
       return tuple;
     }
     case "settle/failure": {
-      if (
-        state.name !== "evaluating" &&
-        state.name !== "revalidating-after-success" &&
-        state.name !== "revalidating-after-failure"
-      )
-        return tuple;
+      if (!canSettle(state)) return tuple;
 
       // ignore outdated responses
       if (state.pending?.id !== action.id) return tuple;
@@ -275,12 +278,7 @@ function reducer<F extends Flags>(
       ];
     }
     case "settle/success": {
-      if (
-        state.name !== "evaluating" &&
-        state.name !== "revalidating-after-success" &&
-        state.name !== "revalidating-after-failure"
-      )
-        return tuple;
+      if (!canSettle(state)) return tuple;
 
       // ignore outdated responses
       if (state.pending?.id !== action.id) return tuple;
