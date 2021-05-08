@@ -121,19 +121,16 @@ type Action<F extends Flags> =
       thrownError: any;
     };
 
-type Effect<F extends Flags> =
+type Effect =
   | {
       effect: "fetch";
       input: Input;
       id: Id;
       controller: AbortController | null;
     }
-  | { effect: "abort-pending-request"; controller: AbortController }
   // revalidate generally revalidates the same input, except for ssg when
   // initial state is passed in
-  | { effect: "revalidate-input"; input?: Input }
-  | { effect: "set-visitor-key"; payload: string }
-  | { effect: "set-cache"; input: Input; outcome: SuccessOutcome<F> };
+  | { effect: "revalidate-input"; input?: Input };
 
 /**
  * Returns new effects and pending state, cancels controller of previous pending
@@ -146,23 +143,17 @@ type Effect<F extends Flags> =
 function createFetchEffects<F extends Flags>(
   input: Input,
   pending?: Pending | null
-): [Effect<F>[], Pending] {
+): [Effect[], Pending] {
   const id = getId();
 
   const controller =
     typeof AbortController !== "undefined" ? new AbortController() : null;
 
-  const fetchEffect: Effect<F> = { effect: "fetch", id, controller, input };
-  return [
-    [
-      pending?.controller && {
-        effect: "abort-pending-request",
-        controller: pending.controller,
-      },
-      fetchEffect,
-    ].filter(Boolean) as Effect<F>[],
-    { id, controller },
-  ];
+  const fetchEffect: Effect = { effect: "fetch", id, controller, input };
+
+  if (pending?.controller) pending.controller.abort();
+
+  return [[fetchEffect], { id, controller }];
 }
 
 function canSettle<F extends Flags>(state: State<F>) {
@@ -185,9 +176,9 @@ function canSettle<F extends Flags>(state: State<F>) {
  * We use a hand-rolled version to keep the size of this package minimal.
  */
 function reducer<F extends Flags>(
-  tuple: readonly [State<F>, Effect<F>[]],
+  tuple: readonly [State<F>, Effect[]],
   action: Action<F>
-): readonly [State<F>, Effect<F>[]] {
+): readonly [State<F>, Effect[]] {
   const [state /* and effects */] = tuple;
 
   switch (action.type) {
@@ -283,11 +274,10 @@ function reducer<F extends Flags>(
       // ignore outdated responses
       if (state.pending?.id !== action.id) return tuple;
 
-      const setCacheEffect: Effect<F> = {
-        effect: "set-cache",
-        input: action.input,
-        outcome: action.outcome,
-      };
+      const visitorKey = action.outcome.data.visitor?.key;
+      if (visitorKey) document.cookie = serializeVisitorKeyCookie(visitorKey);
+
+      cache.set(action.input, action.outcome);
 
       return [
         {
@@ -295,15 +285,7 @@ function reducer<F extends Flags>(
           input: action.input,
           outcome: action.outcome,
         },
-        action.outcome.data.visitor
-          ? [
-              {
-                effect: "set-visitor-key",
-                payload: action.outcome.data.visitor.key,
-              },
-              setCacheEffect,
-            ]
-          : [setCacheEffect],
+        [],
       ];
     }
 
@@ -402,7 +384,7 @@ export function useFlags<F extends Flags = Flags>(
   const [[state, effects], dispatch] = React.useReducer(
     reducer,
     options.initialState,
-    (initialFlagState): [State<F>, Effect<F>[]] => {
+    (initialFlagState): [State<F>, Effect[]] => {
       if (!initialFlagState?.input) return [{ name: "empty" }, []];
 
       const input = getInput({
@@ -425,11 +407,7 @@ export function useFlags<F extends Flags = Flags>(
           [{ effect: "revalidate-input", input }],
         ];
 
-      const setCacheEffect: Effect<F> = {
-        effect: "set-cache",
-        input: initialFlagState.input,
-        outcome: initialFlagState.outcome,
-      };
+      cache.set(initialFlagState.input, initialFlagState.outcome);
 
       return [
         {
@@ -439,8 +417,8 @@ export function useFlags<F extends Flags = Flags>(
         },
         // revalidate only if the initial state was for a static render
         initialFlagState.input.requestBody.static
-          ? [setCacheEffect, { effect: "revalidate-input", input }]
-          : [setCacheEffect],
+          ? [{ effect: "revalidate-input", input }]
+          : [],
       ];
     }
   );
@@ -573,20 +551,8 @@ export function useFlags<F extends Flags = Flags>(
           break;
         }
 
-        case "set-visitor-key":
-          document.cookie = serializeVisitorKeyCookie(effect.payload);
-          break;
-
-        case "set-cache":
-          cache.set(effect.input, effect.outcome);
-          break;
-
         case "revalidate-input":
           dispatch({ type: "revalidate", input: effect.input });
-          break;
-
-        case "abort-pending-request":
-          effect.controller.abort();
           break;
 
         default:
