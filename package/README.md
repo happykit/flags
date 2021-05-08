@@ -21,7 +21,7 @@ Add Feature Flags to your Next.js application with a single React Hook. This pac
 
 - written for Next.js
 - integrate using a simple `useFlags()` hook
-- only 1 kB in size
+- only 5 kB in size
 - extremely fast flag responses (~50ms)
 - supports *user targeting*, *custom rules* and *rollouts*
 - support *server-side rendering* and *static site generation*
