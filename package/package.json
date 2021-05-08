@@ -6,6 +6,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "preconstruct dev",
+    "prebuild": "yarn test",
     "build": "preconstruct build",
     "prepublishOnly": "preconstruct build",
     "postpublishOnly": "preconstruct dev",
