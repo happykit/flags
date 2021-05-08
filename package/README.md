@@ -3,13 +3,13 @@
 </a>
 
 <div align="right">
-  <a href="https://github.com/happykit/flags/tree/next/package">Docs</a>
-  <span>&nbsp;•&nbsp;</span>
   <a href="https://flags.happykit.dev/" target="_blank">Examples</a>
   <span>&nbsp;•&nbsp;</span>
-  <a href="https://happykit.dev/solutions/flags" target="_blank">Website</a>
+  <a href="https://medium.com/frontend-digest/using-feature-flags-in-next-js-c5c8d0795a2?source=friends_link&sk=d846a29f376acf9cfa41e926883923ab" target="_blank">Full Tutorial</a>
   <span>&nbsp;•&nbsp;</span>
-  <a href="https://twitter.com/happykitdev" target="_blank">Twitter</a>
+  <a href="https://happykit.dev/solutions/flags" target="_blank">happykit.dev</a>
+  <span>&nbsp;•&nbsp;</span>
+  <a href="https://twitter.com/happykitdev" target="_blank">@happykitdev</a>
 </div>
 
 &nbsp;
@@ -36,6 +36,7 @@ Add Feature Flags to your Next.js application with a single React Hook. This pac
 - [Installation](#installation)
 - [Setup](#setup)
 - [Basic Usage](#basic-usage)
+- [Exports](#exports)
 - [API](#api)
   - [`configure`](#configure)
   - [`useFlags`](#useflags)
@@ -45,9 +46,11 @@ Add Feature Flags to your Next.js application with a single React Hook. This pac
 - [Advanced Usage](#advanced-usage)
   - [With user targeting](#with-user-targeting)
   - [Configuring application-wide default values](#configuring-application-wide-default-values)
-  - [With server-side rendering](#with-server-side-rendering)
-  - [With static site generation](#with-static-site-generation)
-  - [With static site generation only](#with-static-site-generation-only)
+  - [With server-side rendering (hybrid)](#with-server-side-rendering-hybrid)
+  - [With server-side rendering (pure)](#with-server-side-rendering-pure)
+  - [With static site generation (hybrid)](#with-static-site-generation-hybrid)
+  - [With static site generation (client only)](#with-static-site-generation-client-only)
+  - [With static site generation (pure)](#with-static-site-generation-pure)
   - [With disabled revalidation](#with-disabled-revalidation)
 - [Examples](#examples)
   - [Full example](#full-example)
@@ -126,9 +129,24 @@ export default function FooPage(props) {
 }
 ```
 
+> Note that you should only ever call `useFlags()` once per Next.js page to avoid causing multiple requests and inconsistent flags.
+>
+> See more about this in the [FAQs](#why-should-i-only-ever-render-the-useflags-hook-once-per-page).
+
+
+## Exports
+
+`@happykit/flags` offers multiple entrypoints to keep the bundle small:
+- `@happykit/flags/config`: Configuration functions
+- `@happykit/flags/server`: Everything related to the server
+- `@happykit/flags/client`: Everything related to the client
+- `@happykit/flags/context`: A helper to pass the `flagBag` down through React's context
+
 ## API
 
 ### `configure`
+
+*exported from `@happykit/flags/config`*
 
 - `configure(options)`
   - `options.envKey` _(string)_ _required_: Your HappyKit Flags Client Id
@@ -136,7 +154,10 @@ export default function FooPage(props) {
   - `options.endpoint = "https://happykit.dev/api/flags"` _(string)_ _optional_: The endpoint to load flags from. This does not usually need to be changed.
   - `options.loadingTimeout = 3000` _(string)_ _optional_: A timeout in milliseconds after which any client-side evaluation requests will be aborted. Pass `false` to disable this feature. This feature is only supported in [browsers which support](https://caniuse.com/abortcontroller) the [`AbortController`](https://developer.mozilla.org/en-US/docs/Web/API/AbortController).
 
+
 ### `useFlags`
+
+*exported from `@happykit/flags/client`*
 
 This hook loads the flags on the client.
 
@@ -177,6 +198,8 @@ Provide any of these attributes to store them in HappyKit. You will be able to u
 
 ### `getFlags`
 
+*exported from `@happykit/flags/server`*
+
 - `getFlags(options)`
   - `options.context` _(object)_ _required_: The context which you receive from `getStaticProps` or `getServerSideProps`.
   - `options.user` _(object)_ _optional_: Same as `user` in `useFlags()`. If pass a user here, make sure to pass the same user to `useFlags({ user })`.
@@ -184,14 +207,19 @@ Provide any of these attributes to store them in HappyKit. You will be able to u
 
 This function returns a promise resolving to an object that looks like this:
 
-```js
+```ts
 {
-  flags: { /* Evaluated flags, combined with the configured fallbacks */ },
-  data: { /* Evaluated flags, as loaded from the API (no fallbacks applied) */ },
-  error: { /* Evaluated flags, as loaded from the API (no fallbacks applied) */ },
-  initialFlagState: {/* The preloaded response, which can be provided to useFlags({ initialState }) */ }
+  // Evaluated flags, combined with the configured fallbacks
+  flags: object | null,
+  // Flags as loaded from the API (no fallbacks applied)
+  data: object | null;
+  // Evaluated flags, as loaded from the API (no fallbacks applied)
+  error: string | null,
+  // The preloaded state, which can be provided to useFlags({ initialState })
+  initialFlagState: object
 }
 ```
+
 
 ## Advanced Usage
 
@@ -255,7 +283,7 @@ configure({
 });
 ```
 
-### With server-side rendering
+### With server-side rendering (hybrid)
 
 Being able to set initial flag values is what enables rehydration when using server-side rendering. When you pass in `initialState` the flags will be set from the beginning. This is avoids the first request on the client.
 
@@ -275,7 +303,29 @@ export default function FooPage(props) {
 }
 ```
 
-### With static site generation
+### With server-side rendering (pure)
+
+You don't even need to call `useFlags` if you don't want to revalidate the flags on the client.
+
+```js
+// pages/foo.js
+import { getFlags } from "@happykit/flags/server";
+
+export const getServerSideProps = async (context) => {
+  const { flags } = await getFlags({ context });
+  return { props: { flags } };
+};
+
+export default function FooPage(props) {
+  return props.flags.xzibit ? 'Yo dawg' : 'Hello';
+}
+```
+
+### With static site generation (hybrid)
+
+You can pass in the initial state from static site generation. `@happykit/flags` will then revalidate the flags on mount with the complete information.
+
+Static renders do not have any information about the visitor and any flags using the visitor information will thus evaluate to `null`. They will contain actual values once the client revalidates them. The `flagBag.settled` prop will then switch to `true` once the returned flags are final.
 
 ```js
 // pages/foo.js
@@ -293,7 +343,26 @@ export default function FooPage(props) {
 }
 ```
 
-### With static site generation only
+### With static site generation (client only)
+
+You can also use `@happykit/flags` in client-side rendering mode on static pages by just not passing in any initial state.
+
+```js
+// pages/foo.js
+import { useFlags } from "@happykit/flags/client";
+import { getFlags } from "@happykit/flags/server";
+
+export const getStaticProps = (context) => {
+  return { props: { somethingUnrelated: true } };
+};
+
+export default function FooPage(props) {
+  const { flags } = useFlags();
+  return flags.xzibit ? 'Yo dawg' : 'Hello';
+}
+```
+
+### With static site generation (pure)
 
 You don't even need to use `useFlags` in case you're regenerating your site on flag changes anyways.
 
@@ -319,7 +388,7 @@ _For use with `getStaticProps` the downside is that the new flags are only avail
 
 _Note that when you use `getFlags()` with `getStaticProps` the static generation phase has no concept of a visitor, so rollouts based on visitor information are not possible. You can still use `getStaticProps`, but you should also use `useFlags()` in such cases._
 
-_For use with `getServerSideProps` the downside is that flag changes are only shown when the page is reloaded._
+_For use with `getServerSideProps` the downside of not passing the flags through `useFlags()` is that flag changes are only shown when the page is reloaded._
 
 ### With disabled revalidation
 
@@ -330,7 +399,7 @@ HappyKit uses the browser's [`visibilitychange`](https://developer.mozilla.org/e
 import { useFlags } from "@happykit/flags/client";
 import { getFlags } from "@happykit/flags/server";
 
-export const getStaticProps = (context) => {
+export const getServerSideProps = (context) => {
   const { initialFlagState } = await getFlags({ context });
   return { props: { initialFlagState } };
 };
@@ -350,6 +419,11 @@ export default function FooPage(props) {
 ### Full example
 
 This demo shows the full configuration with server-side rendering and code splitting.
+
+The `@happykit/flags` client will resolve flags from the cache while it revalidates the flags in the background. This means that flags might flip from one value to another after the initial render in case the cache is outdated.
+
+You can use a property called `settled` which turns `true` once the flags are freshly validated from the server. Using this property allows you to ensure flags are freshly loaded before kicking off a heavier task like loading a component.
+
 
 ```js
 // _app.js
@@ -446,7 +520,6 @@ import { AppFlags } from "../types/AppFlags";
 
 // the types defined in "configure" are used to check "defaultFlags"
 configure<AppFlags>({
-  endpoint: 'http://localhost:8787/api/flags',
   envKey: 'flags_pub_272357356657967622',
   defaultFlags: {
     booleanFlag: true,
@@ -555,8 +628,14 @@ export default function Page(props) {
 
 ### Why should I only ever render the `useFlags` hook once per page?
 
-The `useFlags()` handles loading of the feature flags. Since HappyKit supports all rendering modes (server-side rendering, client-side rendering, static site generation) each individual Next.js page route is the best place to call the `useFlags()` hook.
+The `useFlags()` hook handles loading of the feature flags. Since HappyKit supports all rendering modes (server-side rendering, client-side rendering, static site generation) each individual Next.js page route can use a different way to load flags.
+
+Some pages might use pure client-side rendering, others might use server-side rendering or static site generation.
 
 Depending on the rendering mode, you might need to pass some `initialState` to the `useFlags()` hook. The best place to do this is right inside the Next.js page, at the top level.
 
-From there it's best to pass the returned `flagBag` to each component that needs it. You can do so directly or by using `@happykit/flags/context`. 
+From there it's best to pass the returned `flagBag` to each component that needs it.
+
+You can do so directly or by using `@happykit/flags/context`. 
+
+This allows you to switch between flags, and prevents you from calling `useFlags()` with inconsistent values on the same page. Only calling `useFlags()` once per page ensures you'll see the same feature flags on the whole page.
