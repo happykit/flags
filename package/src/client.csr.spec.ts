@@ -28,11 +28,7 @@ describe("when cookie is not set", () => {
       {
         url: "https://happykit.dev/api/flags/flags_pub_000000",
         body: {
-          // there is a visitorKey but we don't know the value as it's generated
-          // visitorKey: expect.any(String),
-          user: null,
-          traits: null,
-          static: false,
+          /* body is checked in the response function */
         },
         matchPartialBody: true,
       },
@@ -41,7 +37,13 @@ describe("when cookie is not set", () => {
         // parse visitorKey so we can mirror it back
         const body = JSON.parse(options.body as string);
         visitorKey = body.visitorKey;
-        expect(typeof visitorKey).toBe("string");
+
+        expect(body).toEqual({
+          user: null,
+          traits: null,
+          static: false,
+          visitorKey: expect.any(String),
+        });
 
         return {
           flags: {
@@ -122,7 +124,7 @@ describe("when cookie is not set", () => {
     expect(
       (result.all[1] as FlagBag<any>).visitorKey,
       "visitor key may not change"
-    ).toEqual((result.all[2] as FlagBag<any>).visitorKey);
+    ).toEqual((result.all[3] as FlagBag<any>).visitorKey);
   });
 });
 
@@ -142,7 +144,6 @@ describe("when cookie is set", () => {
           traits: null,
           static: false,
         },
-        matchPartialBody: true,
       },
       {
         headers: { "content-type": "application/json" },
