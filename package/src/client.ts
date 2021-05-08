@@ -52,7 +52,7 @@ type Pending = {
 };
 
 type State<F extends Flags> =
-  // initial state candidate for csr
+  // "empty" is an initial state candidate for csr
   | {
       name: "empty";
       input?: never;
@@ -67,7 +67,7 @@ type State<F extends Flags> =
       cachedOutcome: SuccessOutcome<F> | null;
       pending: Pending | null;
     }
-  // initial state candidate for ssr
+  // "succeeded" is an initial state candidate for ssr
   | {
       name: "succeeded";
       input: Input;
@@ -83,7 +83,7 @@ type State<F extends Flags> =
       cachedOutcome?: never;
       pending: Pending | null;
     }
-  // initial state candidate for ssr
+  // "failed" is an initial state candidate for ssr
   | {
       name: "failed";
       input: Input;
