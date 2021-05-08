@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@headlessui/react": "1.1.1",
     "@preconstruct/next": "2.0.2",
     "@tailwindcss/typography": "0.4.0",
     "@types/dedent": "0.7.0",

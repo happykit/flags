@@ -84,6 +84,9 @@ export function Nav() {
         </NavLink>
       </div>
       <div>
+        <NavLink href="/demo/dynamics">Dynamics</NavLink>
+      </div>
+      <div>
         <NavLink href="/docs/public-api">Public API</NavLink>
       </div>
     </React.Fragment>

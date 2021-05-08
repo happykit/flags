@@ -1,4 +1,3 @@
-import { loadGetInitialProps } from "next/dist/next-server/lib/utils";
 import * as React from "react";
 
 export function has<X extends {}, Y extends PropertyKey>(
@@ -57,7 +56,7 @@ export function Result(props: { value: any; label?: string }) {
 
   return (
     <div className="mt-4">
-      <pre className="font-mono rounded bg-gray-200 p-2 max-w-prose">
+      <pre className="font-mono rounded bg-gray-200 p-2">
         <div className="text-gray-400 text-xs pb-1">
           {props.label || `Render #${results.length} (Current render)`}
         </div>
@@ -65,14 +64,16 @@ export function Result(props: { value: any; label?: string }) {
       </pre>
       {previousResults.length > 0 && (
         <details className="my-1">
-          <summary className="p-1">
-            Previous values ({previousResults.length})
-          </summary>
+          <summary className="p-1">History ({previousResults.length})</summary>
+
+          <div className="p-2 text-md">
+            This section the previous return values of the{" "}
+            <code>useFlags()</code> hook. You can use it to see how
+            <code>@happykit/flags</code> behaves.
+          </div>
+
           {previousResults.map((result, index) => (
-            <pre
-              key={result.key}
-              className="mt-2 font-mono rounded bg-gray-200 p-2 max-w-prose"
-            >
+            <pre key={result.key} className="font-mono rounded bg-gray-200 p-2">
               <div className="text-gray-400 text-xs pb-1">
                 Render #{previousResults.length - index}
               </div>
