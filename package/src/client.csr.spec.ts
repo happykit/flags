@@ -62,7 +62,7 @@ describe("when cookie is not set", () => {
 
     const { result, waitForNextUpdate } = renderHook(() => useFlags());
 
-    expect(result.all).toHaveLength(3);
+    expect(result.all).toHaveLength(2);
 
     await waitForNextUpdate();
 
@@ -74,15 +74,6 @@ describe("when cookie is not set", () => {
         fetching: false,
         settled: false,
         visitorKey: null,
-        revalidate: expect.any(Function),
-      },
-      {
-        flags: null,
-        data: null,
-        error: null,
-        fetching: true,
-        settled: false,
-        visitorKey: visitorKey,
         revalidate: expect.any(Function),
       },
       {
@@ -118,13 +109,10 @@ describe("when cookie is not set", () => {
       },
     ]);
 
-    // ensure strict equality between rerenders
-    expect(result.all[1]).toBe(result.all[2]);
-
     expect(
       (result.all[1] as FlagBag<any>).visitorKey,
       "visitor key may not change"
-    ).toEqual((result.all[3] as FlagBag<any>).visitorKey);
+    ).toEqual((result.all[2] as FlagBag<any>).visitorKey);
   });
 });
 
@@ -165,7 +153,7 @@ describe("when cookie is set", () => {
     // start actual testing
     const { result, waitForNextUpdate } = renderHook(() => useFlags());
 
-    expect(result.all).toHaveLength(3);
+    expect(result.all).toHaveLength(2);
 
     await waitForNextUpdate();
 
@@ -177,15 +165,6 @@ describe("when cookie is set", () => {
         fetching: false,
         settled: false,
         visitorKey: null,
-        revalidate: expect.any(Function),
-      },
-      {
-        flags: null,
-        data: null,
-        error: null,
-        fetching: true,
-        settled: false,
-        visitorKey: visitorKeyInCookie,
         revalidate: expect.any(Function),
       },
       {
@@ -220,9 +199,6 @@ describe("when cookie is set", () => {
         revalidate: expect.any(Function),
       },
     ]);
-
-    // ensure strict equality between rerenders
-    expect(result.all[1]).toBe(result.all[2]);
   });
 });
 
@@ -234,11 +210,7 @@ describe("stories", () => {
         {
           url: "https://happykit.dev/api/flags/flags_pub_000000",
           body: {
-            // there is a visitorKey but we don't know the value as it's generated
-            // visitorKey: expect.any(String),
-            user: null,
-            traits: null,
-            static: false,
+            /* checked in response function */
           },
           matchPartialBody: true,
         },
@@ -246,7 +218,13 @@ describe("stories", () => {
           // parse visitorKey so we can mirror it back
           const body = JSON.parse(options.body as string);
           generatedVisitorKey = body.visitorKey;
-          expect(typeof generatedVisitorKey).toBe("string");
+
+          expect(body).toEqual({
+            user: null,
+            traits: null,
+            static: false,
+            visitorKey: expect.any(String),
+          });
 
           return {
             flags: {
@@ -268,11 +246,11 @@ describe("stories", () => {
         FlagBag<Flags>
       >((options) => useFlags(options), { initialProps: undefined });
 
-      expect(result.all).toHaveLength(3);
+      expect(result.all).toHaveLength(2);
 
       await waitForNextUpdate();
 
-      expect(result.all).toHaveLength(4);
+      expect(result.all).toHaveLength(3);
 
       fetchMock.post(
         {
@@ -298,7 +276,7 @@ describe("stories", () => {
 
       rerender({ user: { key: "george" } });
 
-      expect(result.all).toHaveLength(7);
+      expect(result.all).toHaveLength(5);
 
       await waitForNextUpdate();
 
@@ -322,15 +300,6 @@ describe("stories", () => {
           revalidate: expect.any(Function),
         },
         {
-          flags: null,
-          data: null,
-          error: null,
-          fetching: true,
-          settled: false,
-          visitorKey: generatedVisitorKey,
-          revalidate: expect.any(Function),
-        },
-        {
           flags: {
             ads: true,
             checkout: "medium",
@@ -375,15 +344,6 @@ describe("stories", () => {
           error: null,
           fetching: false,
           settled: true,
-          visitorKey: generatedVisitorKey,
-          revalidate: expect.any(Function),
-        },
-        {
-          flags: null,
-          data: null,
-          error: null,
-          fetching: true,
-          settled: false,
           visitorKey: generatedVisitorKey,
           revalidate: expect.any(Function),
         },
@@ -421,11 +381,6 @@ describe("stories", () => {
           revalidate: expect.any(Function),
         },
       ]);
-
-      expect(
-        (result.all[1] as FlagBag<any>).visitorKey,
-        "visitor key may not change"
-      ).toEqual((result.all[2] as FlagBag<any>).visitorKey);
     });
   });
 });
