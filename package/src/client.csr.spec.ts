@@ -177,7 +177,6 @@ describe("when cookie is set", () => {
         revalidate: expect.any(Function),
       },
       {
-        fetching: false,
         flags: {
           ads: true,
           checkout: "medium",
@@ -194,6 +193,7 @@ describe("when cookie is set", () => {
           visitor: { key: visitorKeyInCookie },
         },
         error: null,
+        fetching: false,
         settled: true,
         visitorKey: visitorKeyInCookie,
         revalidate: expect.any(Function),

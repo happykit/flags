@@ -179,7 +179,7 @@ describe("when cookie is not set", () => {
 });
 
 describe("when cookie is set", () => {
-  it("generates a visitorKey", async () => {
+  it("reuses the visitorKey", async () => {
     // prepare cookie before test
     const visitorKeyInCookie = nanoid();
     document.cookie = `hkvk=${visitorKeyInCookie}`;
