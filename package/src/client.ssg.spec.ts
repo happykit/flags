@@ -27,12 +27,7 @@ describe("when cookie is not set", () => {
       {
         url: "https://happykit.dev/api/flags/flags_pub_000000",
         body: {
-          // false because this is the request of the client afer hydration,
-          // not the one during static site generation
-          static: false,
-          traits: null,
-          user: null,
-          // visitorKey: generatedVisitorKey,
+          /* checked in response function */
         },
         matchPartialBody: true,
       },
@@ -40,8 +35,15 @@ describe("when cookie is not set", () => {
         // parse visitorKey so we can mirror it back
         const body = JSON.parse(options.body as string);
         generatedVisitorKey = body.visitorKey;
-        expect(typeof generatedVisitorKey).toBe("string");
-        expect(generatedVisitorKey).toHaveLength(21);
+
+        expect(body).toEqual({
+          static: false,
+          traits: null,
+          user: null,
+          visitorKey: expect.any(String),
+        });
+
+        expect(body.visitorKey).toHaveLength(21);
 
         return {
           flags: {
@@ -86,7 +88,7 @@ describe("when cookie is not set", () => {
       useFlags({ initialState: initialStateFromProps })
     );
 
-    expect(result.all).toHaveLength(3);
+    expect(result.all).toHaveLength(2);
     expect(document.cookie).toEqual("");
     await waitForNextUpdate();
     expect(document.cookie).toEqual(`hkvk=${generatedVisitorKey}`);
@@ -148,28 +150,6 @@ describe("when cookie is not set", () => {
       {
         flags: {
           ads: true,
-          checkout: null,
-          discount: 5,
-          purchaseButtonLabel: null,
-        },
-        data: {
-          flags: {
-            ads: true,
-            checkout: null,
-            discount: 5,
-            purchaseButtonLabel: null,
-          },
-          visitor: null,
-        },
-        error: null,
-        fetching: true,
-        settled: false,
-        visitorKey: null,
-        revalidate: expect.any(Function),
-      },
-      {
-        flags: {
-          ads: true,
           checkout: "short",
           discount: 5,
           purchaseButtonLabel: "Purchase",
@@ -190,9 +170,6 @@ describe("when cookie is not set", () => {
         revalidate: expect.any(Function),
       },
     ]);
-
-    // ensure strict equality between rerenders
-    expect(result.all[1]).toBe(result.all[2]);
 
     // ensure there are no further updates
     await expect(waitForNextUpdate({ timeout: 500 })).rejects.toThrow(
@@ -260,7 +237,7 @@ describe("when cookie is set", () => {
       useFlags({ initialState: initialStateFromProps })
     );
 
-    expect(result.all).toHaveLength(3);
+    expect(result.all).toHaveLength(2);
     expect(document.cookie).toEqual(`hkvk=${visitorKeyInCookie}`);
     await waitForNextUpdate();
     expect(document.cookie).toEqual(`hkvk=${visitorKeyInCookie}`);
@@ -313,28 +290,6 @@ describe("when cookie is set", () => {
       {
         flags: {
           ads: true,
-          checkout: null,
-          discount: 5,
-          purchaseButtonLabel: null,
-        },
-        data: {
-          flags: {
-            ads: true,
-            checkout: null,
-            discount: 5,
-            purchaseButtonLabel: null,
-          },
-          visitor: null,
-        },
-        error: null,
-        fetching: true,
-        settled: false,
-        visitorKey: null,
-        revalidate: expect.any(Function),
-      },
-      {
-        flags: {
-          ads: true,
           checkout: "short",
           discount: 5,
           purchaseButtonLabel: "Purchase",
@@ -355,9 +310,6 @@ describe("when cookie is set", () => {
         revalidate: expect.any(Function),
       },
     ]);
-
-    // ensure strict equality between rerenders
-    expect(result.all[1]).toBe(result.all[2]);
 
     // ensure there are no further updates
     await expect(waitForNextUpdate({ timeout: 500 })).rejects.toThrow(

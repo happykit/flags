@@ -47,7 +47,6 @@ let getId = (() => {
 
 type Pending = {
   id: Id;
-  promise: Promise<any>;
   // null in case the browser doesn't support it
   controller: AbortController | null;
 };
@@ -109,12 +108,6 @@ type Action<F extends Flags> =
   // is passed in
   | { type: "revalidate"; input?: Input }
   | {
-      type: "settle/start";
-      id: Id;
-      promise: Promise<any>;
-      controller: AbortController | null;
-    }
-  | {
       type: "settle/success";
       id: Id;
       input: Input;
@@ -129,13 +122,48 @@ type Action<F extends Flags> =
     };
 
 type Effect<F extends Flags> =
-  | { effect: "fetch"; input: Input }
+  | {
+      effect: "fetch";
+      input: Input;
+      id: Id;
+      controller: AbortController | null;
+    }
   | { effect: "abort-pending-request"; controller: AbortController }
   // revalidate generally revalidates the same input, except for ssg when
   // initial state is passed in
   | { effect: "revalidate-input"; input?: Input }
   | { effect: "set-visitor-key"; payload: string }
   | { effect: "set-cache"; input: Input; outcome: SuccessOutcome<F> };
+
+/**
+ * Returns new effects and pending state, cancels controller of previous pending
+ * state.
+ *
+ * @param input Next input
+ * @param pending Previous pending state
+ * @returns [Effects to execute, Next pending state]
+ */
+function createFetchEffects<F extends Flags>(
+  input: Input,
+  pending?: Pending | null
+): [Effect<F>[], Pending] {
+  const id = getId();
+
+  const controller =
+    typeof AbortController !== "undefined" ? new AbortController() : null;
+
+  const fetchEffect: Effect<F> = { effect: "fetch", id, controller, input };
+  return [
+    [
+      pending?.controller && {
+        effect: "abort-pending-request",
+        controller: pending.controller,
+      },
+      fetchEffect,
+    ].filter(Boolean) as Effect<F>[],
+    { id, controller },
+  ];
+}
 
 /**
  * The reducer returns a tuple of [state, effects].
@@ -158,6 +186,11 @@ function reducer<F extends Flags>(
     case "evaluate": {
       const cachedOutcome = cache.get<SuccessOutcome<F>>(action.input);
 
+      const [effects, pending] = createFetchEffects<F>(
+        action.input,
+        state.pending
+      );
+
       // action.input will always differ from state.input, because we do not
       // dispatch "evaluate" otherwise
       return [
@@ -165,16 +198,16 @@ function reducer<F extends Flags>(
           name: "evaluating",
           input: action.input,
           cachedOutcome,
-          pending: state.pending || null,
+          pending,
         },
-        [{ effect: "fetch", input: action.input }],
+        effects,
       ];
     }
     case "revalidate": {
       if (state.name === "empty") return tuple;
 
       const input = action.input || state.input;
-      const nextEffects: Effect<F>[] = [{ effect: "fetch", input }];
+      const [effects, pending] = createFetchEffects<F>(input, state.pending);
 
       if (state.name === "succeeded")
         return [
@@ -183,9 +216,9 @@ function reducer<F extends Flags>(
             input: state.input,
             outcome: state.outcome,
             cachedOutcome: state.cachedOutcome,
-            pending: state.pending || null,
+            pending,
           },
-          nextEffects,
+          effects,
         ];
 
       if (state.name === "failed")
@@ -195,9 +228,9 @@ function reducer<F extends Flags>(
             input: state.input,
             outcome: state.outcome,
             cachedOutcome: state.cachedOutcome,
-            pending: state.pending || null,
+            pending,
           },
-          nextEffects,
+          effects,
         ];
 
       if (state.name === "evaluating")
@@ -207,39 +240,12 @@ function reducer<F extends Flags>(
             input: state.input,
             outcome: state.outcome,
             cachedOutcome: state.cachedOutcome,
-            pending: state.pending || null,
+            pending,
           },
-          nextEffects,
+          effects,
         ];
 
       return tuple;
-    }
-    case "settle/start": {
-      if (
-        state.name !== "evaluating" &&
-        state.name !== "revalidating-after-failure" &&
-        state.name !== "revalidating-after-success"
-      )
-        return tuple;
-
-      return [
-        {
-          ...state,
-          pending: {
-            id: action.id,
-            promise: action.promise,
-            controller: action.controller,
-          },
-        },
-        state.pending?.controller
-          ? [
-              {
-                effect: "abort-pending-request",
-                controller: state.pending.controller,
-              },
-            ]
-          : [],
-      ];
     }
     case "settle/failure": {
       if (
@@ -487,12 +493,7 @@ export function useFlags<F extends Flags = Flags>(
       switch (effect.effect) {
         // execute the effect
         case "fetch": {
-          const { input } = effect;
-
-          const controller =
-            typeof AbortController !== "undefined"
-              ? new AbortController()
-              : null;
+          const { id, input, controller } = effect;
 
           let timeoutId: ReturnType<typeof setTimeout>;
           if (controller && currentLoadingTimeout) {
@@ -502,9 +503,7 @@ export function useFlags<F extends Flags = Flags>(
             );
           }
 
-          const id = getId();
-
-          const promise = fetch([input.endpoint, input.envKey].join("/"), {
+          fetch([input.endpoint, input.envKey].join("/"), {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify(input.requestBody),
@@ -572,8 +571,6 @@ export function useFlags<F extends Flags = Flags>(
               return null;
             }
           );
-
-          dispatch({ type: "settle/start", id, promise, controller });
 
           break;
         }
@@ -687,15 +684,7 @@ export function useFlags<F extends Flags = Flags>(
           visitorKey: null,
         } as EmptyFlagBag;
     }
-  }, [
-    // all of state except for "pending"
-    state.name,
-    state.input,
-    state.outcome,
-    state.cachedOutcome,
-    defaultFlags,
-    revalidate,
-  ]);
+  }, [state, defaultFlags, revalidate]);
 
   return flagBag;
 }
