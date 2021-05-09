@@ -31,7 +31,7 @@ git status # ensure you can push and are up to date
 cd package
 yarn build
 yarn publish --tag next
-git push
+git push --tags
 ```
 
 ## Moving the `latest` dist-tag
