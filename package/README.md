@@ -107,7 +107,7 @@ import { useFlags } from "@happykit/flags/client";
 
 export default function FooPage(props) {
   const { flags } = useFlags();
-  return flags.xzibit ? 'Yo dawg' : 'Hello';
+  return flags?.xzibit ? 'Yo dawg' : 'Hello';
 }
 ```
 
@@ -125,7 +125,7 @@ export const getServerSideProps = async (context) => {
 
 export default function FooPage(props) {
   const { flags } = useFlags({ initialState: props.initialFlagState });
-  return flags.xzibit ? 'Yo dawg' : 'Hello';
+  return flags?.xzibit ? 'Yo dawg' : 'Hello';
 }
 ```
 
@@ -233,7 +233,7 @@ import { useFlags } from "@happykit/flags/client";
 
 export default function FooPage(props) {
   const flagBag = useFlags({ user: { key: 'user-id' } });
-  return flagBag.flags.xzibit ? 'Yo dawg' : 'Hello';
+  return flagBag.flags?.xzibit ? 'Yo dawg' : 'Hello';
 }
 ```
 
@@ -259,7 +259,7 @@ export default function FooPage(props) {
     initialState: props.initialFlagState,
   });
 
-  return flagBag.flags.xzibit ? 'Yo dawg' : 'Hello';
+  return flagBag.flags?.xzibit ? 'Yo dawg' : 'Hello';
 }
 ```
 
@@ -299,7 +299,7 @@ export const getServerSideProps = async (context) => {
 
 export default function FooPage(props) {
   const { flags } = useFlags({ initialState: props.initialFlagState });
-  return flags.xzibit ? 'Yo dawg' : 'Hello';
+  return flags?.xzibit ? 'Yo dawg' : 'Hello';
 }
 ```
 
@@ -317,7 +317,7 @@ export const getServerSideProps = async (context) => {
 };
 
 export default function FooPage(props) {
-  return props.flags.xzibit ? 'Yo dawg' : 'Hello';
+  return props.flags?.xzibit ? 'Yo dawg' : 'Hello';
 }
 ```
 
@@ -339,7 +339,7 @@ export const getStaticProps = (context) => {
 
 export default function FooPage(props) {
   const { flags } = useFlags({ initialState: props.initialFlagState });
-  return flags.xzibit ? 'Yo dawg' : 'Hello';
+  return flags?.xzibit ? 'Yo dawg' : 'Hello';
 }
 ```
 
@@ -358,7 +358,7 @@ export const getStaticProps = (context) => {
 
 export default function FooPage(props) {
   const { flags } = useFlags();
-  return flags.xzibit ? 'Yo dawg' : 'Hello';
+  return flags?.xzibit ? 'Yo dawg' : 'Hello';
 }
 ```
 
@@ -410,7 +410,7 @@ export default function FooPage(props) {
     initialState: props.initialFlagState
   });
 
-  return flagBag.flags.xzibit ? 'Yo dawg' : 'Hello';
+  return flagBag.flags?.xzibit ? 'Yo dawg' : 'Hello';
 }
 ```
 
@@ -472,7 +472,7 @@ export default function Page(props) {
   // you want to use `getStaticProps`.
   if (!flagBag.settled) return null
 
-  return flagBag.flags.profileVariant === 'A' ? (
+  return flagBag.flags?.profileVariant === 'A' ? (
     <ProfileVariantA user={props.user} />
   ) : (
     <ProfileVariantB user={props.user} />
@@ -577,7 +577,7 @@ export default function Page(props) {
   // display nothing until we know for sure which variants the flags resolve to
   if (!flagBag.settled) return null;
 
-  return flagBag.flags.profileVariant === 'A' ? (
+  return flagBag.flags?.profileVariant === 'A' ? (
     <ProfileVariantA user={props.user} />
   ) : (
     <ProfileVariantB user={props.user} />
@@ -614,7 +614,7 @@ export default function Page(props) {
     initialState: props.initialFlagState,
   });
 
-  return flagBag.flags.profileVariant === 'A' ? (
+  return flagBag.flags?.profileVariant === 'A' ? (
     <ProfileVariantA user={props.user} />
   ) : (
     <ProfileVariantB user={props.user} />
