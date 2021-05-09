@@ -41,6 +41,22 @@ Add Feature Flags to your Next.js application with a single React Hook. This pac
 
 <br />
 
+## Code Sample
+
+This is roughly what the usage of feature flags looks like once you're up and running.
+
+```js
+// pages/index.js
+import { useFlags } from "@happykit/flags/client";
+
+export default function IndexPage(props) {
+  const { flags } = useFlags();
+  return flags?.xzibit ? 'Yo dawg' : 'Hello';
+}
+```
+
+See the [full documentation](https://github.com/happykit/flags/tree/next/package) for setup instructions.
+
 ## Examples
 
 The self documenting examples at [flags.happykit.dev](https://flags.happykit.dev/) show how to use `@happykit/flags` for client-side, static and server-side rendering. 
