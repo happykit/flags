@@ -11,10 +11,9 @@
   <span>&nbsp;•&nbsp;</span>
   <a href="https://happykit.dev/solutions/flags" target="_blank">happykit.dev</a>
   <span>&nbsp;•&nbsp;</span>
-  <a href="https://twitter.com/happykitdev" target="_blank">@happykitdev</a>
+  <a href="https://twitter.**com**/happykitdev" target="_blank">@happykitdev</a>
 </div>
 
-<br />
 <br />
 
 &nbsp;
@@ -41,7 +40,11 @@ Add Feature Flags to your Next.js application with a single React Hook. This pac
 
 <br />
 
-## Code Sample
+## [Documentation](https://github.com/happykit/flags/tree/master/package)
+
+See the [full documentation](https://github.com/happykit/flags/tree/master/package) for setup instructions and usage guides.
+
+## [Examples](https://flags.happykit.dev/)
 
 This is roughly what the usage of feature flags looks like once you're up and running.
 
@@ -55,26 +58,19 @@ export default function IndexPage(props) {
 }
 ```
 
-See the [full documentation](https://github.com/happykit/flags/tree/master/package) for setup instructions.
-
-## Examples
 
 The self documenting examples at [flags.happykit.dev](https://flags.happykit.dev/) show how to use `@happykit/flags` for client-side, static and server-side rendering. 
 
-## Tutorial
+
+## [Full Tutorial](https://medium.com/frontend-digest/using-feature-flags-in-next-js-c5c8d0795a2?source=friends_link&sk=d846a29f376acf9cfa41e926883923ab)
 
 A full tutorial including setup instructions is publishd on [frontend-digest.com](https://medium.com/frontend-digest/using-feature-flags-in-next-js-c5c8d0795a2?source=friends_link&sk=d846a29f376acf9cfa41e926883923ab).
 
-## Package
 
-The documentation of `@happykit/flags` lives in the `package` folder
-
-**[Continue to full documentation](https://github.com/happykit/flags/tree/master/package)**
-
-
+<br />
 
 ---
 
 <br />
 
-*Are you looking for the old docs? They are available under [under the v0.3.0 tag](https://github.com/happykit/flags/tree/v0.3.0).*
+> *Are you looking for the old docs? They are available under [under the v0.3.0 tag](https://github.com/happykit/flags/tree/v0.3.0).*
