@@ -3,7 +3,7 @@
 </a>
 
 <div align="right">
-  <a href="https://github.com/happykit/flags/tree/next/package">Documentation</a>
+  <a href="https://github.com/happykit/flags/tree/master/package">Documentation</a>
   <span>&nbsp;•&nbsp;</span>
   <a href="https://flags.happykit.dev/" target="_blank">Examples</a>
   <span>&nbsp;•&nbsp;</span>
@@ -55,7 +55,7 @@ export default function IndexPage(props) {
 }
 ```
 
-See the [full documentation](https://github.com/happykit/flags/tree/next/package) for setup instructions.
+See the [full documentation](https://github.com/happykit/flags/tree/master/package) for setup instructions.
 
 ## Examples
 
@@ -69,7 +69,7 @@ A full tutorial including setup instructions is publishd on [frontend-digest.com
 
 The documentation of `@happykit/flags` lives in the `package` folder
 
-**[Continue to full documentation](https://github.com/happykit/flags/tree/next/package)**
+**[Continue to full documentation](https://github.com/happykit/flags/tree/master/package)**
 
 
 
