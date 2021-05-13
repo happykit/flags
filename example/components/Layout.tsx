@@ -44,15 +44,19 @@ export function Layout(props: {
         );
       }
     }
+  }, [props.flagBag]);
+
+  // clear timings so the next page doesn't accidentally load timings
+  // of the current page
+  React.useEffect(() => {
+    if (typeof performance === "undefined") return;
 
     return () => {
-      // clear timings so the next page doesn't accidentally load timings
-      // of the current page
       performance.clearResourceTimings();
       performance.clearMeasures();
       performance.clearMarks();
     };
-  }, [props.flagBag]);
+  }, []);
 
   return (
     <React.Fragment>
