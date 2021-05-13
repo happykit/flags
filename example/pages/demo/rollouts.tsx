@@ -27,6 +27,7 @@ export default function Page(props: ServerSideProps) {
     <Layout
       title="Rollouts"
       source={`https://github.com/happykit/flags/blob/${process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF}/example/pages/demo/rollouts.tsx`}
+      flagBag={flagBag}
     >
       <article className="py-4 prose max-w-prose">
         <p>

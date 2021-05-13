@@ -27,6 +27,7 @@ export default function Page(props: ServerSideProps) {
     <Layout
       title="Targeting by Visitor Key"
       source={`https://github.com/happykit/flags/blob/${process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF}/example/pages/demo/targeting-by-visitor-key.tsx`}
+      flagBag={flagBag}
     >
       <article className="py-4 prose max-w-prose">
         <p>

@@ -14,7 +14,7 @@ const exampleFlagBag = {
 
 export default function Index() {
   return (
-    <Layout title="Introduction">
+    <Layout title="Introduction" flagBag={null}>
       {/* Replace with your content */}
       <article className="py-4 prose max-w-prose">
         <p>

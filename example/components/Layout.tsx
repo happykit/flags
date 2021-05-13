@@ -2,14 +2,48 @@ import * as React from "react";
 import { Nav } from "../components/Nav";
 import Head from "next/head";
 import { Transition } from "@tailwindui/react";
-import Link from "next/link";
+import { FlagBag } from "@happykit/flags/client";
 
 export function Layout(props: {
   title: string;
   source?: string;
   children: React.ReactNode;
+  flagBag: FlagBag | null;
 }) {
   const [expanded, setExpanded] = React.useState<boolean>(false);
+
+  // has to be done this way to avoid differing output in client and server render
+  const [supportsPerformanceMetrics, setSupportsPerformanceMetrics] =
+    React.useState<boolean>(false);
+  React.useEffect(
+    () => setSupportsPerformanceMetrics(typeof performance !== "undefined"),
+    []
+  );
+
+  const [performanceEntry, setPerformanceEntry] =
+    React.useState<null | PerformanceResourceTiming>(null);
+
+  React.useEffect(() => {
+    if (typeof performance === "undefined") return;
+    if (!props.flagBag || !props.flagBag.settled) return;
+
+    const entries = performance
+      .getEntriesByType("resource")
+      .filter(
+        (entry) =>
+          entry.name ===
+          [
+            process.env.NEXT_PUBLIC_FLAGS_ENDPOINT!,
+            process.env.NEXT_PUBLIC_FLAGS_ENV_KEY!,
+          ].join("/")
+      );
+
+    if (entries.length > 0) {
+      setPerformanceEntry(
+        entries[entries.length - 1] as PerformanceResourceTiming
+      );
+    }
+  }, [props.flagBag]);
 
   return (
     <React.Fragment>
@@ -244,6 +278,24 @@ export function Layout(props: {
                 {props.children}
               </div>
             </div>
+            {supportsPerformanceMetrics && (
+              <div className="bg-gray-100">
+                <hr />
+                <div className="pt-3 pb-1 font-semibold max-w-7xl mx-auto px-4 sm:px-6 md:px-8 text-gray-500 uppercase tracking-wide text-sm">
+                  Performance
+                </div>
+                {performanceEntry ? (
+                  <div className="pb-3 max-w-7xl mx-auto px-4 sm:px-6 md:px-8 text-gray-500 text-sm">
+                    The last flag evaluation request took{" "}
+                    {Math.floor(performanceEntry.duration)}ms.
+                  </div>
+                ) : (
+                  <div className="pb-3 max-w-7xl mx-auto px-4 sm:px-6 md:px-8 text-gray-500 text-sm">
+                    No feature flags loaded by the browser so far.
+                  </div>
+                )}
+              </div>
+            )}
           </main>
         </div>
       </div>

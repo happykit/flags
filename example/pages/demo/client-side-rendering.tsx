@@ -11,6 +11,7 @@ export default function Page() {
     <Layout
       title="Client-Side Rendering"
       source={`https://github.com/happykit/flags/blob/${process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF}/example/pages/demo/client-side-rendering.tsx`}
+      flagBag={flagBag}
     >
       <article className="py-4 prose max-w-prose">
         <p>
