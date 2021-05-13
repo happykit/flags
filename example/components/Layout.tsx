@@ -15,6 +15,7 @@ export function Layout(props: {
   // has to be done this way to avoid differing output in client and server render
   const [supportsPerformanceMetrics, setSupportsPerformanceMetrics] =
     React.useState<boolean>(false);
+
   React.useEffect(
     () => setSupportsPerformanceMetrics(typeof performance !== "undefined"),
     []
@@ -25,24 +26,32 @@ export function Layout(props: {
 
   React.useEffect(() => {
     if (typeof performance === "undefined") return;
-    if (!props.flagBag || !props.flagBag.settled) return;
+    if (props.flagBag && props.flagBag.settled) {
+      const entries = performance
+        .getEntriesByType("resource")
+        .filter(
+          (entry) =>
+            entry.name ===
+            [
+              process.env.NEXT_PUBLIC_FLAGS_ENDPOINT!,
+              process.env.NEXT_PUBLIC_FLAGS_ENV_KEY!,
+            ].join("/")
+        );
 
-    const entries = performance
-      .getEntriesByType("resource")
-      .filter(
-        (entry) =>
-          entry.name ===
-          [
-            process.env.NEXT_PUBLIC_FLAGS_ENDPOINT!,
-            process.env.NEXT_PUBLIC_FLAGS_ENV_KEY!,
-          ].join("/")
-      );
-
-    if (entries.length > 0) {
-      setPerformanceEntry(
-        entries[entries.length - 1] as PerformanceResourceTiming
-      );
+      if (entries.length > 0) {
+        setPerformanceEntry(
+          entries[entries.length - 1] as PerformanceResourceTiming
+        );
+      }
     }
+
+    return () => {
+      // clear timings so the next page doesn't accidentally load timings
+      // of the current page
+      performance.clearResourceTimings();
+      performance.clearMeasures();
+      performance.clearMarks();
+    };
   }, [props.flagBag]);
 
   return (
