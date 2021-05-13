@@ -37,6 +37,7 @@ export type {
   InitialFlagState,
   Input,
   Outcome,
+  FlagBag,
 } from "./types";
 
 type Id = number;
@@ -460,9 +461,10 @@ export function useFlags<F extends Flags = Flags>(
     options.pause,
   ]);
 
-  const revalidate = React.useCallback(() => dispatch({ type: "revalidate" }), [
-    dispatch,
-  ]);
+  const revalidate = React.useCallback(
+    () => dispatch({ type: "revalidate" }),
+    [dispatch]
+  );
 
   React.useEffect(() => {
     effects.forEach((effect) => {

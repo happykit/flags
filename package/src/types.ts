@@ -221,7 +221,7 @@ export type RevalidatingAfterErrorFlagBag<F extends Flags> = {
   visitorKey: string;
 };
 
-export type FlagBag<F extends Flags> =
+export type FlagBag<F extends Flags = Flags> =
   | EmptyFlagBag
   | EvaluatingFlagBag<F>
   | SucceededFlagBag<F>
