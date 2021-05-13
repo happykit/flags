@@ -300,7 +300,21 @@ export function Layout(props: {
                 {performanceEntry ? (
                   <div className="pb-3 max-w-7xl mx-auto px-4 sm:px-6 md:px-8 text-gray-500 text-sm">
                     The last flag evaluation request took{" "}
-                    {Math.floor(performanceEntry.duration)}ms.
+                    {Math.floor(performanceEntry.duration)}ms.{" "}
+                    {Math.floor(performanceEntry.duration) < 100 && (
+                      <React.Fragment>
+                        For comparison:{" "}
+                        <a
+                          href="https://en.wikipedia.org/wiki/Blinking"
+                          className="hover:underline"
+                          rel="noopener noreferrer"
+                          target="_blank"
+                        >
+                          The blink of a human eye takes 100ms
+                        </a>
+                        .
+                      </React.Fragment>
+                    )}
                   </div>
                 ) : (
                   <div className="pb-3 max-w-7xl mx-auto px-4 sm:px-6 md:px-8 text-gray-500 text-sm">
