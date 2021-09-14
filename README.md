@@ -40,11 +40,11 @@ Add Feature Flags to your Next.js application with a single React Hook. This pac
 
 <br />
 
-## [Documentation](https://github.com/happykit/flags/tree/master/package)
+## Documentation
 
 See the [full documentation](https://github.com/happykit/flags/tree/master/package) for setup instructions and usage guides.
 
-## [Examples](https://flags.happykit.dev/)
+## Examples
 
 This is roughly what the usage of feature flags looks like once you're up and running.
 
@@ -62,7 +62,7 @@ export default function IndexPage(props) {
 The self documenting examples at [flags.happykit.dev](https://flags.happykit.dev/) show how to use `@happykit/flags` for client-side, static and server-side rendering. 
 
 
-## [Full Tutorial](https://medium.com/frontend-digest/using-feature-flags-in-next-js-c5c8d0795a2?source=friends_link&sk=d846a29f376acf9cfa41e926883923ab)
+## Full Tutorial
 
 A full tutorial including setup instructions is publishd on [frontend-digest.com](https://medium.com/frontend-digest/using-feature-flags-in-next-js-c5c8d0795a2?source=friends_link&sk=d846a29f376acf9cfa41e926883923ab).
 
