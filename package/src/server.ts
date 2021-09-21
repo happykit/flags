@@ -1,6 +1,10 @@
 /** global: fetch */
 import { IncomingMessage, ServerResponse } from "http";
-import { GetServerSidePropsContext, GetStaticPropsContext } from "next";
+import {
+  GetServerSidePropsContext,
+  GetStaticPathsContext,
+  GetStaticPropsContext,
+} from "next";
 import { config, isConfigured } from "./config";
 import { nanoid } from "nanoid";
 import {
@@ -75,6 +79,7 @@ type GetFlagsErrorBag<F extends Flags> = {
 export function getFlags<F extends Flags = Flags>(options: {
   context:
     | Pick<GetServerSidePropsContext, "req" | "res">
+    | GetStaticPathsContext
     | GetStaticPropsContext;
   user?: FlagUser;
   traits?: Traits;
