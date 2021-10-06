@@ -1,5 +1,6 @@
 /** global: fetch */
 import { IncomingMessage, ServerResponse } from "http";
+import AbortController from "abort-controller";
 import {
   GetServerSidePropsContext,
   GetStaticPathsContext,
@@ -83,9 +84,19 @@ export function getFlags<F extends Flags = Flags>(options: {
     | GetStaticPropsContext;
   user?: FlagUser;
   traits?: Traits;
+  serverLoadingTimeout?: number | false;
+  staticLoadingTimeout?: number | false;
 }): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
   if (!isConfigured(config)) throw new MissingConfigurationError();
   const staticConfig = config;
+
+  const currentStaticLoadingTimeout = has(options, "staticLoadingTimeout")
+    ? options.staticLoadingTimeout
+    : config.staticLoadingTimeout || 0;
+
+  const currentServerLoadingTimeout = has(options, "serverLoadingTimeout")
+    ? options.serverLoadingTimeout
+    : config.serverLoadingTimeout || 0;
 
   // determine visitor key
   const visitorKeyFromCookie = has(options.context, "req")
@@ -122,12 +133,26 @@ export function getFlags<F extends Flags = Flags>(options: {
       { "x-forwarded-for": requestingIp }
     : {};
 
+  // prepare fetch request timeout controller
+  const controller = new AbortController();
+  const timeoutDuration = has(options.context, "req")
+    ? currentServerLoadingTimeout
+    : currentStaticLoadingTimeout;
+  const timeoutId =
+    // validate config
+    typeof timeoutDuration !== "number" ||
+    isNaN(timeoutDuration) ||
+    timeoutDuration <= 0
+      ? null
+      : setTimeout(() => controller.abort(), timeoutDuration);
+
   return fetch([input.endpoint, input.envKey].join("/"), {
     method: "POST",
     headers: Object.assign(
       { "content-type": "application/json" },
       xForwardedForHeader
     ),
+    signal: controller?.signal,
     body: JSON.stringify(input.requestBody),
   }).then(
     (
@@ -135,6 +160,8 @@ export function getFlags<F extends Flags = Flags>(options: {
     ):
       | Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>>
       | GetFlagsErrorBag<F> => {
+      if (timeoutId) clearTimeout(timeoutId);
+
       if (!workerResponse.ok /* status not 200-299 */) {
         return {
           flags: staticConfig.defaultFlags as F,
@@ -183,13 +210,25 @@ export function getFlags<F extends Flags = Flags>(options: {
         }
       );
     },
-    () => {
-      return {
-        flags: staticConfig.defaultFlags as F,
-        data: null,
-        error: "network-error",
-        initialFlagState: { input, outcome: { error: "network-error" } },
-      };
+    (error) => {
+      if (timeoutId) clearTimeout(timeoutId);
+
+      return error?.name === "AbortError"
+        ? {
+            flags: staticConfig.defaultFlags as F,
+            data: null,
+            error: "request-timed-out",
+            initialFlagState: {
+              input,
+              outcome: { error: "request-timed-out" },
+            },
+          }
+        : {
+            flags: staticConfig.defaultFlags as F,
+            data: null,
+            error: "network-error",
+            initialFlagState: { input, outcome: { error: "network-error" } },
+          };
     }
   );
 }

@@ -14,13 +14,15 @@ export function _resetConfig() {
 }
 
 export function configure<F extends Flags = Flags>(
-  options: IncomingConfiguration<F> & Partial<DefaultConfiguration>
+  options: IncomingConfiguration<F>
 ) {
   const defaults: DefaultConfiguration = {
     endpoint: "https://happykit.dev/api/flags",
     defaultFlags: {},
     revalidateOnFocus: true,
-    loadingTimeout: 3000,
+    clientLoadingTimeout: 3000,
+    serverLoadingTimeout: 3000,
+    staticLoadingTimeout: 60000,
   };
 
   if (

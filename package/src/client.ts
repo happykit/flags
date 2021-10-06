@@ -380,7 +380,8 @@ export function useFlags<F extends Flags = Flags>(
 
   const currentLoadingTimeout = has(options, "loadingTimeout")
     ? options.loadingTimeout
-    : config.loadingTimeout || 0;
+    : // also account for deprecated loadingTimeout
+      config.clientLoadingTimeout || config.loadingTimeout || 0;
 
   const [[state, effects], dispatch] = React.useReducer(
     reducer,

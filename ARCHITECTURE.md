@@ -36,7 +36,7 @@ git push
 
 ## Moving the `latest` dist-tag
 
-Run this command to release  a published version under the `latest` dist-tag:
+Run this command to release a published version under the `latest` dist-tag:
 
 ```
 npm dist-tag add @happykit/flags@<version> latest

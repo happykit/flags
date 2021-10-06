@@ -53,7 +53,7 @@ type InvalidResponseBodyError = "invalid-response-body";
  */
 type ResponseNotOkError = "response-not-ok";
 /**
- * The request was aborted because it reached the loadingTimeout.
+ * The request was aborted because it reached any of the loadingTimeouts.
  */
 type RequestTimeoutError = "request-timed-out";
 
@@ -147,14 +147,43 @@ export type IncomingConfiguration<F extends Flags> = {
    * regains focus. You can disable this by passing `revalidateOnFocus: false`.
    */
   revalidateOnFocus?: boolean;
+  /**
+   * @deprecated Use clientLoadingTimeout instead.
+   */
   loadingTimeout?: number;
+  /**
+   * A timeout in milliseconds after which any client-side evaluation requests
+   * from `useFlags` will be aborted.
+   *
+   * Pass `false` to disable this feature.
+   *
+   * This feature is only supported in [browsers which support](https://caniuse.com/abortcontroller) the [`AbortController`](https://developer.mozilla.org/en-US/docs/Web/API/AbortController).
+   */
+  clientLoadingTimeout?: number;
+  /**
+   * A timeout in milliseconds after which any server-side evaluation requests
+   * from `getFlags` inside of `getServerSideProps` will be aborted.
+   *
+   * Pass `false` to disable this feature.
+   */
+  serverLoadingTimeout?: number;
+  /**
+   * A timeout in milliseconds after which any static evaluation requests
+   * from `getFlags` inside of `getStaticProps` or `getStaticPaths` will
+   * be aborted.
+   *
+   * Pass `false` to disable this feature.
+   */
+  staticLoadingTimeout?: number;
 };
 
 export type DefaultConfiguration = {
   endpoint: string;
   defaultFlags: Flags;
   revalidateOnFocus: boolean;
-  loadingTimeout: number;
+  clientLoadingTimeout?: number;
+  serverLoadingTimeout?: number;
+  staticLoadingTimeout?: number;
 };
 
 type Revalidate = () => void;

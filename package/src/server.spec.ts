@@ -233,6 +233,68 @@ describe("server-side rendering (pure + hybrid)", () => {
       );
     });
   });
+
+  describe("when loading times out", () => {
+    it("aborts the request", async () => {
+      configure({ envKey: "flags_pub_000000", serverLoadingTimeout: 50 });
+
+      const routeMock = fetchMock.post(
+        {
+          url: "https://happykit.dev/api/flags/flags_pub_000000",
+          body: {
+            static: false,
+            traits: null,
+            user: null,
+            visitorKey: "V1StGXR8_Z5jdHi6B-myT",
+          },
+        },
+        {
+          // Not used as request times out
+          headers: { "content-type": "application/json" },
+          body: {
+            flags: { meal: "large" },
+            visitor: { key: "V1StGXR8_Z5jdHi6B-myT" },
+          },
+        },
+        // This delay is longer than the serverLoadingTimeout, so the request
+        // times out
+        { delay: 250 }
+      );
+
+      const context = {
+        req: {
+          headers: { cookie: "hkvk=V1StGXR8_Z5jdHi6B-myT" },
+          socket: { remoteAddress: "128.242.245.116" },
+        },
+        res: { setHeader: jest.fn() as any },
+      } as Partial<GetServerSidePropsContext>;
+
+      expect(await getFlags({ context })).toEqual({
+        flags: {},
+        data: null,
+        error: "request-timed-out",
+        initialFlagState: {
+          input: {
+            endpoint: "https://happykit.dev/api/flags",
+            envKey: "flags_pub_000000",
+            requestBody: {
+              visitorKey: "V1StGXR8_Z5jdHi6B-myT",
+              user: null,
+              traits: null,
+              static: false,
+            },
+          },
+          outcome: { error: "request-timed-out" },
+        },
+      });
+
+      // This doesn't seem to work
+      //
+      // The intention is to not leave any open handles as the fetch mock
+      // doesn't seem to support aborting a request and will leave it open.
+      await routeMock.flush(true);
+    });
+  });
 });
 
 describe("static site generation (pure + hybrid)", () => {
@@ -388,6 +450,57 @@ describe("static site generation (pure + hybrid)", () => {
           },
         },
       });
+    });
+  });
+
+  describe("when loading times out", () => {
+    it("aborts the request", async () => {
+      configure({ envKey: "flags_pub_000000", staticLoadingTimeout: 75 });
+
+      const routeMock = fetchMock.post(
+        {
+          url: "https://happykit.dev/api/flags/flags_pub_000000",
+          body: {
+            static: true,
+            traits: null,
+            user: null,
+            visitorKey: null,
+          },
+        },
+        {
+          // Not used as request times out
+          headers: { "content-type": "application/json" },
+          body: { flags: { meal: "large" }, visitor: null },
+        },
+        // This delay is longer than the serverLoadingTimeout, so the request
+        // times out
+        { delay: 250 }
+      );
+
+      expect(await getFlags({ context: {} as GetStaticPropsContext })).toEqual({
+        flags: {},
+        data: null,
+        error: "request-timed-out",
+        initialFlagState: {
+          input: {
+            endpoint: "https://happykit.dev/api/flags",
+            envKey: "flags_pub_000000",
+            requestBody: {
+              static: true,
+              visitorKey: null,
+              user: null,
+              traits: null,
+            },
+          },
+          outcome: { error: "request-timed-out" },
+        },
+      });
+
+      // This doesn't seem to work
+      //
+      // The intention is to not leave any open handles as the fetch mock
+      // doesn't seem to support aborting a request and will leave it open.
+      await routeMock.flush(true);
     });
   });
 });
