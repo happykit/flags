@@ -54,6 +54,9 @@ export function Nav() {
         <NavLink indent href="/demo/static-site-generation-hybrid">
           Static Site Generation (Hybrid)
         </NavLink>
+        <NavLink indent href="/demo/middleware">
+          Middleware
+        </NavLink>
       </div>
       <div className="bg-white text-gray-600 group w-full flex items-center pl-7 pr-2 py-2 text-sm font-medium rounded-md">
         Targeting and Rules
