@@ -5,14 +5,7 @@ import { Result } from "../../../components/Result";
 import { getFlags } from "@happykit/flags/server";
 import { AppFlags } from "../../../types/AppFlags";
 
-type StaticProps = { flags: AppFlags | null };
-
-export const getStaticProps: GetStaticProps<StaticProps> = async (context) => {
-  const { flags } = await getFlags<AppFlags>({ context });
-  return { props: { flags } };
-};
-
-export default function Page(props: StaticProps) {
+export default function Page() {
   return (
     <Layout
       title="Middleware"
@@ -30,7 +23,6 @@ export default function Page(props: StaticProps) {
           percentage-based rollouts targeting a visitor resolve to{" "}
           <code>null</code>.
         </p>
-        <Result key="static-site-generation-pure" value={props.flags} />
       </article>
     </Layout>
   );
