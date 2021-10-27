@@ -1,10 +1,26 @@
 import { NextFetchEvent, NextRequest, NextResponse } from "next/server";
-import { getFlags, EvaluationResponseBody } from "@happykit/flags/server";
+import { getEdgeFlags, hkvkCookieOptions } from "@happykit/flags/edge";
 import { AppFlags } from "../../../types/AppFlags";
-import { NextApiRequest } from "next";
+import "../../../happykit.config";
 
-export async function middleware(req: NextRequest, ev: NextFetchEvent) {
-  // console.log(req.headers);
-  // const { flags, data } = await getFlags<AppFlags>({ context: { req } });
-  return NextResponse.rewrite(`/demo/middleware/variant-b`);
+export async function middleware(request: NextRequest, ev: NextFetchEvent) {
+  // const response = new NextResponse();
+  console.time("edge");
+  const flagBag = await getEdgeFlags<AppFlags>({ request });
+  console.timeEnd("edge");
+
+  // response.headers.set(
+  //   "x-middleware-rewrite",
+  //   `/demo/middleware/variant-${flagBag.flags.checkout}`
+  // );
+
+  const response = NextResponse.rewrite(
+    `/demo/middleware/variant-${flagBag.flags?.checkout || "full"}`
+  );
+
+  if (flagBag.data?.visitor?.key) {
+    response.cookie("hkvk", flagBag.data.visitor.key, hkvkCookieOptions);
+  }
+
+  return response;
 }
