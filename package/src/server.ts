@@ -1,7 +1,7 @@
 /** global: fetch */
 import { IncomingMessage, ServerResponse } from "http";
 import AbortController from "abort-controller";
-import {
+import type {
   GetServerSidePropsContext,
   GetStaticPathsContext,
   GetStaticPropsContext,
@@ -20,7 +20,6 @@ import {
   Input,
 } from "./types";
 import {
-  getCookie,
   has,
   serializeVisitorKeyCookie,
   combineRawFlagsWithDefaultFlags,
@@ -32,7 +31,7 @@ function getRequestingIp(context: {
   req: IncomingMessage;
   res: ServerResponse;
 }): null | string {
-  const key = "x-forwarded-for" as const;
+  const key = "x-forwarded-for" as keyof Headers;
   const xForwardedFor = context.req.headers[key];
   if (typeof xForwardedFor === "string") return xForwardedFor;
   const remoteAddress = context.req.socket.remoteAddress;
@@ -100,7 +99,7 @@ export function getFlags<F extends Flags = Flags>(options: {
 
   // determine visitor key
   const visitorKeyFromCookie = has(options.context, "req")
-    ? getCookie(options.context.req.headers.cookie, "hkvk")
+    ? options.context.req.cookies.hkvk || null
     : null;
 
   // When using server-side rendering and there was no visitor key cookie,
