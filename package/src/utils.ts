@@ -1,4 +1,4 @@
-import { Flags } from "./types";
+import type { Flags } from "./types";
 
 export function has<X extends {}, Y extends PropertyKey>(
   obj: X,

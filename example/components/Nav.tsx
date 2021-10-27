@@ -8,7 +8,10 @@ function NavLink(props: {
   indent?: boolean;
 }) {
   const router = useRouter();
-  const active = router.asPath === props.href;
+  const active =
+    router.asPath === props.href ||
+    // TODO this is a workaround since the _middeware's rewrite messes with asPath
+    (props.href === "/demo/middleware" && router.asPath.startsWith(props.href));
   return (
     <Link href={props.href}>
       <a
