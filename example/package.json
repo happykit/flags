@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "yarn workspace @happykit/flags preconstruct dev",
     "build": "next build",
     "start": "next start"
   },
