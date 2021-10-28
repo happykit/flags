@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Layout } from "../../../components/Layout";
-import { Content } from "../../../components/Content";
+import { EdgeFunctionContent } from "../../../components/EdgeFunctionContent";
 
 export default function Page() {
   return (
@@ -10,7 +10,7 @@ export default function Page() {
       flagBag={null}
     >
       <article className="py-4 prose max-w-prose">
-        <Content checkoutVariant="full" />
+        <EdgeFunctionContent checkoutVariant="full" />
       </article>
     </Layout>
   );

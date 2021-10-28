@@ -1,7 +1,9 @@
 import React from "react";
 import { AppFlags } from "../types/AppFlags";
 
-export function Content(props: { checkoutVariant: AppFlags["checkout"] }) {
+export function EdgeFunctionContent(props: {
+  checkoutVariant: AppFlags["checkout"];
+}) {
   return (
     <React.Fragment>
       <p>
