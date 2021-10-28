@@ -1,5 +1,5 @@
 import React from "react";
-import { AppFlags } from "../../../types/AppFlags";
+import { AppFlags } from "../types/AppFlags";
 
 export function Content(props: { checkoutVariant: AppFlags["checkout"] }) {
   return (
