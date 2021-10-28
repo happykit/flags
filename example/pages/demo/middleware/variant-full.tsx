@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Layout } from "../../../components/Layout";
-import { Content } from "./content";
+import { Content } from "../../../components/Content";
 
 export default function Page() {
   return (
