@@ -2,8 +2,9 @@ import * as React from "react";
 import Head from "next/head";
 import type { AppProps } from "next/app";
 import "tailwindcss/tailwind.css";
-import "../happykit.config";
 import Script from "next/script";
+// Import HappyKit configuration
+import "../happykit.config";
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
