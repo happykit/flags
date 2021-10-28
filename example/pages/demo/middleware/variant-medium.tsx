@@ -10,7 +10,7 @@ export default function Page() {
       flagBag={null}
     >
       <article className="py-4 prose max-w-prose">
-        <Content checkoutVariant="full" />
+        <Content checkoutVariant="medium" />
       </article>
     </Layout>
   );

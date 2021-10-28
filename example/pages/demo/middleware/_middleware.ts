@@ -3,23 +3,30 @@ import { getEdgeFlags, hkvkCookieOptions } from "@happykit/flags/edge";
 import { AppFlags } from "../../../types/AppFlags";
 import "../../../happykit.config";
 
-export async function middleware(request: NextRequest, ev: NextFetchEvent) {
-  // const response = new NextResponse();
-  console.time("edge");
-  const flagBag = await getEdgeFlags<AppFlags>({ request });
-  console.timeEnd("edge");
+function serializeVisitorKeyCookie(visitorKey: string) {
+  // Max-Age 15552000 seconds equals 180 days
+  return `hkvk=${encodeURIComponent(
+    visitorKey
+  )}; Path=/; Max-Age=15552000; SameSite=Lax`;
+}
 
-  // response.headers.set(
-  //   "x-middleware-rewrite",
-  //   `/demo/middleware/variant-${flagBag.flags.checkout}`
-  // );
+export async function middleware(request: NextRequest, ev: NextFetchEvent) {
+  const flagBag = await getEdgeFlags<AppFlags>({ request });
 
   const response = NextResponse.rewrite(
     `/demo/middleware/variant-${flagBag.flags?.checkout || "full"}`
   );
 
   if (flagBag.data?.visitor?.key) {
-    response.cookie("hkvk", flagBag.data.visitor.key, hkvkCookieOptions);
+    // response.cookie has a bug when used with an expiration date,
+    // so we append Set-Cookie manually
+    // https://github.com/vercel/next.js/issues/30430
+    //
+    // response.cookie("hkvk", flagBag.data.visitor.key, hkvkCookieOptions);
+    response.headers.append(
+      "Set-Cookie",
+      serializeVisitorKeyCookie(flagBag.data.visitor.key)
+    );
   }
 
   return response;
