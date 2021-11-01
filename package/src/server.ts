@@ -23,6 +23,7 @@ import {
   has,
   serializeVisitorKeyCookie,
   combineRawFlagsWithDefaultFlags,
+  getCookie,
 } from "./utils";
 
 export type { EvaluationResponseBody } from "./types";
@@ -99,7 +100,7 @@ export function getFlags<F extends Flags = Flags>(options: {
 
   // determine visitor key
   const visitorKeyFromCookie = has(options.context, "req")
-    ? options.context.req.cookies.hkvk || null
+    ? getCookie(options.context.req.headers.cookie, "hkvk")
     : null;
 
   // When using server-side rendering and there was no visitor key cookie,
