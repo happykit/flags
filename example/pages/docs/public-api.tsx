@@ -76,7 +76,7 @@ export default function Page() {
         <h2>Endpoint</h2>
         <p>
           Requests need to be sent as a <code>POST</code> request to:
-          <pre>https://happykit.dev/api/flags/&lt;flags key&gt;</pre> You can
+          <code>https://happykit.dev/api/flags/&lt;flags key&gt;</code> You can
           find the <i>flag key</i> for each stage in your project's settings on{" "}
           <a href="https://happykit.dev/">happykit.dev</a>.
         </p>
