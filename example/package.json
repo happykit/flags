@@ -4,13 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "yarn workspace @happykit/flags preconstruct build",
+    "prebuild": "yarn workspace @happykit/flags preconstruct dev",
     "build": "next build",
     "start": "next start"
   },
   "dependencies": {
     "@headlessui/react": "1.1.1",
-    "@preconstruct/next": "3.0.0",
+    "@preconstruct/next": "3.0.1",
     "@tailwindcss/typography": "0.4.0",
     "@types/dedent": "0.7.0",
     "@types/node": "16.7.10",
