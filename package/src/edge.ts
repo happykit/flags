@@ -19,8 +19,8 @@ import { combineRawFlagsWithDefaultFlags } from "./utils";
 export type { EvaluationResponseBody } from "./types";
 
 function getRequestingIp(req: NextRequest): null | string {
-  const key = "x-forwarded-for" as keyof Headers;
-  const xForwardedFor = req.headers[key];
+  const key = "x-forwarded-for";
+  const xForwardedFor = req.headers.get(key);
   if (typeof xForwardedFor === "string") return xForwardedFor;
   return null;
 }
