@@ -32,7 +32,7 @@ function getRequestingIp(context: {
   req: IncomingMessage;
   res: ServerResponse;
 }): null | string {
-  const key = "x-forwarded-for" as keyof Headers;
+  const key = "x-forwarded-for";
   const xForwardedFor = context.req.headers[key];
   if (typeof xForwardedFor === "string") return xForwardedFor;
   const remoteAddress = context.req.socket.remoteAddress;
