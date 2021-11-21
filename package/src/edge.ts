@@ -64,7 +64,7 @@ type GetFlagsErrorBag<F extends Flags> = {
 
 export const hkvkCookieOptions: CookieSerializeOptions = {
   path: "/",
-  maxAge: 15552000,
+  maxAge: 15552000 * 1000,
   sameSite: "lax",
 };
 
