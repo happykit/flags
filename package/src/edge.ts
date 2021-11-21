@@ -88,12 +88,6 @@ type GetFlagsErrorBag<F extends Flags> = {
   cookie: null;
 };
 
-export const hkvkCookieOptions: CookieSerializeOptions = {
-  path: "/",
-  maxAge: 15552000 * 1000,
-  sameSite: "lax",
-};
-
 export function getEdgeFlags<F extends Flags = Flags>(options: {
   request: NextRequest;
   user?: FlagUser;
@@ -166,6 +160,12 @@ export function getEdgeFlags<F extends Flags = Flags>(options: {
             staticConfig.defaultFlags
           );
 
+          const cookieOptions: CookieSerializeOptions = {
+            path: "/",
+            maxAge: 60 * 60 * 24 * 180,
+            sameSite: "lax",
+          };
+
           return {
             flags: flagsWithDefaults,
             data: workerResponseBody,
@@ -175,12 +175,8 @@ export function getEdgeFlags<F extends Flags = Flags>(options: {
               ? {
                   name: "hkvk",
                   value: workerResponseBody.visitor.key,
-                  options: hkvkCookieOptions,
-                  args: [
-                    "hkvk",
-                    workerResponseBody.visitor.key,
-                    hkvkCookieOptions,
-                  ],
+                  options: cookieOptions,
+                  args: ["hkvk", workerResponseBody.visitor.key, cookieOptions],
                 }
               : null,
           };
