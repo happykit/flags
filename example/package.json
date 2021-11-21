@@ -12,6 +12,7 @@
     "@headlessui/react": "1.4.1",
     "@preconstruct/next": "3.0.1",
     "@tailwindcss/typography": "0.4.1",
+    "@tailwindui/react": "0.1.1",
     "@types/dedent": "0.7.0",
     "@types/node": "16.11.9",
     "@types/react": "17.0.35",
