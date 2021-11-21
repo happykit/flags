@@ -11,13 +11,7 @@ export async function middleware(request: NextRequest, ev: NextFetchEvent) {
   );
 
   if (flagBag.data?.visitor?.key) {
-    const options = {
-      path: "/",
-      maxAge: 15552000 * 1000,
-      sameSite: "lax",
-    };
-    response.cookie("hkvk", flagBag.data.visitor.key, options);
-    console.log("hkvk", flagBag.data.visitor.key, options);
+    response.cookie("hkvk", flagBag.data.visitor.key, hkvkCookieOptions);
   }
 
   return response;
