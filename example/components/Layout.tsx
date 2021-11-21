@@ -241,10 +241,10 @@ export function Layout(props: {
             </button>
           </div>
           <main
-            className="flex-1 relative z-0 overflow-y-auto focus:outline-none"
+            className="flex-1 relative z-0 overflow-y-auto focus:outline-none flex flex-col min-h-screen"
             tabIndex={0}
           >
-            <div className="py-6 max-w-prose">
+            <div className="py-6 max-w-prose flex-auto">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
                 <h1 className="text-2xl font-semibold text-gray-900">
                   {props.title}
