@@ -1,8 +1,7 @@
-import {
+import type {
   DefaultConfiguration,
   IncomingConfiguration,
   Flags,
-  InvalidConfigurationError,
 } from "./types";
 
 export type Configuration<F extends Flags> = DefaultConfiguration &
@@ -29,8 +28,11 @@ export function configure<F extends Flags = Flags>(
     !options ||
     typeof options.envKey !== "string" ||
     options.envKey.length === 0
-  )
-    throw new InvalidConfigurationError();
+  ) {
+    // We can't create a custom InvalidConfigurationError as that
+    // would lead to the middleware "eval" warning:
+    throw new Error("@happykit/flags: Invalid configuration");
+  }
 
   config = Object.assign({}, defaults, options);
 }
