@@ -51,13 +51,13 @@
     "@testing-library/react": "11.2.6",
     "@testing-library/react-hooks": "5.1.2",
     "@types/cookie": "0.4.1",
-    "@types/jest": "27.0.2",
+    "@types/jest": "27.0.3",
     "@types/jest-expect-message": "1.0.3",
     "fetch-mock-jest": "1.5.1",
     "jest": "27.3.1",
     "jest-expect-message": "1.0.2",
     "ts-jest": "27.0.7",
-    "typescript": "4.4.4"
+    "typescript": "4.5.2"
   },
   "files": [
     "dist",

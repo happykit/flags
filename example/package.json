@@ -13,16 +13,16 @@
     "@preconstruct/next": "3.0.1",
     "@tailwindcss/typography": "0.4.1",
     "@types/dedent": "0.7.0",
-    "@types/node": "16.11.6",
-    "@types/react": "17.0.33",
+    "@types/node": "16.11.9",
+    "@types/react": "17.0.35",
     "autoprefixer": "10.4.0",
     "clsx": "1.1.1",
     "dedent": "0.7.0",
-    "next": "12.0.2",
+    "next": "12.0.4",
     "postcss": "8.3.11",
     "react": "17.0.2",
     "react-dom": "17.0.2",
     "tailwindcss": "2.2.19",
-    "typescript": "4.4.4"
+    "typescript": "4.5.2"
   }
 }
