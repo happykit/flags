@@ -90,12 +90,6 @@ export type InitialFlagState<F extends Flags> =
   | SuccessInitialFlagState<F>
   | ErrorInitialFlagState;
 
-// export class InvalidConfigurationError extends Error {
-//   constructor() {
-//     super("@happykit/flags: Invalid configuration");
-//   }
-// }
-
 export type IncomingConfiguration<F extends Flags> = {
   /**
    * Find this key in your happykit.dev project settings.
