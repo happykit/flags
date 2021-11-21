@@ -1,5 +1,5 @@
 /** global: fetch */
-import type { NextRequest } from "next/server";
+import type { NextRequest, NextResponse } from "next/server";
 import { config, isConfigured } from "./config";
 import type { CookieSerializeOptions } from "cookie";
 import { nanoid } from "nanoid";
@@ -40,6 +40,32 @@ type GetFlagsSuccessBag<F extends Flags> = {
   data: EvaluationResponseBody<F> | null;
   error: null;
   initialFlagState: SuccessInitialFlagState<F>;
+  /**
+   * The cookie options you should forward using
+   *
+   * ```
+   * response.cookie(
+   *   flagBag.cookie.name,
+   *   flagBag.cookie.value,
+   *   flagBag.cookie.options
+   * );
+   * ```
+   *
+   * or using
+   *
+   * ```
+   * response.cookie(...flagBag.cookie.args)
+   * ```
+   */
+  cookie: {
+    name: string;
+    value: string;
+    options: CookieSerializeOptions;
+    /**
+     * Arguments for response.cookie()
+     */
+    args: [string, string, CookieSerializeOptions];
+  } | null;
 };
 
 type GetFlagsErrorBag<F extends Flags> = {
@@ -60,6 +86,7 @@ type GetFlagsErrorBag<F extends Flags> = {
    * The initial flag state that you can use to initialize useFlags()
    */
   initialFlagState: ErrorInitialFlagState;
+  cookie: null;
 };
 
 export const hkvkCookieOptions: CookieSerializeOptions = {
@@ -124,6 +151,7 @@ export function getEdgeFlags<F extends Flags = Flags>(options: {
           data: null,
           error: "response-not-ok",
           initialFlagState: { input, outcome: { error: "response-not-ok" } },
+          cookie: null,
         };
       }
 
@@ -143,6 +171,18 @@ export function getEdgeFlags<F extends Flags = Flags>(options: {
             data: workerResponseBody,
             error: null,
             initialFlagState: { input, outcome: { data: workerResponseBody } },
+            cookie: workerResponseBody.visitor?.key
+              ? {
+                  name: "hkvk",
+                  value: workerResponseBody.visitor.key,
+                  options: hkvkCookieOptions,
+                  args: [
+                    "hkvk",
+                    workerResponseBody.visitor.key,
+                    hkvkCookieOptions,
+                  ],
+                }
+              : null,
           };
         },
         () => {
@@ -154,6 +194,7 @@ export function getEdgeFlags<F extends Flags = Flags>(options: {
               input,
               outcome: { error: "invalid-response-body" },
             },
+            cookie: null,
           };
         }
       );
@@ -164,6 +205,7 @@ export function getEdgeFlags<F extends Flags = Flags>(options: {
         data: null,
         error: "network-error",
         initialFlagState: { input, outcome: { error: "network-error" } },
+        cookie: null,
       };
     }
   );
