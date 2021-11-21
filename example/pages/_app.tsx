@@ -4,7 +4,7 @@ import type { AppProps } from "next/app";
 import "tailwindcss/tailwind.css";
 import Script from "next/script";
 // Import HappyKit configuration
-import "../happykit.config";
+import "../flags.config";
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
