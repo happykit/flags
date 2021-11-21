@@ -1,12 +1,11 @@
 /** global: fetch */
-import type { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { config, isConfigured } from "./config";
 import type { CookieSerializeOptions } from "cookie";
 import { nanoid } from "nanoid";
-import {
+import type {
   FlagUser,
   Traits,
-  MissingConfigurationError,
   Flags,
   SuccessInitialFlagState,
   ErrorInitialFlagState,
@@ -102,7 +101,10 @@ export function getEdgeFlags<F extends Flags = Flags>(options: {
   serverLoadingTimeout?: number | false;
   staticLoadingTimeout?: number | false;
 }): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
-  if (!isConfigured(config)) throw new MissingConfigurationError();
+  if (!isConfigured(config))
+    throw new Error(
+      "@happykit/flags: Missing configuration. Call configure() first."
+    );
   const staticConfig = config;
 
   // determine visitor key
