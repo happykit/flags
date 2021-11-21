@@ -43,7 +43,7 @@
   },
   "devDependencies": {
     "@babel/core": "7.16.0",
-    "@babel/preset-env": "7.16.0",
+    "@babel/preset-env": "7.16.4",
     "@babel/preset-typescript": "7.16.0",
     "@sheerun/mutationobserver-shim": "0.3.3",
     "@tailwindui/react": "0.1.1",
