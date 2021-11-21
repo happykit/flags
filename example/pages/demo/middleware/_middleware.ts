@@ -1,7 +1,7 @@
 import { NextFetchEvent, NextRequest, NextResponse } from "next/server";
 import { getEdgeFlags, hkvkCookieOptions } from "@happykit/flags/edge";
 import type { AppFlags } from "../../../types/AppFlags";
-import "../../../happykit.config";
+import "../../../flags.config";
 
 export async function middleware(request: NextRequest, ev: NextFetchEvent) {
   const flagBag = await getEdgeFlags<AppFlags>({ request });
