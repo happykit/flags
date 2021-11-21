@@ -98,8 +98,6 @@ export function getEdgeFlags<F extends Flags = Flags>(options: {
   request: NextRequest;
   user?: FlagUser;
   traits?: Traits;
-  serverLoadingTimeout?: number | false;
-  staticLoadingTimeout?: number | false;
 }): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
   if (!isConfigured(config))
     throw new Error(
