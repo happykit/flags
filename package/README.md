@@ -262,12 +262,11 @@ This function returns a promise resolving to an object that looks like this:
   // The preloaded state, which can be provided to useFlags({ initialState })
   initialFlagState: object,
   // Use this to set the response cookie from the middleware 
-  // with `response.cookie(...cookie.args)`
+  // with `response.cookie(...cookie)`
   cookie: null | {
     name: string;
     value: string;
     options: object;
-    args: [string, string, object];
   }
 }
 ```
@@ -735,7 +734,7 @@ export async function middleware(request: NextRequest) {
     `/demo/middleware/variant-${flagBag.flags?.checkout || "full"}`
   );
 
-  if (flagBag.cookie) response.cookie(...flagBag.cookie.args);
+  if (flagBag.cookie) response.cookie(...flagBag.cookie);
 
   return response;
 }
@@ -757,15 +756,15 @@ if (flagBag.cookie) {
 }
 ```
 
-There is a shortcut tho make this more concise:
+> There is a shortcut tho make this more concise:
+>
+> ```ts
+> if (flagBag.cookie) response.cookie(...flagBag.cookie)
+> ```
+>
+> This is possible since `flagBag.cookie` is iterable. It contains `[cookie.name, cookie.value, cookie.options]`, so `flagBag.cookie` can simply be applied onto `response.cookie` as `response.cookie(...flagBag.cookie)`.
 
-```ts
-if (flagBag.cookie) response.cookie(...flagBag.cookie.args)
-```
-
-`flagBag.cookie.args` is an array that contains `[cookie.name, cookie.value, cookie.options]`, so `cookie.args` can simply be applied onto `response.cookie`.
-
-Both of these methods of using `flagBag.cookie` set a cookie called `hkvk` on the client which contians the automatically generated visitor key.
+Calling `response.cookie` with `flagBag.cookie` sets a cookie called `hkvk` on the client which contians the automatically generated visitor key. This is necessary so the visitor can be reidentified on their next page view.
 
 You can see this example in action at [flags.happykit.dev/demo/middleware](https://flags.happykit.dev/demo/middleware).
 
