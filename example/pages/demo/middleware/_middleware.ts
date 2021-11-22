@@ -11,7 +11,7 @@ export async function middleware(request: NextRequest) {
     `/demo/middleware/variant-${flagBag.flags?.checkout || "full"}`
   );
 
-  if (flagBag.cookie) response.cookie(...flagBag.cookie.args);
+  if (flagBag.cookie) response.cookie(...flagBag.cookie);
 
   return response;
 }
