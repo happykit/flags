@@ -50,16 +50,20 @@ type GetFlagsSuccessBag<F extends Flags> = {
    * );
    * ```
    *
-   * or since flagBag.cookie is iterable, using
+   * or using
    *
    * ```
-   * response.cookie(...flagBag.cookie)
+   * response.cookie(...flagBag.cookie.args)
    * ```
    */
   cookie: {
     name: string;
     value: string;
     options: CookieSerializeOptions;
+    /**
+     * Arguments for response.cookie()
+     */
+    args: [string, string, CookieSerializeOptions];
   } | null;
 };
 
@@ -172,27 +176,7 @@ export function getEdgeFlags<F extends Flags = Flags>(options: {
                   name: "hkvk",
                   value: workerResponseBody.visitor.key,
                   options: cookieOptions,
-
-                  // Make flagBag.cookie iterable as [name, value, options],
-                  // so it can be used with response.cookie(...flagBag.cookie)
-                  [Symbol.iterator]() {
-                    let i = 0;
-                    const cookie = this;
-                    return {
-                      next() {
-                        switch (i++) {
-                          case 0:
-                            return { value: cookie.name, done: false };
-                          case 1:
-                            return { value: cookie.value, done: false };
-                          case 2:
-                            return { value: cookie.options, done: false };
-                          default:
-                            return { value: undefined, done: true };
-                        }
-                      },
-                    };
-                  },
+                  args: ["hkvk", workerResponseBody.visitor.key, cookieOptions],
                 }
               : null,
           };
