@@ -90,7 +90,7 @@ configure({
 Import your configuration in `_app.js`.
 
 ```js
-// _app.js
+// pages/_app.js
 import '../flags.config'
 ```
 
@@ -326,7 +326,7 @@ export default function FooPage(props) {
 You can configure application-wide default values for flags. These defaults will be used while your flags are being loaded (unless you're using server-side rendering). They'll also be used as fallback values in case the flags couldn't be loaded from HappyKit.
 
 ```js
-// _app.js
+// flags.config.js
 import { configure } from "@happykit/flags/config";
 
 configure({
@@ -478,11 +478,16 @@ You can use a property called `settled` which turns `true` once the flags are fr
 
 
 ```js
-// _app.js
-import App from 'next/app';
+// flags.config.js
 import { configure } from "@happykit/flags/config";
 
 configure({ envKey: process.env.NEXT_PUBLIC_FLAGS_ENVIRONMENT_KEY });
+```
+
+```js
+// pages/_app.js
+import App from 'next/app';
+import '../flags.config'
 
 export default function MyApp({ Component, pageProps }) {
   return <Component {...pageProps} />;
@@ -564,7 +569,8 @@ export type AppFlags = {
 ```
 
 ```ts
-// _app.tsx
+// flags.config.ts
+
 import { configure } from "@happykit/flags/config";
 // import your custom AppFlags type
 import { AppFlags } from "../types/AppFlags";
@@ -579,6 +585,11 @@ configure<AppFlags>({
     textualFlag: 'profileA',
   },
 });
+```
+
+```ts
+// pages/_app.tsx
+import '../flags.config';
 ```
 
 ```ts
