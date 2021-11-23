@@ -17,7 +17,7 @@ import { combineRawFlagsWithDefaultFlags } from "./utils";
 
 export type { EvaluationResponseBody } from "./types";
 
-function getRequestingIp(req: NextRequest): null | string {
+function getRequestingIp(req: Pick<NextRequest, "headers">): null | string {
   const key = "x-forwarded-for";
   const xForwardedFor = req.headers.get(key);
   if (typeof xForwardedFor === "string") return xForwardedFor;
@@ -89,7 +89,7 @@ type GetFlagsErrorBag<F extends Flags> = {
 };
 
 export function getEdgeFlags<F extends Flags = Flags>(options: {
-  request: NextRequest;
+  request: Pick<NextRequest, "cookies" | "headers">;
   user?: FlagUser;
   traits?: Traits;
 }): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
