@@ -3,7 +3,6 @@
  */
 import "@testing-library/jest-dom/extend-expect";
 import "@testing-library/jest-dom";
-import "jest-expect-message";
 import { renderHook } from "@testing-library/react-hooks";
 import { useFlags, cache, UseFlagsOptions } from "./client";
 import { configure, _resetConfig } from "./config";

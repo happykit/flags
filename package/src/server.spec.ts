@@ -3,7 +3,6 @@
  */
 import { getFlags } from "./server";
 import "@testing-library/jest-dom/extend-expect";
-import "jest-expect-message";
 import * as fetchMock from "fetch-mock-jest";
 import { configure, _resetConfig } from "./config";
 import { GetServerSidePropsContext, GetStaticPropsContext } from "next";
@@ -87,7 +86,8 @@ describe("server-side rendering (pure + hybrid)", () => {
         }
       );
 
-      expect(context.res!.setHeader, "refresh of cookie").toHaveBeenCalledWith(
+      // refresh of cookie
+      expect(context.res!.setHeader).toHaveBeenCalledWith(
         "Set-Cookie",
         "hkvk=V1StGXR8_Z5jdHi6B-myT; Path=/; Max-Age=15552000; SameSite=Lax"
       );

@@ -3,7 +3,6 @@
  */
 import "@testing-library/jest-dom/extend-expect";
 import "@testing-library/jest-dom";
-import "jest-expect-message";
 import { renderHook } from "@testing-library/react-hooks";
 import { useFlags, cache } from "./client";
 import { configure, _resetConfig } from "./config";
@@ -80,7 +79,8 @@ describe("when visitorKey is not set in cookie", () => {
       },
     ]);
 
-    expect(fetchMock.calls(), "should not fetch at all").toHaveLength(0);
+    // should not fetch at all
+    expect(fetchMock.calls()).toHaveLength(0);
 
     // getFlags() would set the cookies in the response to the page itself,
     // but that server function is mocked in this example.
@@ -133,7 +133,8 @@ describe("when visitorKey is set in cookie", () => {
       useFlags({ initialState: initialStateFromProps })
     );
 
-    expect(fetchMock.calls(), "should not fetch at all").toHaveLength(0);
+    // should not fetch at all
+    expect(fetchMock.calls()).toHaveLength(0);
 
     expect(result.all).toEqual([
       {

@@ -3,7 +3,6 @@
  */
 import "@testing-library/jest-dom/extend-expect";
 import "@testing-library/jest-dom";
-import "jest-expect-message";
 import { renderHook } from "@testing-library/react-hooks";
 import { useFlags, cache, UseFlagsOptions } from "./client";
 import { configure, _resetConfig } from "./config";
@@ -109,10 +108,10 @@ describe("when cookie is not set", () => {
       },
     ]);
 
-    expect(
-      (result.all[1] as FlagBag<any>).visitorKey,
-      "visitor key may not change"
-    ).toEqual((result.all[2] as FlagBag<any>).visitorKey);
+    // visitor key may not change
+    expect((result.all[1] as FlagBag<any>).visitorKey).toEqual(
+      (result.all[2] as FlagBag<any>).visitorKey
+    );
   });
 });
 
