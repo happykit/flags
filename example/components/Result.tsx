@@ -67,9 +67,7 @@ export function Result(props: { value: any; label?: string }) {
           <summary className="p-1">History ({previousResults.length})</summary>
 
           <div className="p-2 text-md">
-            This section the previous return values of the{" "}
-            <code>useFlags()</code> hook. You can use it to see how
-            <code>@happykit/flags</code> behaves.
+            Previous return values of the <code>useFlags()</code> hook.
           </div>
 
           {previousResults.map((result, index) => (
