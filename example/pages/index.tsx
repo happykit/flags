@@ -4,12 +4,27 @@ import { Result } from "../components/Result";
 
 // defined outside to guarantee a consistent ref
 const exampleFlagBag = {
-  flags: null,
-  data: null,
+  flags: {
+    ads: true,
+    checkout: "medium",
+    discount: 5,
+    purchaseButtonLabel: "Get it",
+  },
+  data: {
+    flags: {
+      ads: true,
+      checkout: "medium",
+      discount: 5,
+      purchaseButtonLabel: "Get it",
+    },
+    visitor: {
+      key: "jy9jlWoINT6RF80ckkVVA",
+    },
+  },
   error: null,
-  fetching: true,
-  visitorKey: "example-visitor-key",
-  settled: false,
+  fetching: false,
+  settled: true,
+  visitorKey: "jy9jlWoINT6RF80ckkVVA",
 };
 
 export default function Index() {
