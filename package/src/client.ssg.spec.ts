@@ -36,7 +36,6 @@ describe("when cookie is not set", () => {
         generatedVisitorKey = body.visitorKey;
 
         expect(body).toEqual({
-          static: false,
           traits: null,
           user: null,
           visitorKey: expect.any(String),
@@ -67,7 +66,6 @@ describe("when cookie is not set", () => {
           visitorKey: null,
           user: null,
           traits: null,
-          static: true,
         },
       },
       outcome: {
@@ -187,11 +185,10 @@ describe("when cookie is set", () => {
       {
         url: "https://happykit.dev/api/flags/flags_pub_000000",
         body: {
-          // false because this is the request of the client afer hydration,
-          // not the one during static site generation
-          static: false,
           traits: null,
           user: null,
+          // not static because this is the request of the client afer hydration,
+          // not the one during static site generation
           visitorKey: visitorKeyInCookie,
         },
       },
@@ -216,7 +213,6 @@ describe("when cookie is set", () => {
           visitorKey: null,
           user: null,
           traits: null,
-          static: true,
         },
       },
       outcome: {

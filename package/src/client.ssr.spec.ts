@@ -34,7 +34,6 @@ describe("when visitorKey is not set in cookie", () => {
           visitorKey: generatedVisitorKey,
           user: null,
           traits: null,
-          static: false,
         },
       },
       outcome: {
@@ -112,7 +111,6 @@ describe("when visitorKey is set in cookie", () => {
           visitorKey: visitorKeyInCookie,
           user: null,
           traits: null,
-          static: false,
         },
       },
       outcome: {

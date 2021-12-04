@@ -40,7 +40,6 @@ describe("when cookie is not set", () => {
         expect(body).toEqual({
           user: null,
           traits: null,
-          static: false,
           visitorKey: expect.any(String),
         });
 
@@ -129,7 +128,6 @@ describe("when cookie is set", () => {
           visitorKey: visitorKeyInCookie,
           user: null,
           traits: null,
-          static: false,
         },
       },
       {
@@ -221,7 +219,6 @@ describe("stories", () => {
           expect(body).toEqual({
             user: null,
             traits: null,
-            static: false,
             visitorKey: expect.any(String),
           });
 
@@ -258,7 +255,6 @@ describe("stories", () => {
             visitorKey: generatedVisitorKey,
             user: { key: "george" },
             traits: null,
-            static: false,
           },
         },
         {

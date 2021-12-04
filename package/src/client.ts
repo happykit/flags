@@ -318,7 +318,6 @@ function getInput<F extends Flags>({
       visitorKey: cookie || visitorKeyInState || generatedVisitorKey,
       user,
       traits,
-      static: false,
     },
   };
 }
@@ -326,7 +325,7 @@ function getInput<F extends Flags>({
 function omitStaticDifferences(input: Input) {
   return {
     ...input,
-    requestBody: { ...input.requestBody, static: null, visitorKey: null },
+    requestBody: { ...input.requestBody, visitorKey: null },
   };
 }
 
@@ -342,7 +341,7 @@ function isAlmostEqual(
 ): boolean {
   // special treatment when the current input is static
   // in this case, we ignore the static and visitorKey properties
-  return currentInput?.requestBody.static
+  return currentInput && !currentInput.requestBody.visitorKey
     ? deepEqual(
         omitStaticDifferences(currentInput),
         omitStaticDifferences(nextInput)
@@ -418,9 +417,9 @@ export function useFlags<F extends Flags = Flags>(
           outcome: initialFlagState.outcome,
         },
         // revalidate only if the initial state was for a static render
-        initialFlagState.input.requestBody.static
-          ? [{ effect: "revalidate-input", input }]
-          : [],
+        initialFlagState.input.requestBody.visitorKey
+          ? []
+          : [{ effect: "revalidate-input", input }],
       ];
     }
   );
@@ -592,7 +591,7 @@ export function useFlags<F extends Flags = Flags>(
           data: state.outcome.data,
           error: null,
           fetching: false,
-          settled: !state.input.requestBody.static,
+          settled: Boolean(state.input.requestBody.visitorKey),
           revalidate,
           visitorKey: state.input.requestBody.visitorKey,
         } as SucceededFlagBag<F>;
@@ -605,7 +604,7 @@ export function useFlags<F extends Flags = Flags>(
           data: state.outcome.data,
           error: null,
           fetching: true,
-          settled: !state.input.requestBody.static,
+          settled: Boolean(state.input.requestBody.visitorKey),
           revalidate,
           visitorKey: state.input.requestBody.visitorKey,
         } as RevalidatingAfterSuccessFlagBag<F>;
@@ -620,7 +619,7 @@ export function useFlags<F extends Flags = Flags>(
           data: null,
           error: state.outcome.error,
           fetching: false,
-          settled: !state.input.requestBody.static,
+          settled: Boolean(state.input.requestBody.visitorKey),
           revalidate,
           visitorKey: state.input.requestBody.visitorKey,
         } as FailedFlagBag<F>;
@@ -635,7 +634,7 @@ export function useFlags<F extends Flags = Flags>(
           data: null,
           error: state.outcome.error,
           fetching: true,
-          settled: !state.input.requestBody.static,
+          settled: Boolean(state.input.requestBody.visitorKey),
           revalidate,
           visitorKey: state.input.requestBody.visitorKey,
         } as RevalidatingAfterErrorFlagBag<F>;

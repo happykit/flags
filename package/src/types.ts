@@ -67,7 +67,6 @@ export type EvaluationRequestBody = {
   visitorKey: string | null;
   user: FlagUser | null;
   traits: Traits | null;
-  static?: boolean;
 };
 
 export type EvaluationResponseBody<F extends Flags> = {
@@ -207,7 +206,7 @@ export type SucceededFlagBag<F extends Flags> = {
   data: EvaluationResponseBody<F>;
   error: null;
   fetching: false;
-  // true, unless input is for a static page
+  // true, unless input is for a static page (has no visitorKey)
   settled: boolean;
   revalidate: Revalidate;
   visitorKey: string;
@@ -228,7 +227,7 @@ export type FailedFlagBag<F extends Flags> = {
   data: null;
   error: ResolvingError;
   fetching: false;
-  // true, unless input is for a static page
+  // true, unless input is for a static page (has no visitorKey)
   settled: boolean;
   revalidate: Revalidate;
   visitorKey: string;

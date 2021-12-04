@@ -34,7 +34,6 @@ describe("server-side rendering (pure + hybrid)", () => {
         {
           url: "https://happykit.dev/api/flags/flags_pub_000000",
           body: {
-            static: false,
             traits: { teamMember: true },
             user: null,
             visitorKey: "V1StGXR8_Z5jdHi6B-myT",
@@ -70,7 +69,6 @@ describe("server-side rendering (pure + hybrid)", () => {
               endpoint: "https://happykit.dev/api/flags",
               envKey: "flags_pub_000000",
               requestBody: {
-                static: false,
                 traits: { teamMember: true },
                 user: null,
                 visitorKey: "V1StGXR8_Z5jdHi6B-myT",
@@ -102,7 +100,6 @@ describe("server-side rendering (pure + hybrid)", () => {
         {
           url: "https://happykit.dev/api/flags/flags_pub_000000",
           body: {
-            static: false,
             traits: null,
             user: { key: "random-user-key", name: "joe" },
             visitorKey: "V1StGXR8_Z5jdHi6B-myT",
@@ -142,7 +139,6 @@ describe("server-side rendering (pure + hybrid)", () => {
             endpoint: "https://happykit.dev/api/flags",
             envKey: "flags_pub_000000",
             requestBody: {
-              static: false,
               traits: null,
               user: { key: "random-user-key", name: "joe" },
               visitorKey: "V1StGXR8_Z5jdHi6B-myT",
@@ -175,7 +171,6 @@ describe("server-side rendering (pure + hybrid)", () => {
         {
           url: "https://happykit.dev/api/flags/flags_pub_000000",
           body: {
-            static: false,
             traits: null,
             user: null,
             // nanoid is mocked to return "V1StGXR8_Z5jdHi6B-myT",
@@ -212,7 +207,6 @@ describe("server-side rendering (pure + hybrid)", () => {
             endpoint: "https://happykit.dev/api/flags",
             envKey: "flags_pub_000000",
             requestBody: {
-              static: false,
               traits: null,
               user: null,
               visitorKey: "V1StGXR8_Z5jdHi6B-myT",
@@ -242,7 +236,6 @@ describe("server-side rendering (pure + hybrid)", () => {
         {
           url: "https://happykit.dev/api/flags/flags_pub_000000",
           body: {
-            static: false,
             traits: null,
             user: null,
             visitorKey: "V1StGXR8_Z5jdHi6B-myT",
@@ -281,7 +274,6 @@ describe("server-side rendering (pure + hybrid)", () => {
               visitorKey: "V1StGXR8_Z5jdHi6B-myT",
               user: null,
               traits: null,
-              static: false,
             },
           },
           outcome: { error: "request-timed-out" },
@@ -305,7 +297,6 @@ describe("static site generation (pure + hybrid)", () => {
       {
         url: "https://happykit.dev/api/flags/flags_pub_000000",
         body: {
-          static: true,
           traits: null,
           user: null,
           visitorKey: null,
@@ -329,7 +320,6 @@ describe("static site generation (pure + hybrid)", () => {
           endpoint: "https://happykit.dev/api/flags",
           envKey: "flags_pub_000000",
           requestBody: {
-            static: true,
             traits: null,
             user: null,
             visitorKey: null,
@@ -353,7 +343,6 @@ describe("static site generation (pure + hybrid)", () => {
         {
           url: "https://happykit.dev/api/flags/flags_pub_000000",
           body: {
-            static: true,
             traits: { friendly: true },
             user: null,
             visitorKey: null,
@@ -382,7 +371,6 @@ describe("static site generation (pure + hybrid)", () => {
             endpoint: "https://happykit.dev/api/flags",
             envKey: "flags_pub_000000",
             requestBody: {
-              static: true,
               traits: { friendly: true },
               user: null,
               visitorKey: null,
@@ -407,7 +395,6 @@ describe("static site generation (pure + hybrid)", () => {
         {
           url: "https://happykit.dev/api/flags/flags_pub_000000",
           body: {
-            static: true,
             traits: null,
             user: { key: "random-user-key", name: "joe" },
             visitorKey: null,
@@ -436,7 +423,6 @@ describe("static site generation (pure + hybrid)", () => {
             endpoint: "https://happykit.dev/api/flags",
             envKey: "flags_pub_000000",
             requestBody: {
-              static: true,
               traits: null,
               user: { key: "random-user-key", name: "joe" },
               visitorKey: null,
@@ -461,7 +447,6 @@ describe("static site generation (pure + hybrid)", () => {
         {
           url: "https://happykit.dev/api/flags/flags_pub_000000",
           body: {
-            static: true,
             traits: null,
             user: null,
             visitorKey: null,
@@ -486,7 +471,6 @@ describe("static site generation (pure + hybrid)", () => {
             endpoint: "https://happykit.dev/api/flags",
             envKey: "flags_pub_000000",
             requestBody: {
-              static: true,
               visitorKey: null,
               user: null,
               traits: null,
