@@ -1,17 +1,11 @@
 /** global: fetch */
-import { IncomingMessage, ServerResponse } from "http";
-import AbortController from "abort-controller";
-import type {
-  GetServerSidePropsContext,
-  GetStaticPathsContext,
-  GetStaticPropsContext,
-} from "next";
+import type { NextRequest } from "next/server";
 import { config, isConfigured } from "./config";
+import type { CookieSerializeOptions } from "cookie";
 import { nanoid } from "nanoid";
-import {
+import type {
   FlagUser,
   Traits,
-  MissingConfigurationError,
   Flags,
   SuccessInitialFlagState,
   ErrorInitialFlagState,
@@ -19,24 +13,14 @@ import {
   ResolvingError,
   Input,
 } from "./types";
-import {
-  has,
-  serializeVisitorKeyCookie,
-  combineRawFlagsWithDefaultFlags,
-  getCookie,
-} from "./utils";
+import { combineRawFlagsWithDefaultFlags } from "./utils";
 
 export type { EvaluationResponseBody } from "./types";
 
-function getRequestingIp(context: {
-  req: IncomingMessage;
-  res: ServerResponse;
-}): null | string {
+function getRequestingIp(req: Pick<NextRequest, "headers">): null | string {
   const key = "x-forwarded-for";
-  const xForwardedFor = context.req.headers[key];
+  const xForwardedFor = req.headers.get(key);
   if (typeof xForwardedFor === "string") return xForwardedFor;
-  const remoteAddress = context.req.socket.remoteAddress;
-  if (remoteAddress) return remoteAddress;
   return null;
 }
 
@@ -55,6 +39,32 @@ type GetFlagsSuccessBag<F extends Flags> = {
   data: EvaluationResponseBody<F> | null;
   error: null;
   initialFlagState: SuccessInitialFlagState<F>;
+  /**
+   * The cookie options you should forward using
+   *
+   * ```
+   * response.cookie(
+   *   flagBag.cookie.name,
+   *   flagBag.cookie.value,
+   *   flagBag.cookie.options
+   * );
+   * ```
+   *
+   * or using
+   *
+   * ```
+   * response.cookie(...flagBag.cookie.args)
+   * ```
+   */
+  cookie: {
+    name: string;
+    value: string;
+    options: CookieSerializeOptions;
+    /**
+     * Arguments for response.cookie()
+     */
+    args: [string, string, CookieSerializeOptions];
+  } | null;
 };
 
 type GetFlagsErrorBag<F extends Flags> = {
@@ -75,42 +85,27 @@ type GetFlagsErrorBag<F extends Flags> = {
    * The initial flag state that you can use to initialize useFlags()
    */
   initialFlagState: ErrorInitialFlagState;
+  cookie: null;
 };
 
-export function getFlags<F extends Flags = Flags>(options: {
-  context:
-    | Pick<GetServerSidePropsContext, "req" | "res">
-    | GetStaticPathsContext
-    | GetStaticPropsContext;
+export function getEdgeFlags<F extends Flags = Flags>(options: {
+  request: Pick<NextRequest, "cookies" | "headers">;
   user?: FlagUser;
   traits?: Traits;
-  serverLoadingTimeout?: number | false;
-  staticLoadingTimeout?: number | false;
 }): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
-  if (!isConfigured(config)) throw new MissingConfigurationError();
+  if (!isConfigured(config))
+    throw new Error(
+      "@happykit/flags: Missing configuration. Call configure() first."
+    );
   const staticConfig = config;
 
-  const currentStaticLoadingTimeout = has(options, "staticLoadingTimeout")
-    ? options.staticLoadingTimeout
-    : config.staticLoadingTimeout || 0;
-
-  const currentServerLoadingTimeout = has(options, "serverLoadingTimeout")
-    ? options.serverLoadingTimeout
-    : config.serverLoadingTimeout || 0;
-
   // determine visitor key
-  const visitorKeyFromCookie = has(options.context, "req")
-    ? getCookie(options.context.req.headers.cookie, "hkvk")
-    : null;
+  const visitorKeyFromCookie = options.request.cookies.hkvk || null;
 
   // When using server-side rendering and there was no visitor key cookie,
   // we generate a visitor key
   // When using static rendering, we never set any visitor key
-  const visitorKey = has(options.context, "req")
-    ? visitorKeyFromCookie
-      ? visitorKeyFromCookie
-      : nanoid()
-    : null;
+  const visitorKey = visitorKeyFromCookie ? visitorKeyFromCookie : nanoid();
 
   const input: Input = {
     endpoint: config.endpoint,
@@ -119,13 +114,11 @@ export function getFlags<F extends Flags = Flags>(options: {
       visitorKey,
       user: options.user || null,
       traits: options.traits || null,
-      static: !has(options.context, "req"),
+      static: false,
     },
   };
 
-  const requestingIp = has(options.context, "req")
-    ? getRequestingIp(options.context)
-    : null;
+  const requestingIp = getRequestingIp(options.request);
 
   const xForwardedForHeader: { "x-forwarded-for": string } | {} = requestingIp
     ? // add x-forwarded-for header so the service worker gets
@@ -133,26 +126,12 @@ export function getFlags<F extends Flags = Flags>(options: {
       { "x-forwarded-for": requestingIp }
     : {};
 
-  // prepare fetch request timeout controller
-  const controller = new AbortController();
-  const timeoutDuration = has(options.context, "req")
-    ? currentServerLoadingTimeout
-    : currentStaticLoadingTimeout;
-  const timeoutId =
-    // validate config
-    typeof timeoutDuration !== "number" ||
-    isNaN(timeoutDuration) ||
-    timeoutDuration <= 0
-      ? null
-      : setTimeout(() => controller.abort(), timeoutDuration);
-
   return fetch([input.endpoint, input.envKey].join("/"), {
     method: "POST",
     headers: Object.assign(
       { "content-type": "application/json" },
       xForwardedForHeader
     ),
-    signal: controller?.signal,
     body: JSON.stringify(input.requestBody),
   }).then(
     (
@@ -160,27 +139,18 @@ export function getFlags<F extends Flags = Flags>(options: {
     ):
       | Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>>
       | GetFlagsErrorBag<F> => {
-      if (timeoutId) clearTimeout(timeoutId);
-
       if (!workerResponse.ok /* status not 200-299 */) {
         return {
           flags: staticConfig.defaultFlags as F,
           data: null,
           error: "response-not-ok",
           initialFlagState: { input, outcome: { error: "response-not-ok" } },
+          cookie: null,
         };
       }
 
       return workerResponse.json().then(
         (workerResponseBody: EvaluationResponseBody<F>) => {
-          if (has(options.context, "req") && workerResponseBody.visitor?.key) {
-            // always set the cookie so its max age refreshes
-            options.context.res.setHeader(
-              "Set-Cookie",
-              serializeVisitorKeyCookie(workerResponseBody.visitor.key)
-            );
-          }
-
           // add defaults to flags here, but not in initialFlagState
           const flags = workerResponseBody.flags
             ? workerResponseBody.flags
@@ -190,11 +160,25 @@ export function getFlags<F extends Flags = Flags>(options: {
             staticConfig.defaultFlags
           );
 
+          const cookieOptions: CookieSerializeOptions = {
+            path: "/",
+            maxAge: 60 * 60 * 24 * 180,
+            sameSite: "lax",
+          };
+
           return {
             flags: flagsWithDefaults,
             data: workerResponseBody,
             error: null,
             initialFlagState: { input, outcome: { data: workerResponseBody } },
+            cookie: workerResponseBody.visitor?.key
+              ? {
+                  name: "hkvk",
+                  value: workerResponseBody.visitor.key,
+                  options: cookieOptions,
+                  args: ["hkvk", workerResponseBody.visitor.key, cookieOptions],
+                }
+              : null,
           };
         },
         () => {
@@ -206,29 +190,19 @@ export function getFlags<F extends Flags = Flags>(options: {
               input,
               outcome: { error: "invalid-response-body" },
             },
+            cookie: null,
           };
         }
       );
     },
-    (error) => {
-      if (timeoutId) clearTimeout(timeoutId);
-
-      return error?.name === "AbortError"
-        ? {
-            flags: staticConfig.defaultFlags as F,
-            data: null,
-            error: "request-timed-out",
-            initialFlagState: {
-              input,
-              outcome: { error: "request-timed-out" },
-            },
-          }
-        : {
-            flags: staticConfig.defaultFlags as F,
-            data: null,
-            error: "network-error",
-            initialFlagState: { input, outcome: { error: "network-error" } },
-          };
+    () => {
+      return {
+        flags: staticConfig.defaultFlags as F,
+        data: null,
+        error: "network-error",
+        initialFlagState: { input, outcome: { error: "network-error" } },
+        cookie: null,
+      };
     }
   );
 }

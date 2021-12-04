@@ -24,7 +24,8 @@ Add Feature Flags to your Next.js application with a single React Hook. This pac
 - only 5 kB in size
 - extremely fast flag responses (~50ms)
 - supports *user targeting*, *custom rules* and *rollouts*
-- support *server-side rendering* and *static site generation*
+- supports *server-side rendering* and *static site generation*
+- supports *_middleware (edge functions)*
 
 
 <br />
@@ -43,6 +44,7 @@ Add Feature Flags to your Next.js application with a single React Hook. This pac
     - [`flagBag`](#flagbag)
     - [Supported user attributes](#supported-user-attributes)
   - [`getFlags`](#getflags)
+  - [`getEdgeFlags`](#getedgeflags)
 - [Advanced Usage](#advanced-usage)
   - [With user targeting](#with-user-targeting)
   - [Configuring application-wide default values](#configuring-application-wide-default-values)
@@ -58,6 +60,7 @@ Add Feature Flags to your Next.js application with a single React Hook. This pac
     - [Default Types](#default-types)
     - [Custom Flag Type](#custom-flag-type)
   - [Code splitting](#code-splitting)
+  - [Middleware example](#middleware-example)
 - [FAQs](#faqs)
   - [Why should I only ever render the `useFlags` hook once per page?](#why-should-i-only-ever-render-the-useflags-hook-once-per-page)
 
@@ -71,13 +74,24 @@ npm install @happykit/flags
 
 ## Setup
 
-Configure your application in `_app.js`.
+Configure your application by creating `flags.config.js` in  your root folder.
+
 
 ```js
-// _app.js
+// flags.config.js
 import { configure } from "@happykit/flags/config";
 
-configure({ envKey: process.env.NEXT_PUBLIC_FLAGS_ENVIRONMENT_KEY });
+configure({
+  envKey: process.env.NEXT_PUBLIC_FLAGS_ENVIRONMENT_KEY
+});
+```
+
+
+Import your configuration in `_app.js`.
+
+```js
+// pages/_app.js
+import '../flags.config'
 ```
 
 If you don't have a custom `_app.js` yet, see the [Custom `App`](https://nextjs.org/docs/advanced-features/custom-app) section of the Next.js docs for setup instructions.
@@ -223,6 +237,41 @@ This function returns a promise resolving to an object that looks like this:
 }
 ```
 
+### `getEdgeFlags`
+
+This function is meant to be used from [Next.js Middleware](https://nextjs.org/docs/middleware) (`_middleware` files).
+
+*exported from `@happykit/flags/edge`*
+
+- `getEdgeFlags(options)`
+  - `options.request` _(NextRequest)_ _required_: The Next.js Request.
+  - `options.user` _(object)_ _optional_: Same as `user` in `useFlags()`. If pass a user here, make sure to pass the same user to `useFlags({ user })`.
+  - `options.traits` _(object)_ _optional_: Same as `traits` in `useFlags()`. If pass traits here, make sure to pass the same traits to `useFlags({ traits })`.
+  
+
+This function returns a promise resolving to an object that looks like this:
+
+```ts
+{
+  // Evaluated flags, combined with the configured fallbacks
+  flags: object | null,
+  // Flags as loaded from the API (no fallbacks applied)
+  data: object | null;
+  // Evaluated flags, as loaded from the API (no fallbacks applied)
+  error: string | null,
+  // The preloaded state, which can be provided to useFlags({ initialState })
+  initialFlagState: object,
+  // Use this to set the response cookie from the middleware 
+  // with `response.cookie(...cookie.args)`
+  cookie: null | {
+    name: string;
+    value: string;
+    options: object;
+    args: [string, string, object];
+  }
+}
+```
+
 
 ## Advanced Usage
 
@@ -277,7 +326,7 @@ export default function FooPage(props) {
 You can configure application-wide default values for flags. These defaults will be used while your flags are being loaded (unless you're using server-side rendering). They'll also be used as fallback values in case the flags couldn't be loaded from HappyKit.
 
 ```js
-// _app.js
+// flags.config.js
 import { configure } from "@happykit/flags/config";
 
 configure({
@@ -429,11 +478,16 @@ You can use a property called `settled` which turns `true` once the flags are fr
 
 
 ```js
-// _app.js
-import App from 'next/app';
+// flags.config.js
 import { configure } from "@happykit/flags/config";
 
 configure({ envKey: process.env.NEXT_PUBLIC_FLAGS_ENVIRONMENT_KEY });
+```
+
+```js
+// pages/_app.js
+import App from 'next/app';
+import '../flags.config'
 
 export default function MyApp({ Component, pageProps }) {
   return <Component {...pageProps} />;
@@ -515,7 +569,8 @@ export type AppFlags = {
 ```
 
 ```ts
-// _app.tsx
+// flags.config.ts
+
 import { configure } from "@happykit/flags/config";
 // import your custom AppFlags type
 import { AppFlags } from "../types/AppFlags";
@@ -530,6 +585,11 @@ configure<AppFlags>({
     textualFlag: 'profileA',
   },
 });
+```
+
+```ts
+// pages/_app.tsx
+import '../flags.config';
 ```
 
 ```ts
@@ -626,6 +686,89 @@ export default function Page(props) {
 ```
 
 *This technique of removing the loading state works only with `getServerSideProps`. If you use `getStaticProps`, the server has no concept of the current visitor, but a visitor could influence flag rollouts. The client thus needs to reevaluate the flags and will only settle (pass `settled: true`) once the client-side reevaluation has completed.*
+
+
+
+
+### Middleware example
+
+You can use `getEdgeFlags` from `@happykit/flags/edge` to evaluate flags from the [Next.js Middleware](https://nextjs.org/docs/middleware).
+
+Note that you will need to import your `flags.config`:
+
+```ts
+// _middleware.ts
+import "../../../flags.config";
+import { getEdgeFlags } from "@happykit/flags/edge";
+```
+
+
+One way to make your middleware less verbose is to create your own `edge-flags.ts` file which imports `flags.config` and exports `getEdgeFlags`. That way you only need to import `getEdgeFlags` in your middleware.
+
+An example could look like this:
+```ts
+// edge-flags.ts
+import "../../../flags.config";
+export { getEdgeFlags } from "@happykit/flags/edge";
+```
+
+You would then `import { getEdgeFlags } from "../edge-flags.ts"` in your own code.
+
+
+
+A fully configured middleware could look like this:
+
+```ts
+import { NextRequest, NextResponse } from "next/server";
+import type { AppFlags } from "../../../types/AppFlags";
+import { getEdgeFlags } from "../edge-flags.ts";
+// Or import these if you didn't create edge-flags.ts:
+// import "../../../flags.config";
+// import { getEdgeFlags } from "@happykit/flags/edge";
+
+
+export async function middleware(request: NextRequest) {
+  const flagBag = await getEdgeFlags<AppFlags>({ request });
+
+  // Use the flagBag result to run a static rewrite
+  const response = NextResponse.rewrite(
+    `/demo/middleware/variant-${flagBag.flags?.checkout || "full"}`
+  );
+
+  if (flagBag.cookie) response.cookie(...flagBag.cookie.args);
+
+  return response;
+}
+```
+
+Notice that we need to `import "../../../flags.config"` so `getEdgeFlags` has access to the configuration.
+
+Another new property of `getEdgeFlags` is `flagBag.cookie`. This is set whenver the flag response contains a visitor key. You must then manually set the cookie on the response so the visitor can be reidentified on the next page load.
+
+One way to do that would be to use
+
+```ts
+if (flagBag.cookie) {
+  response.cookie(
+    flagBag.cookie.name,
+    flagBag.cookie.value,
+    flagBag.cookie.options,
+  )
+}
+```
+
+There is a shortcut tho make this more concise:
+
+```ts
+if (flagBag.cookie) response.cookie(...flagBag.cookie.args)
+```
+
+`flagBag.cookie.args` is an array that contains `[cookie.name, cookie.value, cookie.options]`, so `cookie.args` can simply be applied onto `response.cookie`.
+
+Both of these methods of using `flagBag.cookie` set a cookie called `hkvk` on the client which contians the automatically generated visitor key.
+
+You can see this example in action at [flags.happykit.dev/demo/middleware](https://flags.happykit.dev/demo/middleware).
+
 
 ## FAQs
 
