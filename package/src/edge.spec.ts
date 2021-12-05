@@ -52,7 +52,6 @@ describe("middleware", () => {
         {
           url: "https://happykit.dev/api/flags/flags_pub_000000",
           body: {
-            static: false,
             traits: { teamMember: true },
             user: null,
             visitorKey: "V1StGXR8_Z5jdHi6B-myT",
@@ -85,7 +84,6 @@ describe("middleware", () => {
             endpoint: "https://happykit.dev/api/flags",
             envKey: "flags_pub_000000",
             requestBody: {
-              static: false,
               traits: { teamMember: true },
               user: null,
               visitorKey: "V1StGXR8_Z5jdHi6B-myT",
@@ -120,7 +118,6 @@ describe("middleware", () => {
         {
           url: "https://happykit.dev/api/flags/flags_pub_000000",
           body: {
-            static: false,
             traits: null,
             user: { key: "random-user-key", name: "joe" },
             visitorKey: "V1StGXR8_Z5jdHi6B-myT",
@@ -156,7 +153,6 @@ describe("middleware", () => {
             endpoint: "https://happykit.dev/api/flags",
             envKey: "flags_pub_000000",
             requestBody: {
-              static: false,
               traits: null,
               user: { key: "random-user-key", name: "joe" },
               visitorKey: "V1StGXR8_Z5jdHi6B-myT",
@@ -202,7 +198,6 @@ describe("middleware", () => {
         {
           url: "https://happykit.dev/api/flags/flags_pub_000000",
           body: {
-            static: false,
             traits: null,
             user: null,
             // nanoid is mocked to return "V1StGXR8_Z5jdHi6B-myT",
@@ -235,7 +230,6 @@ describe("middleware", () => {
             endpoint: "https://happykit.dev/api/flags",
             envKey: "flags_pub_000000",
             requestBody: {
-              static: false,
               traits: null,
               user: null,
               visitorKey: "V1StGXR8_Z5jdHi6B-myT",

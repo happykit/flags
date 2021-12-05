@@ -114,7 +114,6 @@ export function getEdgeFlags<F extends Flags = Flags>(options: {
       visitorKey,
       user: options.user || null,
       traits: options.traits || null,
-      static: false,
     },
   };
 
