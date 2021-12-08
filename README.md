@@ -65,7 +65,7 @@ The self documenting examples at [flags.happykit.dev](https://flags.happykit.dev
 
 ## Full Tutorial
 
-A full tutorial including setup instructions is publishd on [frontend-digest.com](https://medium.com/frontend-digest/using-feature-flags-in-next-js-c5c8d0795a2?source=friends_link&sk=d846a29f376acf9cfa41e926883923ab).
+A full tutorial including setup instructions is published on [frontend-digest.com](https://medium.com/frontend-digest/using-feature-flags-in-next-js-c5c8d0795a2?source=friends_link&sk=d846a29f376acf9cfa41e926883923ab).
 
 
 <br />
