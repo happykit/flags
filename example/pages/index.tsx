@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Layout } from "../components/Layout";
 import { Result } from "../components/Result";
+import { useOnce } from "../useOnce";
 
 // defined outside to guarantee a consistent ref
 const exampleFlagBag = {
@@ -28,6 +29,7 @@ const exampleFlagBag = {
 };
 
 export default function Index() {
+  useOnce();
   return (
     <Layout title="Introduction" flagBag={null}>
       {/* Replace with your content */}

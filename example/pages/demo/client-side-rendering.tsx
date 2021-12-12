@@ -3,9 +3,11 @@ import { Layout } from "../../components/Layout";
 import { Result } from "../../components/Result";
 import { useFlags } from "@happykit/flags/client";
 import { AppFlags } from "../../types/AppFlags";
+import { useOnce } from "../../useOnce";
 
 export default function Page() {
   const flagBag = useFlags<AppFlags>();
+  useOnce();
 
   return (
     <Layout

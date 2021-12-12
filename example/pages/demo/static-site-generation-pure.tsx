@@ -4,6 +4,7 @@ import { Layout } from "../../components/Layout";
 import { Result } from "../../components/Result";
 import { getFlags } from "@happykit/flags/server";
 import { AppFlags } from "../../types/AppFlags";
+import { useOnce } from "../../useOnce";
 
 type StaticProps = { flags: AppFlags | null };
 
@@ -13,6 +14,7 @@ export const getStaticProps: GetStaticProps<StaticProps> = async (context) => {
 };
 
 export default function Page(props: StaticProps) {
+  useOnce();
   return (
     <Layout
       title="Static Site Generation (Pure)"

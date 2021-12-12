@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useOnce } from "../useOnce";
 
 export function has<X extends {}, Y extends PropertyKey>(
   obj: X,
@@ -42,6 +43,7 @@ const quotelessJson = (obj: any) => {
 };
 
 export function Result(props: { value: any; label?: string }) {
+  // useOnce();
   const [results, setResults] = React.useState<{ key: number; value: any }[]>([
     { key: 0, value: props.value },
   ]);

@@ -5,6 +5,7 @@ import { Result } from "../../components/Result";
 import { InitialFlagState, useFlags } from "@happykit/flags/client";
 import { getFlags } from "@happykit/flags/server";
 import { AppFlags } from "../../types/AppFlags";
+import { useOnce } from "../../useOnce";
 
 type Traits = { teamMember: boolean };
 type ServerSideProps = {
@@ -29,6 +30,7 @@ export default function Page(props: ServerSideProps) {
     initialState: props.initialFlagState,
     traits: props.traits,
   });
+  useOnce();
   return (
     <Layout
       title="Targeting by Traits"

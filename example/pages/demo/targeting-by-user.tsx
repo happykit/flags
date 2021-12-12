@@ -5,6 +5,7 @@ import { Result } from "../../components/Result";
 import { InitialFlagState, useFlags } from "@happykit/flags/client";
 import { getFlags } from "@happykit/flags/server";
 import { AppFlags } from "../../types/AppFlags";
+import { useOnce } from "../../useOnce";
 
 type User = { key: string; name: string };
 
@@ -30,6 +31,7 @@ export default function Page(props: ServerSideProps) {
     initialState: props.initialFlagState,
     user: props.user,
   });
+  useOnce();
   return (
     <Layout
       title="Targeting by User"

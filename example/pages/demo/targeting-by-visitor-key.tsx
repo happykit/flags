@@ -5,6 +5,7 @@ import { Result } from "../../components/Result";
 import { InitialFlagState, useFlags } from "@happykit/flags/client";
 import { getFlags } from "@happykit/flags/server";
 import { AppFlags } from "../../types/AppFlags";
+import { useOnce } from "../../useOnce";
 
 type ServerSideProps = {
   initialFlagState: InitialFlagState<AppFlags>;
@@ -22,7 +23,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
 export default function Page(props: ServerSideProps) {
   // This demo shows that you never need to deal with the visitor key yourself
   const flagBag = useFlags({ initialState: props.initialFlagState });
-
+  useOnce();
   return (
     <Layout
       title="Targeting by Visitor Key"

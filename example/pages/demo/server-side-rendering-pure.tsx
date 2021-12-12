@@ -4,6 +4,7 @@ import { Layout } from "../../components/Layout";
 import { Result } from "../../components/Result";
 import { getFlags, EvaluationResponseBody } from "@happykit/flags/server";
 import { AppFlags } from "../../types/AppFlags";
+import { useOnce } from "../../useOnce";
 
 type ServerSideProps = {
   flags: AppFlags | null;
@@ -18,6 +19,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
 };
 
 export default function Page(props: ServerSideProps) {
+  useOnce();
   return (
     <Layout
       title="Server Side Rendering (Pure)"

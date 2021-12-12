@@ -5,6 +5,7 @@ import { Result } from "../../components/Result";
 import { InitialFlagState, useFlags } from "@happykit/flags/client";
 import { getFlags } from "@happykit/flags/server";
 import { AppFlags } from "../../types/AppFlags";
+import { useOnce } from "../../useOnce";
 
 type StaticProps = { initialFlagState: InitialFlagState<AppFlags> };
 
@@ -14,6 +15,7 @@ export const getStaticProps: GetStaticProps<StaticProps> = async (context) => {
 };
 
 export default function Page(props: StaticProps) {
+  useOnce();
   const flagBag = useFlags<AppFlags>({ initialState: props.initialFlagState });
 
   return (
