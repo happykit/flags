@@ -254,7 +254,7 @@ function reducer<F extends Flags>(
       if (state.pending?.id !== action.id) return tuple;
 
       if (action.thrownError) {
-        console.error("HappyKit: Failed to load flags");
+        console.error("@happykit/flags: Failed to load flags");
         console.error(action.thrownError);
       }
 
@@ -349,6 +349,27 @@ function isAlmostEqual(
     : deepEqual(currentInput, nextInput);
 }
 
+let usedTimes = 0;
+export function useOnce() {
+  React.useEffect(() => {
+    usedTimes++;
+
+    if (usedTimes > 1) {
+      console.warn(
+        [
+          "@happykit/flags: Simultaneous invocations of useFlags() detected",
+          "",
+          "See https://happykit.dev/notes/1",
+        ].join("\n")
+      );
+    }
+
+    return () => {
+      usedTimes--;
+    };
+  }, []);
+}
+
 export const cache = new ObjectMap<Input, Outcome<Flags>>();
 
 export type UseFlagsOptions<F extends Flags = Flags> =
@@ -366,6 +387,7 @@ export function useFlags<F extends Flags = Flags>(
   options: UseFlagsOptions<F> = {}
 ): FlagBag<F> {
   if (!isConfigured(config)) throw new MissingConfigurationError();
+  useOnce();
   const staticConfig = config;
 
   const [generatedVisitorKey] = React.useState(nanoid);
