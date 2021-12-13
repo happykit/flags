@@ -54,8 +54,9 @@ This is roughly what the usage of feature flags looks like once you're up and ru
 import { useFlags } from "@happykit/flags/client";
 
 export default function IndexPage(props) {
-  const { flags } = useFlags();
-  return flags?.xzibit ? 'Yo dawg' : 'Hello';
+  const flagBag = useFlags();
+
+  return flagBag.flags.dogGreeting ? "Who's a good boye" : "Hello";
 }
 ```
 
@@ -66,12 +67,3 @@ The self documenting examples at [flags.happykit.dev](https://flags.happykit.dev
 ## Full Tutorial
 
 A full tutorial including setup instructions is published on [frontend-digest.com](https://medium.com/frontend-digest/using-feature-flags-in-next-js-c5c8d0795a2?source=friends_link&sk=d846a29f376acf9cfa41e926883923ab).
-
-
-<br />
-
----
-
-<br />
-
-> *Are you looking for the old docs? They are available under [under the v0.3.0 tag](https://github.com/happykit/flags/tree/v0.3.0).*
