@@ -29,9 +29,9 @@ export default function Page(props: StaticProps) {
         </p>
         <p>
           This page is rendered statically at first. The first rendering pass
-          will use no visitor key. This is necessary as the the concept of a
-          visitor does not exist during static site generation. Thus all rules
-          and percentage-based rollouts targeting a visitor resolve to{" "}
+          will use no visitor key. This is necessary as the concept of a visitor
+          does not exist during static site generation. Thus all rules and
+          percentage-based rollouts targeting a visitor resolve to{" "}
           <code>null</code>. If provided, the fallback values will be used for
           those.
         </p>
