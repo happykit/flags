@@ -8,7 +8,7 @@ export async function middleware(request: NextRequest) {
   const flagBag = await getEdgeFlags<AppFlags>({ request });
 
   const response = NextResponse.rewrite(
-    `/demo/middleware/variant-${flagBag.flags?.checkout || "full"}`
+    `/demo/middleware/${flagBag.flags?.checkout || "full"}`
   );
 
   if (flagBag.cookie) response.cookie(...flagBag.cookie.args);
