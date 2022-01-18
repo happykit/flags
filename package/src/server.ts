@@ -6,7 +6,7 @@ import type {
   GetStaticPathsContext,
   GetStaticPropsContext,
 } from "next";
-import { config, isConfigured } from "./config";
+import { config, Configuration, isConfigured } from "./config";
 import { nanoid } from "nanoid";
 import {
   FlagUser,
@@ -25,6 +25,9 @@ import {
   combineRawFlagsWithDefaultFlags,
   getCookie,
 } from "./utils";
+import { PHASE_PRODUCTION_BUILD } from "next/constants";
+import * as fs from "fs";
+import * as path from "path";
 
 export type { EvaluationResponseBody } from "./types";
 
@@ -77,6 +80,21 @@ type GetFlagsErrorBag<F extends Flags> = {
   initialFlagState: ErrorInitialFlagState;
 };
 
+function determineLeader(lockFile: string) {
+  try {
+    // fail if file exists
+    fs.writeFileSync(lockFile, "", { flag: "wx" });
+    process.on("exit", () => {
+      fs.unlinkSync(lockFile);
+      console.log("PROCESS EXIT");
+    });
+    return true;
+  } catch (error) {
+    if (error.code !== "EEXIST") throw error;
+    return false;
+  }
+}
+
 export function getFlags<F extends Flags = Flags>(options: {
   context:
     | Pick<GetServerSidePropsContext, "req" | "res">
@@ -88,7 +106,7 @@ export function getFlags<F extends Flags = Flags>(options: {
   staticLoadingTimeout?: number | false;
 }): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
   if (!isConfigured(config)) throw new MissingConfigurationError();
-  const staticConfig = config;
+  const staticConfig = config as Configuration<F>;
 
   const currentStaticLoadingTimeout = has(options, "staticLoadingTimeout")
     ? options.staticLoadingTimeout
@@ -145,15 +163,79 @@ export function getFlags<F extends Flags = Flags>(options: {
       ? null
       : setTimeout(() => controller.abort(), timeoutDuration);
 
-  return fetch([input.endpoint, input.envKey].join("/"), {
-    method: "POST",
-    headers: Object.assign(
-      { "content-type": "application/json" },
-      xForwardedForHeader
-    ),
-    signal: controller?.signal,
-    body: JSON.stringify(input.requestBody),
-  }).then(
+  const lockFile = path.join(process.cwd(), ".happykit");
+  const leader = determineLeader(lockFile);
+  console.log(leader ? "leading" : "not leading");
+
+  // only fetch flag definitions once during builds
+  const workerResponsePromise =
+    process.env.NEXT_PHASE === PHASE_PRODUCTION_BUILD
+      ? // TODO load definitions and resolve locally instead of loading resolved flags
+        // - needs package/src/evaluate (and an API which returns flag definitions)
+        // - needs its own representation of flags that uses bloom filters
+        // the flag definition type should live inside of @happykit/flags and
+        // get reused by the happykit/site worker
+        new Promise<Response>((resolve) => {
+          if (leader) {
+            console.log("fetching..", input.endpoint);
+            // this loads resolved flags at the moment, but should ultimately
+            // load flag definitions
+            return fetch([input.endpoint, input.envKey].join("/"), {
+              method: "POST",
+              headers: Object.assign(
+                { "content-type": "application/json" },
+                xForwardedForHeader
+              ),
+              signal: controller?.signal,
+              body: JSON.stringify(input.requestBody),
+            })
+              .then((res) => res.json())
+              .then(
+                (body) => {
+                  console.log("writing");
+                  fs.writeFileSync(lockFile, JSON.stringify(body));
+                  console.log("resolving");
+                  return resolve(new Response(body));
+                },
+                () => {
+                  console.log("failed to read");
+                }
+              );
+          }
+
+          // we are not the leader, wait for the file
+          console.log("start watching");
+          const watcher = fs.watch(lockFile, (event, filename) => {
+            console.log(event, filename);
+            if (!filename || event !== "change") return;
+            const content = fs.readFileSync(lockFile, "utf-8");
+            console.log("watching read", content);
+            resolve(JSON.parse(content));
+            watcher.close();
+          });
+
+          console.log("trying immediate read");
+          // check once manually in case we started waching too late
+          fs.readFile(lockFile, "utf-8", (err, content) => {
+            if (content && content.length > 0) {
+              console.log("immediately read", content);
+              watcher.close();
+              resolve(JSON.parse(content));
+            }
+          });
+        })
+      : // load from server
+        fetch([input.endpoint, input.envKey].join("/"), {
+          method: "POST",
+          headers: Object.assign(
+            { "content-type": "application/json" },
+            xForwardedForHeader
+          ),
+          signal: controller?.signal,
+          body: JSON.stringify(input.requestBody),
+        });
+
+  return workerResponsePromise.then(
     (
       workerResponse
     ):
