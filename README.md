@@ -11,7 +11,7 @@
   <span>&nbsp;•&nbsp;</span>
   <a href="https://happykit.dev/solutions/flags" target="_blank">happykit.dev</a>
   <span>&nbsp;•&nbsp;</span>
-  <a href="https://twitter.**com**/happykitdev" target="_blank">@happykitdev</a>
+  <a href="https://twitter.com/happykitdev" target="_blank">@happykitdev</a>
 </div>
 
 <br />
