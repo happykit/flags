@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "abort-controller": "3.0.0",
-    "nanoid": "3.1.30"
+    "nanoid": "3.1.31"
   },
   "preconstruct": {
     "entrypoints": [
