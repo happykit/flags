@@ -56,7 +56,7 @@ export function Result(props: { value: any; label?: string }) {
 
   return (
     <div className="mt-4">
-      <pre className="font-mono rounded bg-gray-200 p-2">
+      <pre className="font-mono rounded p-2">
         <div className="text-gray-400 text-xs pb-1">
           {props.label || `Render #${results.length} (Current render)`}
         </div>
@@ -71,7 +71,7 @@ export function Result(props: { value: any; label?: string }) {
           </div>
 
           {previousResults.map((result, index) => (
-            <pre key={result.key} className="font-mono rounded bg-gray-200 p-2">
+            <pre key={result.key} className="font-mono rounded p-2">
               <div className="text-gray-400 text-xs pb-1">
                 Render #{previousResults.length - index}
               </div>
