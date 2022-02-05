@@ -94,6 +94,13 @@ export function getEdgeFlags<F extends Flags = Flags>(options: {
   traits?: Traits;
 }): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
   const config = getConfig();
+  if (!config) {
+    // can't throw MissingConfigurationError here as it would lead to Next.js'
+    // "Dynamic Code Evaluation (e. g. 'eval', 'new Function') not allowed" error
+    throw new Error(
+      "@happykit/flags: Missing configuration. Call configure() first."
+    );
+  }
 
   // determine visitor key
   const visitorKeyFromCookie = options.request.cookies.hkvk || null;

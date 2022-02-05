@@ -1,8 +1,7 @@
-import {
+import type {
   DefaultConfiguration,
   IncomingConfiguration,
   Flags,
-  MissingConfigurationError,
 } from "./types";
 
 export type Configuration<F extends Flags> = DefaultConfiguration &
@@ -10,8 +9,8 @@ export type Configuration<F extends Flags> = DefaultConfiguration &
 
 let config: Configuration<Flags> | null = null;
 
+// getter is necessary as we can't export a live binding of "config"
 export function getConfig() {
-  if (!config) throw new MissingConfigurationError();
   return config;
 }
 
