@@ -1,9 +1,8 @@
 import * as React from "react";
 import { nanoid } from "nanoid";
-import { isConfigured, config, Configuration } from "./config";
+import { Configuration, getConfig } from "./config";
 import {
   InitialFlagState,
-  MissingConfigurationError,
   Flags,
   Input,
   Outcome,
@@ -386,9 +385,8 @@ export type UseFlagsOptions<F extends Flags = Flags> =
 export function useFlags<F extends Flags = Flags>(
   options: UseFlagsOptions<F> = {}
 ): FlagBag<F> {
-  if (!isConfigured(config)) throw new MissingConfigurationError();
   useOnce();
-  const staticConfig = config;
+  const config = getConfig();
 
   const [generatedVisitorKey] = React.useState(nanoid);
 
@@ -411,7 +409,7 @@ export function useFlags<F extends Flags = Flags>(
       if (!initialFlagState?.input) return [{ name: "empty" }, []];
 
       const input = getInput({
-        config: staticConfig,
+        config,
         visitorKeyInState: initialFlagState.input.requestBody.visitorKey,
         generatedVisitorKey,
         user: currentUser,
@@ -448,7 +446,7 @@ export function useFlags<F extends Flags = Flags>(
 
   React.useEffect(() => {
     const input = getInput({
-      config: staticConfig,
+      config,
       visitorKeyInState: state.input?.requestBody.visitorKey,
       generatedVisitorKey,
       user: currentUser,
