@@ -8,7 +8,7 @@ import type {
 } from "next";
 import { getConfig } from "./config";
 import { nanoid } from "nanoid";
-import {
+import type {
   FlagUser,
   Traits,
   Flags,
@@ -18,6 +18,7 @@ import {
   ResolvingError,
   Input,
 } from "./types";
+import { MissingConfigurationError } from "./types";
 import {
   has,
   serializeVisitorKeyCookie,
@@ -87,6 +88,7 @@ export function getFlags<F extends Flags = Flags>(options: {
   staticLoadingTimeout?: number | false;
 }): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
   const config = getConfig();
+  if (!config) throw new MissingConfigurationError();
 
   const currentStaticLoadingTimeout = has(options, "staticLoadingTimeout")
     ? options.staticLoadingTimeout

@@ -18,6 +18,7 @@ import {
   SucceededFlagBag,
   RevalidatingAfterSuccessFlagBag,
   FailedFlagBag,
+  MissingConfigurationError,
 } from "./types";
 import {
   deepEqual,
@@ -385,8 +386,10 @@ export type UseFlagsOptions<F extends Flags = Flags> =
 export function useFlags<F extends Flags = Flags>(
   options: UseFlagsOptions<F> = {}
 ): FlagBag<F> {
-  useOnce();
   const config = getConfig();
+  if (!config) throw new MissingConfigurationError();
+
+  useOnce();
 
   const [generatedVisitorKey] = React.useState(nanoid);
 
