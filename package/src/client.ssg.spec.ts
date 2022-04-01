@@ -54,6 +54,7 @@ describe("when cookie is not set", () => {
         };
       }
     );
+    fetchMock.post(`https://happykit.dev/api/flags-perf`, {});
 
     configure({ envKey: "flags_pub_000000" });
     expect(document.cookie).toEqual("");
@@ -202,6 +203,7 @@ describe("when cookie is set", () => {
         visitor: { key: visitorKeyInCookie },
       }
     );
+    fetchMock.post(`https://happykit.dev/api/flags-perf`, {});
 
     configure({ envKey: "flags_pub_000000" });
 

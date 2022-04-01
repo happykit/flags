@@ -14,6 +14,7 @@ import type {
   Input,
 } from "./types";
 import { combineRawFlagsWithDefaultFlags } from "./utils";
+import { trackPerf } from "./track-perf";
 
 export type { EvaluationResponseBody } from "./types";
 
@@ -125,6 +126,7 @@ export function getEdgeFlags<F extends Flags = Flags>(options: {
       { "x-forwarded-for": requestingIp }
     : {};
 
+  const before = Date.now();
   return fetch([input.endpoint, input.envKey].join("/"), {
     method: "POST",
     headers: Object.assign(
@@ -138,6 +140,15 @@ export function getEdgeFlags<F extends Flags = Flags>(options: {
     ):
       | Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>>
       | GetFlagsErrorBag<F> => {
+      trackPerf({
+        duration: Date.now() - before,
+        location: "edge",
+        envKey: input.envKey,
+        responseStatusCode: workerResponse.status,
+        serverTiming: workerResponse.headers.get("Server-Timing"),
+        cfRay: workerResponse.headers.get("CF-RAY"),
+      });
+
       if (!workerResponse.ok /* status not 200-299 */) {
         return {
           flags: staticConfig.defaultFlags as F,

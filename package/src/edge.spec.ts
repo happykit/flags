@@ -65,6 +65,7 @@ describe("middleware", () => {
           },
         }
       );
+      fetchMock.post(`https://happykit.dev/api/flags-perf`, {});
 
       const request = createNextRequest({
         cookies: { hkvk: "V1StGXR8_Z5jdHi6B-myT" },
@@ -131,6 +132,8 @@ describe("middleware", () => {
           },
         }
       );
+
+      fetchMock.post(`https://happykit.dev/api/flags-perf`, {});
 
       const request = createNextRequest({
         cookies: { hkvk: "V1StGXR8_Z5jdHi6B-myT" },
@@ -213,6 +216,8 @@ describe("middleware", () => {
           },
         }
       );
+
+      fetchMock.post(`https://happykit.dev/api/flags-perf`, {});
 
       const request = createNextRequest({
         cookies: { foo: "bar" },

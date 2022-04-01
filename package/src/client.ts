@@ -28,6 +28,7 @@ import {
   ObjectMap,
   has,
 } from "./utils";
+import { perfContent } from "./track-perf";
 
 export type {
   FlagUser,
@@ -503,6 +504,7 @@ export function useFlags<F extends Flags = Flags>(
             );
           }
 
+          const before = Date.now();
           fetch([input.endpoint, input.envKey].join("/"), {
             method: "POST",
             headers: { "content-type": "application/json" },
@@ -511,6 +513,20 @@ export function useFlags<F extends Flags = Flags>(
           }).then(
             (response) => {
               clearTimeout(timeoutId);
+
+              if (navigator.sendBeacon) {
+                navigator.sendBeacon(
+                  "https://happykit.dev/api/flags-perf",
+                  perfContent({
+                    duration: Date.now() - before,
+                    location: "client",
+                    envKey: input.envKey,
+                    responseStatusCode: response.status,
+                    serverTiming: response.headers.get("Server-Timing"),
+                    cfRay: response.headers.get("CF-RAY"),
+                  })
+                );
+              }
 
               if (!response.ok /* response.status is not 200-299 */) {
                 dispatch({

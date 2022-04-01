@@ -48,6 +48,8 @@ describe("server-side rendering (pure + hybrid)", () => {
         }
       );
 
+      fetchMock.post(`https://happykit.dev/api/flags-perf`, {});
+
       const context = {
         req: {
           headers: { cookie: "hkvk=V1StGXR8_Z5jdHi6B-myT" },
@@ -113,6 +115,8 @@ describe("server-side rendering (pure + hybrid)", () => {
           },
         }
       );
+
+      fetchMock.post(`https://happykit.dev/api/flags-perf`, {});
 
       const context = {
         req: {
@@ -186,6 +190,8 @@ describe("server-side rendering (pure + hybrid)", () => {
           },
         }
       );
+
+      fetchMock.post(`https://happykit.dev/api/flags-perf`, {});
 
       const context = {
         req: {
@@ -308,6 +314,8 @@ describe("static site generation (pure + hybrid)", () => {
       }
     );
 
+    fetchMock.post(`https://happykit.dev/api/flags-perf`, {});
+
     expect(await getFlags({ context: {} as GetStaticPropsContext })).toEqual({
       flags: { meal: "large" },
       data: {
@@ -353,6 +361,8 @@ describe("static site generation (pure + hybrid)", () => {
           body: { flags: { meal: "large" }, visitor: null },
         }
       );
+
+      fetchMock.post(`https://happykit.dev/api/flags-perf`, {});
 
       expect(
         await getFlags({
@@ -405,6 +415,8 @@ describe("static site generation (pure + hybrid)", () => {
           body: { flags: { meal: "large" }, visitor: null },
         }
       );
+
+      fetchMock.post(`https://happykit.dev/api/flags-perf`, {});
 
       expect(
         await getFlags({

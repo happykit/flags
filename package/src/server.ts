@@ -25,6 +25,7 @@ import {
   combineRawFlagsWithDefaultFlags,
   getCookie,
 } from "./utils";
+import { trackPerf } from "./track-perf";
 
 export type { EvaluationResponseBody } from "./types";
 
@@ -145,6 +146,7 @@ export function getFlags<F extends Flags = Flags>(options: {
       ? null
       : setTimeout(() => controller.abort(), timeoutDuration);
 
+  const before = Date.now();
   return fetch([input.endpoint, input.envKey].join("/"), {
     method: "POST",
     headers: Object.assign(
@@ -160,6 +162,15 @@ export function getFlags<F extends Flags = Flags>(options: {
       | Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>>
       | GetFlagsErrorBag<F> => {
       if (timeoutId) clearTimeout(timeoutId);
+
+      trackPerf({
+        duration: Date.now() - before,
+        location: has(options.context, "req") ? "ssr" : "ssg",
+        envKey: input.envKey,
+        responseStatusCode: workerResponse.status,
+        serverTiming: workerResponse.headers.get("Server-Timing"),
+        cfRay: workerResponse.headers.get("CF-RAY"),
+      });
 
       if (!workerResponse.ok /* status not 200-299 */) {
         return {

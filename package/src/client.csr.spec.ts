@@ -55,6 +55,8 @@ describe("when cookie is not set", () => {
       }
     );
 
+    fetchMock.post(`https://happykit.dev/api/flags-perf`, {});
+
     configure({ envKey: "flags_pub_000000" });
     expect(document.cookie).toEqual("");
 
@@ -143,6 +145,7 @@ describe("when cookie is set", () => {
         },
       }
     );
+    fetchMock.post(`https://happykit.dev/api/flags-perf`, {});
 
     configure({ envKey: "flags_pub_000000" });
     expect(document.cookie).toEqual(`hkvk=${visitorKeyInCookie}`);
@@ -233,6 +236,8 @@ describe("stories", () => {
           };
         }
       );
+
+      fetchMock.post(`https://happykit.dev/api/flags-perf`, {});
 
       configure({ envKey: "flags_pub_000000" });
       expect(document.cookie).toEqual("");
