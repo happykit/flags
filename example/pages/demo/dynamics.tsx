@@ -205,8 +205,7 @@ export default function Page() {
         <div className="text-sm font-medium text-gray-900 mt-8">
           Generated Input
         </div>
-        <pre className="font-mono rounded bg-gray-200 p-2">
-          <div className="text-gray-400 text-xs pb-1">Generated Input</div>
+        <pre className="font-mono rounded bg-gray-200 p-2 text-gray-800">
           useFlags(
           {JSON.stringify({ user: user.value, traits: trait.value }, null, 2)})
         </pre>
