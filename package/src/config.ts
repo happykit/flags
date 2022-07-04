@@ -6,7 +6,13 @@ import type {
 
 export type Configuration<F extends Flags> = DefaultConfiguration &
   IncomingConfiguration<F>;
-export let config: Configuration<Flags> | null = null;
+
+let config: Configuration<Flags> | null = null;
+
+// getter is necessary as we can't export a live binding of "config"
+export function getConfig() {
+  return config;
+}
 
 export function _resetConfig() {
   config = null;
@@ -35,10 +41,4 @@ export function configure<F extends Flags = Flags>(
   }
 
   config = Object.assign({}, defaults, options);
-}
-
-export function isConfigured<F extends Flags, C = Configuration<F>>(
-  c: C | null
-): c is C {
-  return c !== null;
 }

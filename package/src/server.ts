@@ -6,12 +6,11 @@ import type {
   GetStaticPathsContext,
   GetStaticPropsContext,
 } from "next";
-import { config, isConfigured } from "./config";
+import { getConfig } from "./config";
 import { nanoid } from "nanoid";
-import {
+import type {
   FlagUser,
   Traits,
-  MissingConfigurationError,
   Flags,
   SuccessInitialFlagState,
   ErrorInitialFlagState,
@@ -19,6 +18,7 @@ import {
   ResolvingError,
   Input,
 } from "./types";
+import { MissingConfigurationError } from "./types";
 import {
   has,
   serializeVisitorKeyCookie,
@@ -87,8 +87,8 @@ export function getFlags<F extends Flags = Flags>(options: {
   serverLoadingTimeout?: number | false;
   staticLoadingTimeout?: number | false;
 }): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
-  if (!isConfigured(config)) throw new MissingConfigurationError();
-  const staticConfig = config;
+  const config = getConfig();
+  if (!config) throw new MissingConfigurationError();
 
   const currentStaticLoadingTimeout = has(options, "staticLoadingTimeout")
     ? options.staticLoadingTimeout
@@ -163,7 +163,7 @@ export function getFlags<F extends Flags = Flags>(options: {
 
       if (!workerResponse.ok /* status not 200-299 */) {
         return {
-          flags: staticConfig.defaultFlags as F,
+          flags: config.defaultFlags as F,
           data: null,
           error: "response-not-ok",
           initialFlagState: { input, outcome: { error: "response-not-ok" } },
@@ -186,7 +186,7 @@ export function getFlags<F extends Flags = Flags>(options: {
             : null;
           const flagsWithDefaults = combineRawFlagsWithDefaultFlags<F>(
             flags,
-            staticConfig.defaultFlags
+            config.defaultFlags
           );
 
           return {
@@ -198,7 +198,7 @@ export function getFlags<F extends Flags = Flags>(options: {
         },
         () => {
           return {
-            flags: staticConfig.defaultFlags as F,
+            flags: config.defaultFlags as F,
             data: null,
             error: "invalid-response-body",
             initialFlagState: {
@@ -214,7 +214,7 @@ export function getFlags<F extends Flags = Flags>(options: {
 
       return error?.name === "AbortError"
         ? {
-            flags: staticConfig.defaultFlags as F,
+            flags: config.defaultFlags as F,
             data: null,
             error: "request-timed-out",
             initialFlagState: {
@@ -223,7 +223,7 @@ export function getFlags<F extends Flags = Flags>(options: {
             },
           }
         : {
-            flags: staticConfig.defaultFlags as F,
+            flags: config.defaultFlags as F,
             data: null,
             error: "network-error",
             initialFlagState: { input, outcome: { error: "network-error" } },

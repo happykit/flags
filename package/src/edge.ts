@@ -1,6 +1,6 @@
 /** global: fetch */
 import type { NextRequest } from "next/server";
-import { config, isConfigured } from "./config";
+import { getConfig } from "./config";
 import type { CookieSerializeOptions } from "cookie";
 import { nanoid } from "nanoid";
 import type {
@@ -93,11 +93,14 @@ export function getEdgeFlags<F extends Flags = Flags>(options: {
   user?: FlagUser;
   traits?: Traits;
 }): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
-  if (!isConfigured(config))
+  const config = getConfig();
+  if (!config) {
+    // can't throw MissingConfigurationError here as it would lead to Next.js'
+    // "Dynamic Code Evaluation (e. g. 'eval', 'new Function') not allowed" error
     throw new Error(
       "@happykit/flags: Missing configuration. Call configure() first."
     );
-  const staticConfig = config;
+  }
 
   // determine visitor key
   const visitorKeyFromCookie = options.request.cookies.hkvk || null;
@@ -140,7 +143,7 @@ export function getEdgeFlags<F extends Flags = Flags>(options: {
       | GetFlagsErrorBag<F> => {
       if (!workerResponse.ok /* status not 200-299 */) {
         return {
-          flags: staticConfig.defaultFlags as F,
+          flags: config.defaultFlags as F,
           data: null,
           error: "response-not-ok",
           initialFlagState: { input, outcome: { error: "response-not-ok" } },
@@ -156,7 +159,7 @@ export function getEdgeFlags<F extends Flags = Flags>(options: {
             : null;
           const flagsWithDefaults = combineRawFlagsWithDefaultFlags<F>(
             flags,
-            staticConfig.defaultFlags
+            config.defaultFlags
           );
 
           const cookieOptions: CookieSerializeOptions = {
@@ -182,7 +185,7 @@ export function getEdgeFlags<F extends Flags = Flags>(options: {
         },
         () => {
           return {
-            flags: staticConfig.defaultFlags as F,
+            flags: config.defaultFlags as F,
             data: null,
             error: "invalid-response-body",
             initialFlagState: {
@@ -196,7 +199,7 @@ export function getEdgeFlags<F extends Flags = Flags>(options: {
     },
     () => {
       return {
-        flags: staticConfig.defaultFlags as F,
+        flags: config.defaultFlags as F,
         data: null,
         error: "network-error",
         initialFlagState: { input, outcome: { error: "network-error" } },
