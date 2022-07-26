@@ -103,7 +103,12 @@ export function getEdgeFlags<F extends Flags = Flags>(options: {
   }
 
   // determine visitor key
-  const visitorKeyFromCookie = options.request.cookies.hkvk || null;
+  const visitorKeyFromCookie =
+    typeof options.request.cookies.get === "function"
+      ? options.request.cookies.get("hkvk")
+      : // backwards compatible for when cookies was { [key: string]: string; }
+        // in Next.js
+        (options.request.cookies as any).hkvk || null;
 
   // When using server-side rendering and there was no visitor key cookie,
   // we generate a visitor key

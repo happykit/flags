@@ -32,20 +32,28 @@ export function EdgeFunctionContent(props: {
         Remove cookie and reload
       </button>
       <p>
-        This example uses a <code>_middleware</code> file at{" "}
-        <code>pages/demo/middleware</code> to statically render different
-        variants for the <code>/demo/middleware</code> path. The different
-        variants live under <code>pages/demo/middleware/variant-*.tsx</code>.
+        This example uses a <code>middleware</code> file at{" "}
+        <code>/middleware.ts</code> to statically render different variants for
+        the <code>/demo/middleware</code> path. The different variants live
+        under <code>pages/demo/middleware/[variant].tsx</code>.
       </p>
       <p>
         The middleware loads the flags and rewrites the incoming request either
-        to <code>variant-short.tsx</code>, <code>variant-medium.tsx</code> or{" "}
-        <code>variant-full.tsx</code> depending on the resolved flag variant.
+        to <code>/demo/middleware/short</code>,{" "}
+        <code>/demo/middleware/medium</code> or{" "}
+        <code>/demo/middleware/full</code> depending on the resolved flag
+        variant.
       </p>
       <p>
-        Since resulting page is served statically from the edge, rendering will
-        use no visitor key. This is necessary as the concept of a visitor does
-        not exist during static site generation. Thus all rules and
+        The request to any of those paths will then be handled by{" "}
+        <code>/demo/middleware/[variant].tsx</code>. That file will have
+        staticaly generated a version for each variant. The request will thus
+        get answered statically.
+      </p>
+      <p>
+        Since the resulting page is served statically from the edge, the first
+        render will use no visitor key. This is necessary as the concept of a
+        visitor does not exist during static site generation. Thus all rules and
         percentage-based rollouts targeting a visitor resolve to{" "}
         <code>null</code>.
       </p>
