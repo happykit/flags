@@ -4,8 +4,15 @@ import { Layout } from "../../../components/Layout";
 import { EdgeFunctionContent } from "../../../components/EdgeFunctionContent";
 import { AppFlags } from "../../../types/AppFlags";
 
-// This file generates a static page for each variant (short, medium, full)
-// You could also actually create one file for each variant instead.
+// ℹ️ Check out the /middleware.ts file as well.
+// That middlware.ts file routes requests to /demo/middlware
+// to any of the variants under /demo/middleware/:variant.
+//
+// It is the second piece aside from this [variant].tsx file.
+
+// This generates a static page for each variant (short, medium, full).
+// You could also create these files manually instead of generating them.
+// But we use the path generating approach for this demo.
 export const getStaticPaths: GetStaticPaths = () => ({
   paths: [
     { params: { variant: "full" } },
