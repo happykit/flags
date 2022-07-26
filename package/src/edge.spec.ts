@@ -24,12 +24,15 @@ beforeEach(() => {
 function createNextRequest(
   options: {
     headers?: HeadersInit;
-    cookies?: { [key: string]: string };
+    cookies?: any;
   } = {}
 ) {
   return {
     headers: new Headers(options.headers || []),
-    cookies: options.cookies || {},
+    cookies: {
+      get: (key: string) =>
+        options.cookies ? options.cookies[key] || undefined : undefined,
+    } as any,
   };
 }
 
