@@ -25,7 +25,7 @@ Add Feature Flags to your Next.js application with a single React Hook. This pac
 - extremely fast flag responses (~50ms)
 - supports *user targeting*, *custom rules* and *rollouts*
 - supports *server-side rendering* and *static site generation*
-- supports *_middleware (edge functions)*
+- supports *middleware (edge functions)*
 
 
 <br />
@@ -239,7 +239,7 @@ This function returns a promise resolving to an object that looks like this:
 
 ### `getEdgeFlags`
 
-This function is meant to be used from [Next.js Middleware](https://nextjs.org/docs/middleware) (`_middleware` files).
+This function is meant to be used from [Next.js Middleware](https://nextjs.org/docs/middleware) (`middleware` files).
 
 *exported from `@happykit/flags/edge`*
 
