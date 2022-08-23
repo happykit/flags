@@ -1,6 +1,5 @@
 /** global: fetch */
 import { IncomingMessage, ServerResponse } from "http";
-import AbortController from "abort-controller";
 import type {
   GetServerSidePropsContext,
   GetStaticPathsContext,
@@ -133,12 +132,14 @@ export function getFlags<F extends Flags = Flags>(options: {
     : {};
 
   // prepare fetch request timeout controller
-  const controller = new AbortController();
+  const controller =
+    typeof AbortController === "function" ? new AbortController() : null;
   const timeoutDuration = has(options.context, "req")
     ? currentServerLoadingTimeout
     : currentStaticLoadingTimeout;
   const timeoutId =
     // validate config
+    !controller ||
     typeof timeoutDuration !== "number" ||
     isNaN(timeoutDuration) ||
     timeoutDuration <= 0
@@ -151,7 +152,7 @@ export function getFlags<F extends Flags = Flags>(options: {
       { "content-type": "application/json" },
       xForwardedForHeader
     ),
-    signal: controller?.signal,
+    signal: controller ? controller.signal : undefined,
     body: JSON.stringify(input.requestBody),
   }).then(
     (
@@ -196,7 +197,7 @@ export function getFlags<F extends Flags = Flags>(options: {
             initialFlagState: { input, outcome: { data: workerResponseBody } },
           };
         },
-        () => {
+        (error) => {
           return {
             flags: config.defaultFlags as F,
             data: null,
