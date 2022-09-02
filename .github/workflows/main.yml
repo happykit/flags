@@ -8,36 +8,41 @@ jobs:
       - name: Begin CI...
         uses: actions/checkout@v2
 
+      - uses: pnpm/action-setup@v2.2.2
+        with:
+          version: 7
+
       - name: Use Node
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v2
         with:
           node-version: 16.x
+          cache: "pnpm"
 
       - name: Use cached node_modules
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: node_modules
-          key: nodeModules-${{ hashFiles('**/yarn.lock') }}
+          key: nodeModules-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             nodeModules-
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
         env:
           CI: true
 
       - name: Test
-        run: yarn package:test --ci --coverage --maxWorkers=2
+        run: pnpm package:test --ci --coverage --maxWorkers=2
         env:
           CI: true
 
       - name: Build package
-        run: yarn package:build
+        run: pnpm package:build
         env:
           CI: true
 
       - name: Build example
-        run: yarn example:build
+        run: pnpm example:build
         env:
           CI: true
           NEXT_PUBLIC_FLAGS_ENDPOINT: https://happykit.dev/api/flags
