@@ -36,13 +36,8 @@ jobs:
         env:
           CI: true
 
-      - name: Build package
-        run: pnpm package:build
-        env:
-          CI: true
-
-      - name: Build example
-        run: pnpm example:build
+      - name: Build
+        run: pnpm build
         env:
           CI: true
           NEXT_PUBLIC_FLAGS_ENDPOINT: https://happykit.dev/api/flags
