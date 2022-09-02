@@ -9,6 +9,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@happykit/flags": "workspace:*",
     "@headlessui/react": "1.4.3",
     "@preconstruct/next": "3.0.1",
     "@tailwindcss/typography": "0.5.1",

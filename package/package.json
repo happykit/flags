@@ -45,7 +45,6 @@
     "@babel/preset-env": "7.16.11",
     "@babel/preset-typescript": "7.16.7",
     "@sheerun/mutationobserver-shim": "0.3.3",
-    "@tailwindui/react": "0.1.1",
     "@testing-library/jest-dom": "5.16.2",
     "@testing-library/react": "12.1.2",
     "@testing-library/react-hooks": "7.0.2",
