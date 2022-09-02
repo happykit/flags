@@ -32,7 +32,7 @@ jobs:
           CI: true
 
       - name: Test
-        run: pnpm package:test --ci --coverage --maxWorkers=2
+        run: pnpm turbo run test -- --ci --coverage --maxWorkers=2
         env:
           CI: true
 
