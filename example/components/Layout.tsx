@@ -58,10 +58,19 @@ export function Layout(props: {
     };
   }, []);
 
+  // Text has to be extract to a variable to avoid this react error:
+  //
+  // Warning: A title element received an array with more than 1 element as
+  // children. In browsers title Elements can only have Text Nodes as children.
+  // If the children being rendered output more than a single text node in
+  // aggregate the browser will display markup and comments as text in the title
+  // and hydration will likely fail and fall back to client rendering
+  const titleText = `${props.title} · HappyKit Flags Documentation`;
+
   return (
     <React.Fragment>
       <Head>
-        <title>{props.title} · HappyKit Flags Documentation</title>
+        <title>{titleText}</title>
       </Head>
       {/* This example requires Tailwind CSS v2.0+ */}
       <div className="h-screen flex overflow-hidden bg-gray-100">

@@ -1,4 +1,5 @@
 {
-  "main": "dist/happykit-flags-server.cjs.js",
-  "module": "dist/happykit-flags-server.esm.js"
+  "main": "../dist/server.cjs",
+  "module": "../dist/server.js",
+  "types": "../dist/server.d.ts"
 }

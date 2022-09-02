@@ -1,4 +1,5 @@
 {
-  "main": "dist/happykit-flags-context.cjs.js",
-  "module": "dist/happykit-flags-context.esm.js"
+  "main": "../dist/context.cjs",
+  "module": "../dist/context.js",
+  "types": "../dist/context.d.ts"
 }

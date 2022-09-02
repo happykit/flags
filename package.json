@@ -4,27 +4,19 @@
   "license": "MIT",
   "author": "Dominik Ferber",
   "scripts": {
-    "example:dev": "yarn workspace example dev",
-    "example:build": "yarn workspace example build",
-    "example:start": "yarn workspace example next start",
-    "package:dev": "yarn workspace @happykit/flags preconstruct build",
-    "package:test": "yarn workspace @happykit/flags test",
-    "package:build": "yarn workspace @happykit/flags build",
-    "jest": "yarn workspace @happykit/flags jest"
+    "dev": "pnpm turbo run dev",
+    "build": "pnpm turbo run build"
   },
   "workspaces": [
     "package",
     "example"
   ],
   "dependencies": {
-    "@preconstruct/cli": "2.1.5",
     "next": "12.2.5",
-    "react": "17.0.2",
-    "react-dom": "17.0.2"
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
   },
-  "preconstruct": {
-    "packages": [
-      "package"
-    ]
+  "devDependencies": {
+    "turbo": "^1.4.4"
   }
 }
