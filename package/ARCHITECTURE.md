@@ -16,7 +16,7 @@ A Next.js example project lives inside `example`. The Next.js example project us
 
 ## Publishing for the `next` dist-tag
 
-To publish a `next` version from the `package` folder run `yarn build` and then `yarn publish --tag next`.
+To publish a `next` version from the `package` folder run `pnpm test && pnpm build` and then `pnpm publish --tag next`.
 
 This will ask you for the next version, automatically change it in `package.json` and commit it.
 
@@ -29,9 +29,10 @@ git checkout next # ensure you are on "next"
 git status # ensure you can push and are up to date
 
 cd package
-yarn build
-yarn publish --tag next
-git push --tags
+pnpm test
+pnpm build
+pnpm publish --tag next
+git push --follow-tags
 ```
 
 ## Moving the `latest` dist-tag
