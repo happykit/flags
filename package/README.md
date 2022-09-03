@@ -180,7 +180,7 @@ This hook loads the flags on the client.
 > **This hook should only ever be rendered once per page.**
 
 - `useFlags(options)`
-  - `options.user` _(object)_ _optional_: A user to load the flags for. A user must at least have a `key`. See the supported user attributes [here](#supported-user-attributes). The user information you pass can be used for [individual targeting](#with-user-targeting) or rules. You can set the `persist` attribute on the user to store them in HappyKit for future reference.
+  - `options.user` _(object)_ _optional_: A user to load the flags for. A user must at least have a `key`. See the supported user attributes [here](#supported-user-attributes). The user information you pass can be used for [individual targeting](#with-user-targeting) or rules.
   - `options.traits` _(object)_ _optional_: An object which you have access to in the flag's rules. You can target users based on traits.
   - `options.initialState` _(object)_ _optional_: In case you preloaded your flags during server-side rendering using `getFlags()`, provide the returned state as `initialState`. The client will then skip the first request whenever possible and use the provided flags instead. This allows you to get rid of loading states and on the client.
   - `options.revalidateOnFocus` _(object)_ _optional_: By default the client will revalidate all feature flags when the browser window regains focus. Pass `revalidateOnFocus: false` to skip this behaviour.
@@ -210,7 +210,6 @@ Provide any of these attributes to store them in HappyKit. You will be able to u
 - `name` _(string)_: Full name or nickname
 - `avatar` _(string)_: URL to users profile picture
 - `country` _(string)_: Two-letter uppercase country-code of user's county, see [ISO 3166-1](https://en.wikipedia.org/wiki/ISO_3166-1)
-- `persist` _(boolean)_: This is a special attribute which tells HappyKit to persist that user in HappyKit. When you persist a user, you can see that users profile on [happykit.dev](https://happykit.dev/). *Note that persisting users will incur additional charges in the future.*
 
 ### `getFlags`
 

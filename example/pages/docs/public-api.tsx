@@ -173,16 +173,6 @@ export default function Page() {
               ISO 3166-1
             </a>
           </li>
-          <li>
-            <code>persist</code> <i>(boolean)</i>: This is a special attribute
-            which tells HappyKit to persist that user in HappyKit. When you
-            persist a user, you can see that users profile on{" "}
-            <a href="https://happykit.dev/">happykit.dev</a>.{" "}
-            <i>
-              Note that persisting users will incur additional charges in the
-              future.
-            </i>
-          </li>
         </ul>
         <p>Here is an exampe request</p>
         <pre>

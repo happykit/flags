@@ -1,5 +1,10 @@
 export type FlagUser = {
   key: string;
+  /**
+   * Persist user in HappyKit
+   *
+   * @deprecated This feature has been removed. It is no longer possible to persist users.
+   */
   persist?: boolean;
   email?: string;
   name?: string;
