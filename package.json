@@ -5,6 +5,7 @@
   "author": "Dominik Ferber",
   "scripts": {
     "dev": "pnpm turbo run dev",
+    "test": "pnpm turbo run test",
     "build": "pnpm turbo run build"
   },
   "workspaces": [
