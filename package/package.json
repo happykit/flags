@@ -59,6 +59,7 @@
     "context",
     "edge",
     "evaluate",
-    "server"
+    "server",
+    "api-route"
   ]
 }
