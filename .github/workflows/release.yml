@@ -1,11 +1,18 @@
-name: CI
-on: [push]
-jobs:
-  build:
-    runs-on: ubuntu-latest
+name: Release
 
+on:
+  push:
+    branches:
+      - master
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
     steps:
-      - name: Begin CI...
+      - name: Checkout Repo
         uses: actions/checkout@v3
 
       - uses: pnpm/action-setup@v2.2.2
@@ -31,14 +38,7 @@ jobs:
         env:
           CI: true
 
-      - name: Test
-        run: pnpm turbo run test -- --ci --coverage --maxWorkers=2
+      - name: Create Release Pull Request
+        uses: changesets/action@v1
         env:
-          CI: true
-
-      - name: Build
-        run: pnpm build
-        env:
-          CI: true
-          NEXT_PUBLIC_FLAGS_ENDPOINT: https://happykit.dev/api/flags
-          NEXT_PUBLIC_FLAGS_ENV_KEY: flags_pub_development_289861443285680649
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
