@@ -1,1 +1,5 @@
-{"teamId":"team_ItYtoTLMzROnOUyTcndn0dN3","apiUrl":"https://vercel.com/api"}
+{
+  "apiurl": "https://vercel.com/api",
+  "loginurl": "https://vercel.com",
+  "teamid": "team_ItYtoTLMzROnOUyTcndn0dN3"
+}
