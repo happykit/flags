@@ -277,29 +277,6 @@ export function createHandler({
       {}
     );
 
-    // update user attributes for persisted users
-    if (user && user.persist) {
-      // lazy init for faunaClient
-
-      event.waitUntil(
-        Promise.resolve(null)
-        // TODO convert this to a POST request which sends
-        // the user to happykit's API (need to create API route)
-        // faunaClient
-        //   .query(
-        //     updateUserAttributes({
-        //       userAttributes: omit(user, "persist"),
-        //       environment,
-        //       projectId,
-        //     })
-        //   )
-        //   .catch((error) => {
-        //     console.error("fauna error");
-        //     console.error(error);
-        //   })
-      );
-    }
-
     return new Response(
       JSON.stringify({
         flags: toVariantValues(evaluatedVariants),
