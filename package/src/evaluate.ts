@@ -10,7 +10,7 @@ import type { FlagUser, Traits } from "./internal/types";
 /**
  * Evaluates feature flags to their variant values given some inputs.
  */
-export function unstable_evaluate({
+export function evaluate({
   flags,
   environment,
   user,

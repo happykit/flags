@@ -1,5 +1,5 @@
 import { Flag } from "./evaluation-types";
-import { unstable_evaluate } from "./evaluate";
+import { evaluate } from "./evaluate";
 
 const fakeVariant1 = {
   id: "fake-variant-id-1",
@@ -66,12 +66,12 @@ const flag: Flag = {
 // more in-depth tests are in resolve-flag-to-variant.spec.ts
 describe("evaluate", () => {
   it("should be a function", () => {
-    expect(typeof unstable_evaluate).toEqual("function");
+    expect(typeof evaluate).toEqual("function");
   });
 
   it("evaluates flags", () => {
     expect(
-      unstable_evaluate({
+      evaluate({
         flags: [flag],
         environment: "production",
         user: null,
