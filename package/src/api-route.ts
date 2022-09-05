@@ -1,5 +1,4 @@
-import { resolveFlagToVariant } from "./resolve-flag-to-variant";
-import {
+import type {
   Environment,
   Flag,
   FlagUserAttributes,
@@ -7,6 +6,7 @@ import {
   FlagVisitor,
 } from "./api-route-types";
 import type { NextFetchEvent, NextRequest } from "next/server";
+import { evaluate } from "./evaluate";
 
 function toUser(incomingUser: {
   key: string;
@@ -88,17 +88,17 @@ function toVariantValues(
   }, {});
 }
 
-function toVariantIds(
-  input: Record<string, FlagVariant | null>
-): Record<string, FlagVariant["id"] | null> {
-  return Object.entries(input).reduce<Record<string, FlagVariant["id"] | null>>(
-    (acc, [key, variant]) => {
-      acc[key] = variant ? variant.id : null;
-      return acc;
-    },
-    {}
-  );
-}
+// function toVariantIds(
+//   input: Record<string, FlagVariant | null>
+// ): Record<string, FlagVariant["id"] | null> {
+//   return Object.entries(input).reduce<Record<string, FlagVariant["id"] | null>>(
+//     (acc, [key, variant]) => {
+//       acc[key] = variant ? variant.id : null;
+//       return acc;
+//     },
+//     {}
+//   );
+// }
 
 export type DefinitionsInEdgeConfig = {
   revision: string;
@@ -116,12 +116,7 @@ const defaultCorsHeaders = {
   "Access-Control-Expose-Headers": "*",
 };
 
-export function createHandler({
-  /**
-   * Load feature flag definitions from your data source.
-   * Called when feature flags are evaluated.
-   */
-  getDefinitions,
+export function createWriteHandler({
   /**
    * Store feature flag definitions in your data source.
    * Called when you change feature flags in HappyKit's UI.
@@ -130,12 +125,6 @@ export function createHandler({
   apiKey,
   corsHeaders = defaultCorsHeaders,
 }: {
-  // TODO loadFlag should use "await edgeConfig.get(projectId)" eventually
-  getDefinitions: (
-    projectId: string,
-    envKey: string,
-    environment: Environment
-  ) => Promise<null | DefinitionsInEdgeConfig>;
   setDefinitions: (
     projectId: string,
     definitions: DefinitionsInEdgeConfig
@@ -179,6 +168,32 @@ export function createHandler({
           });
     }
 
+    // to avoid handling additional requests during development
+    return new Response(null, { status: 404, headers });
+  };
+}
+
+export function createReadHandler({
+  /**
+   * Load feature flag definitions from your data source.
+   * Called when feature flags are evaluated.
+   */
+  getDefinitions,
+  corsHeaders = defaultCorsHeaders,
+  serverTiming = false,
+}: {
+  // TODO loadFlag should use "await edgeConfig.get(projectId)" eventually
+  getDefinitions: (
+    projectId: string,
+    envKey: string,
+    environment: Environment
+  ) => Promise<null | DefinitionsInEdgeConfig>;
+  corsHeaders?: Record<string, string>;
+  serverTiming?: boolean;
+}) {
+  const headers = { ...corsHeaders, "content-type": "application/json" };
+
+  return async function handler(request: NextRequest, event: NextFetchEvent) {
     // to avoid handling additional requests during development
     if (request.url.endsWith("favicon.ico")) {
       return new Response(null, { status: 404, headers });
@@ -247,7 +262,7 @@ export function createHandler({
 
     let flags: Flag[];
 
-    // read definitions from Edge Config based on projectId
+    // read definitions from storage based on projectId
     const originStart = Date.now();
     const definitions = await getDefinitions(projectId, envKey, environment);
     const originStop = Date.now();
@@ -261,31 +276,16 @@ export function createHandler({
 
     flags = definitions.flags;
 
-    const evaluatedVariants = flags.reduce<Record<string, FlagVariant | null>>(
-      (acc, flag) => {
-        const variant: FlagVariant | null = resolveFlagToVariant({
-          flag,
-          environment,
-          user,
-          visitor,
-          traits,
-        });
+    const evaluatedVariants = evaluate({
+      flags,
+      environment,
+      user,
+      visitor,
+      traits,
+    });
 
-        acc[flag.slug] = variant ? variant : null;
-        return acc;
-      },
-      {}
-    );
-
-    return new Response(
-      JSON.stringify({
-        flags: toVariantValues(evaluatedVariants),
-        resolvedVariantIds: toVariantIds(evaluatedVariants),
-        visitor: visitorKey ? { key: visitorKey } : null,
-      }),
-      {
-        headers: {
-          ...headers,
+    const serverTimingHeader = serverTiming
+      ? {
           "Server-Timing": [
             originStop !== null && originStart !== null
               ? `origin;dur=${originStop - originStart}`
@@ -293,8 +293,16 @@ export function createHandler({
           ]
             .filter(Boolean)
             .join(", "),
-        },
-      }
+        }
+      : null;
+
+    return new Response(
+      JSON.stringify({
+        flags: toVariantValues(evaluatedVariants),
+        // resolvedVariantIds: toVariantIds(evaluatedVariants),
+        visitor: visitorKey ? { key: visitorKey } : null,
+      }),
+      { headers: { ...headers, ...serverTimingHeader } }
     );
   };
 }

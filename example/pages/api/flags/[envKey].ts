@@ -1,11 +1,9 @@
 import {
-  createHandler,
+  createReadHandler,
   type DefinitionsInEdgeConfig,
 } from "@happykit/flags/api-route";
 
-export const config = {
-  runtime: "experimental-edge",
-};
+export const config = { runtime: "experimental-edge" };
 
 const definitions: DefinitionsInEdgeConfig = {
   flags: [
@@ -267,12 +265,8 @@ const definitions: DefinitionsInEdgeConfig = {
   revision: "331789352553153107",
 };
 
-export default createHandler({
-  apiKey: "",
+export default createReadHandler({
   async getDefinitions(projectId, envKey, environment) {
     return definitions;
-  },
-  async setDefinitions(definitions) {
-    return true;
   },
 });
