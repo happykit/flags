@@ -152,8 +152,9 @@ export default function FooPage(props) {
 
 `@happykit/flags` offers multiple entrypoints to keep the bundle small:
 - `@happykit/flags/config`: Configuration functions
-- `@happykit/flags/server`: Everything related to the server
-- `@happykit/flags/client`: Everything related to the client
+- `@happykit/flags/server`: Use flags in `getServerSideProps` & `getStaticProps`
+- `@happykit/flags/client`: Use flags on the client
+- `@happykit/flags/edge`: Use flags in Middleware and Edge API Routes
 - `@happykit/flags/context`: A helper to pass the `flagBag` down through React's context
 
 ## API
