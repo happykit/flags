@@ -13,7 +13,8 @@ export type u64 = Brand<"u64", [u32, u32]>;
 // 16bit chunks in big endian as u32s to allow carrying of overflows.
 type u64spill = Brand<"u64spill", [u32, u32, u32, u32]>;
 
-export const strToBuf = TextEncoder.prototype.encode.bind(new TextEncoder());
+export const strToBuf: typeof TextEncoder.prototype.encode =
+  TextEncoder.prototype.encode.bind(new TextEncoder());
 
 const hexLUT = Array.from({ length: 256 }, (_, i) =>
   `00${i.toString(16)}`.slice(-2)

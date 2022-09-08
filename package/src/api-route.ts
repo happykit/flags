@@ -182,7 +182,6 @@ export function createReadHandler({
   corsHeaders = defaultCorsHeaders,
   serverTiming = false,
 }: {
-  // TODO loadFlag should use "await edgeConfig.get(projectId)" eventually
   getDefinitions: (
     projectId: string,
     envKey: string,
