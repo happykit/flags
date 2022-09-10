@@ -5,7 +5,7 @@ import type {
   GetStaticPathsContext,
   GetStaticPropsContext,
 } from "next";
-import type { Configuration } from "./config";
+import { Configuration, validate } from "./config";
 import { nanoid } from "nanoid";
 import type {
   FlagUser,
@@ -13,7 +13,7 @@ import type {
   Flags,
   SuccessInitialFlagState,
   ErrorInitialFlagState,
-  EvaluationResponseBody,
+  GenericEvaluationResponseBody,
   ResolvingError,
   Input,
 } from "./types";
@@ -26,7 +26,7 @@ import {
 } from "./utils";
 import { NextRequest, NextResponse } from "next/server";
 
-export type { EvaluationResponseBody } from "./types";
+export type { GenericEvaluationResponseBody } from "./types";
 
 function getRequestingIp(context: {
   req: IncomingMessage;
@@ -52,7 +52,7 @@ type GetFlagsSuccessBag<F extends Flags> = {
    * The actually loaded data without any defaults applied, or null when
    * the flags could not be loaded.
    */
-  data: EvaluationResponseBody<F> | null;
+  data: GenericEvaluationResponseBody<F> | null;
   error: null;
   initialFlagState: SuccessInitialFlagState<F>;
 };
@@ -77,31 +77,51 @@ type GetFlagsErrorBag<F extends Flags> = {
   initialFlagState: ErrorInitialFlagState;
 };
 
-export function createGetFlags<F extends Flags>(config: Configuration<F>) {
-  console.log(
-    "createGetFlags() on ",
-    typeof window === "undefined" ? "server" : "browser"
-  );
-  return function getFlags(options: {
-    context:
-      | Pick<GetServerSidePropsContext, "req" | "res">
-      | GetStaticPathsContext
-      | GetStaticPropsContext;
-    user?: FlagUser;
-    traits?: Traits;
-    serverLoadingTimeout?: number | false;
-    staticLoadingTimeout?: number | false;
-  }): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
-    console.log("getFlags() on server");
+interface FactoryGetFlagsOptions {
+  /**
+   * A timeout in milliseconds after which any server-side evaluation requests
+   * from `getFlags` inside of `getServerSideProps` will be aborted.
+   *
+   * Pass `false` to disable this feature.
+   */
+  serverLoadingTimeout?: number;
+  /**
+   * A timeout in milliseconds after which any static evaluation requests
+   * from `getFlags` inside of `getStaticProps` or `getStaticPaths` will
+   * be aborted.
+   *
+   * Pass `false` to disable this feature.
+   */
+  staticLoadingTimeout?: number;
+}
+
+export function createGetFlags<F extends Flags>(
+  config: Configuration<F>,
+  {
+    serverLoadingTimeout: factoryServerLoadingTimeout = 3000,
+    staticLoadingTimeout: factoryStaticLoadingTimeout = 60000,
+  }: FactoryGetFlagsOptions = {}
+) {
+  validate(config);
+  return function getFlags(
+    options: {
+      context:
+        | Pick<GetServerSidePropsContext, "req" | "res">
+        | GetStaticPathsContext
+        | GetStaticPropsContext;
+      user?: FlagUser;
+      traits?: Traits;
+    } & FactoryGetFlagsOptions
+  ): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
     if (!config) throw new MissingConfigurationError();
 
     const currentStaticLoadingTimeout = has(options, "staticLoadingTimeout")
       ? options.staticLoadingTimeout
-      : config.staticLoadingTimeout || 0;
+      : factoryStaticLoadingTimeout;
 
     const currentServerLoadingTimeout = has(options, "serverLoadingTimeout")
       ? options.serverLoadingTimeout
-      : config.serverLoadingTimeout || 0;
+      : factoryServerLoadingTimeout;
 
     // determine visitor key
     const visitorKeyFromCookie = has(options.context, "req")
@@ -194,7 +214,7 @@ export function createGetFlags<F extends Flags>(config: Configuration<F>) {
         }
 
         return workerResponse.json().then(
-          (workerResponseBody: EvaluationResponseBody<F>) => {
+          (workerResponseBody: GenericEvaluationResponseBody<F>) => {
             if (
               has(options.context, "req") &&
               workerResponseBody.visitor?.key
@@ -269,10 +289,3 @@ export function createGetFlags<F extends Flags>(config: Configuration<F>) {
     );
   };
 }
-
-// export const createGetFlags = createGetFlagsImpl;
-// typeof window === "undefined"
-//   ? createGetFlagsImpl
-//   : ((() => {
-//       console.log("dead getFlags on client");
-//     }) as unknown as typeof createGetFlagsImpl);

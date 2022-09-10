@@ -1,6 +1,6 @@
 /** global: fetch */
 import type { NextRequest } from "next/server";
-import type { Configuration } from "./config";
+import { Configuration, validate } from "./config";
 import type { CookieSerializeOptions } from "cookie";
 import { nanoid } from "nanoid";
 import type {
@@ -9,13 +9,13 @@ import type {
   Flags,
   SuccessInitialFlagState,
   ErrorInitialFlagState,
-  EvaluationResponseBody,
+  GenericEvaluationResponseBody,
   ResolvingError,
   Input,
 } from "./types";
 import { combineRawFlagsWithDefaultFlags } from "./utils";
 
-export type { EvaluationResponseBody } from "./types";
+export type { GenericEvaluationResponseBody } from "./types";
 
 function getRequestingIp(req: Pick<NextRequest, "headers">): null | string {
   const key = "x-forwarded-for";
@@ -36,7 +36,7 @@ type GetFlagsSuccessBag<F extends Flags> = {
    * The actually loaded data without any defaults applied, or null when
    * the flags could not be loaded.
    */
-  data: EvaluationResponseBody<F> | null;
+  data: GenericEvaluationResponseBody<F> | null;
   error: null;
   initialFlagState: SuccessInitialFlagState<F>;
   /**
@@ -89,24 +89,12 @@ type GetFlagsErrorBag<F extends Flags> = {
 };
 
 export function createGetEdgeFlags<F extends Flags>(config: Configuration<F>) {
-  console.log(
-    "createGetEdgeFlags() on",
-    typeof window === "undefined" ? "server" : "browser"
-  );
+  validate(config);
   return function getEdgeFlags(options: {
     request: Pick<NextRequest, "cookies" | "headers">;
     user?: FlagUser;
     traits?: Traits;
   }): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
-    console.log("getEdgeFlags()");
-    if (!config) {
-      // can't throw MissingConfigurationError here as it would lead to Next.js'
-      // "Dynamic Code Evaluation (e. g. 'eval', 'new Function') not allowed" error
-      throw new Error(
-        "@happykit/flags: Missing configuration. Call configure() first."
-      );
-    }
-
     // determine visitor key
     const visitorKeyFromCookie =
       typeof options.request.cookies.get === "function"
@@ -162,7 +150,7 @@ export function createGetEdgeFlags<F extends Flags>(config: Configuration<F>) {
         }
 
         return workerResponse.json().then(
-          (workerResponseBody: EvaluationResponseBody<F>) => {
+          (workerResponseBody: GenericEvaluationResponseBody<F>) => {
             // add defaults to flags here, but not in initialFlagState
             const flags = workerResponseBody.flags
               ? workerResponseBody.flags
@@ -226,8 +214,3 @@ export function createGetEdgeFlags<F extends Flags>(config: Configuration<F>) {
     );
   };
 }
-
-// export const createGetEdgeFlags =
-//   typeof window === "undefined"
-//     ? createGetEdgeFlagsImpl
-//     : ((() => void 0) as unknown as typeof createGetEdgeFlagsImpl);

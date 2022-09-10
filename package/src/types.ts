@@ -34,7 +34,7 @@ export type Input = {
 };
 
 export type SuccessOutcome<F extends Flags> = {
-  data: EvaluationResponseBody<F>;
+  data: GenericEvaluationResponseBody<F>;
   error?: never;
 };
 
@@ -74,7 +74,7 @@ export type EvaluationRequestBody = {
   traits: Traits | null;
 };
 
-export type EvaluationResponseBody<F extends Flags> = {
+export type GenericEvaluationResponseBody<F extends Flags> = {
   visitor: { key: string } | null;
   flags: F;
 };
@@ -140,48 +140,11 @@ export type IncomingConfiguration<F extends Flags> = {
    * @default `{}`
    */
   defaultFlags?: F;
-  /**
-   * By default `@happykit/flags` refetches the feature flags when the window
-   * regains focus. You can disable this by passing `revalidateOnFocus: false`.
-   */
-  revalidateOnFocus?: boolean;
-  /**
-   * @deprecated Use clientLoadingTimeout instead.
-   */
-  loadingTimeout?: number;
-  /**
-   * A timeout in milliseconds after which any client-side evaluation requests
-   * from `useFlags` will be aborted.
-   *
-   * Pass `false` to disable this feature.
-   *
-   * This feature is only supported in [browsers which support](https://caniuse.com/abortcontroller) the [`AbortController`](https://developer.mozilla.org/en-US/docs/Web/API/AbortController).
-   */
-  clientLoadingTimeout?: number;
-  /**
-   * A timeout in milliseconds after which any server-side evaluation requests
-   * from `getFlags` inside of `getServerSideProps` will be aborted.
-   *
-   * Pass `false` to disable this feature.
-   */
-  serverLoadingTimeout?: number;
-  /**
-   * A timeout in milliseconds after which any static evaluation requests
-   * from `getFlags` inside of `getStaticProps` or `getStaticPaths` will
-   * be aborted.
-   *
-   * Pass `false` to disable this feature.
-   */
-  staticLoadingTimeout?: number;
 };
 
 export type DefaultConfiguration = {
   endpoint: string;
   defaultFlags: Flags;
-  revalidateOnFocus: boolean;
-  clientLoadingTimeout?: number;
-  serverLoadingTimeout?: number;
-  staticLoadingTimeout?: number;
 };
 
 type Revalidate = () => void;
@@ -208,7 +171,7 @@ export type EvaluatingFlagBag<F extends Flags> = {
 
 export type SucceededFlagBag<F extends Flags> = {
   flags: F;
-  data: EvaluationResponseBody<F>;
+  data: GenericEvaluationResponseBody<F>;
   error: null;
   fetching: false;
   // true, unless input is for a static page (has no visitorKey)
@@ -219,7 +182,7 @@ export type SucceededFlagBag<F extends Flags> = {
 
 export type RevalidatingAfterSuccessFlagBag<F extends Flags> = {
   flags: F;
-  data: EvaluationResponseBody<F>;
+  data: GenericEvaluationResponseBody<F>;
   error: null;
   fetching: true;
   settled: boolean;

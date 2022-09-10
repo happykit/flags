@@ -13,13 +13,6 @@ const FlagBagContext = React.createContext<FlagBag<Flags> | null>(null);
  * _Note that it's generally better to explicitly pass your flags down as props,
  * so you might not need this at all._
  */
-// export function useFlagBag<F extends Flags = Flags>() {
-//   const flagBagContext = React.useContext(FlagBagContext);
-//   if (flagBagContext === null)
-//     throw new Error("Error: useFlagBag was used outside of FlagBagProvider.");
-//   return flagBagContext as FlagBag<F>;
-// }
-
 export function createUseFlagBag<F extends Flags = Flags>() {
   return function useFlagBag() {
     const flagBagContext = React.useContext(FlagBagContext);

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { nanoid } from "nanoid";
-import type { Configuration } from "./config";
+import { Configuration, validate } from "./config";
 import {
   InitialFlagState,
   Flags,
@@ -9,7 +9,7 @@ import {
   FlagUser,
   Traits,
   FlagBag,
-  EvaluationResponseBody,
+  GenericEvaluationResponseBody,
   SuccessOutcome,
   ErrorOutcome,
   RevalidatingAfterErrorFlagBag,
@@ -372,27 +372,41 @@ export function useOnce() {
 
 export const cache = new ObjectMap<Input, Outcome<Flags>>();
 
+interface FactoryUseFlagOptions {
+  /**
+   * By default `@happykit/flags` refetches the feature flags when the window
+   * regains focus. You can disable this by passing `revalidateOnFocus: false`.
+   */
+  revalidateOnFocus?: boolean;
+  /**
+   * A timeout in milliseconds after which any client-side evaluation requests
+   * from `useFlags` will be aborted.
+   *
+   * Pass `false` to disable this feature.
+   *
+   * This feature is only supported in [browsers which support](https://caniuse.com/abortcontroller) the [`AbortController`](https://developer.mozilla.org/en-US/docs/Web/API/AbortController).
+   */
+  clientLoadingTimeout?: number;
+}
+
 export type UseFlagsOptions<F extends Flags = Flags> =
-  | {
+  | ({
       user?: FlagUser | null;
       traits?: Traits | null;
       initialState?: InitialFlagState<F>;
-      revalidateOnFocus?: boolean;
       pause?: boolean;
-      loadingTimeout?: number | false;
-    }
+    } & FactoryUseFlagOptions)
   | undefined;
 
-export function createUseFlags<F extends Flags>(config: Configuration<F>) {
-  console.log(
-    "createUseFlags() on",
-    typeof window === "undefined" ? "server" : "browser"
-  );
+export function createUseFlags<F extends Flags>(
+  config: Configuration<F>,
+  {
+    revalidateOnFocus: factoryRevalidateOnFocus = true,
+    clientLoadingTimeout: factoryClientLoadingOptions = 3000,
+  }: FactoryUseFlagOptions = {}
+) {
+  validate(config);
   return function useFlags(options: UseFlagsOptions<F> = {}): FlagBag<F> {
-    console.log(
-      "useFlags() on",
-      typeof window === "undefined" ? "server" : "browser"
-    );
     if (!config) throw new MissingConfigurationError();
 
     useOnce();
@@ -403,13 +417,12 @@ export function createUseFlags<F extends Flags>(config: Configuration<F>) {
     const currentTraits = options.traits || null;
     const shouldRevalidateOnFocus =
       options.revalidateOnFocus === undefined
-        ? config.revalidateOnFocus
+        ? factoryRevalidateOnFocus
         : options.revalidateOnFocus;
 
-    const currentLoadingTimeout = has(options, "loadingTimeout")
-      ? options.loadingTimeout
-      : // also account for deprecated loadingTimeout
-        config.clientLoadingTimeout || config.loadingTimeout || 0;
+    const currentClientLoadingTimeout = has(options, "clientLoadingTimeout")
+      ? options.clientLoadingTimeout
+      : factoryClientLoadingOptions;
 
     const [[state, effects], dispatch] = React.useReducer(
       reducer,
@@ -505,10 +518,10 @@ export function createUseFlags<F extends Flags>(config: Configuration<F>) {
             const { id, input, controller } = effect;
 
             let timeoutId: ReturnType<typeof setTimeout>;
-            if (controller && currentLoadingTimeout) {
+            if (controller && currentClientLoadingTimeout) {
               timeoutId = setTimeout(
                 () => controller.abort(),
-                currentLoadingTimeout
+                currentClientLoadingTimeout
               );
             }
 
@@ -533,7 +546,7 @@ export function createUseFlags<F extends Flags>(config: Configuration<F>) {
                 }
 
                 return response.json().then(
-                  (data: EvaluationResponseBody<F>) => {
+                  (data: GenericEvaluationResponseBody<F>) => {
                     // responses to outdated requests are skipped in the reducer
                     dispatch({
                       type: "settle/success",

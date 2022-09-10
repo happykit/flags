@@ -7,16 +7,22 @@ import type {
 export type Configuration<F extends Flags> = DefaultConfiguration &
   IncomingConfiguration<F>;
 
+/**
+ * Throws if envKey or endpoint are missing in configuration
+ */
+export function validate<F extends Flags = Flags>(config: Configuration<F>) {
+  if (!config.envKey || config.envKey.length === 0)
+    throw new Error("@happykit/flags: envKey missing");
+  if (!config.endpoint || config.endpoint.length === 0)
+    throw new Error("@happykit/flags: endpoint missing");
+}
+
 export function configure<F extends Flags = Flags>(
   options: IncomingConfiguration<F>
 ): Configuration<F> {
   const defaults: DefaultConfiguration = {
     endpoint: "https://happykit.dev/api/flags",
     defaultFlags: {},
-    revalidateOnFocus: true,
-    clientLoadingTimeout: 3000,
-    serverLoadingTimeout: 3000,
-    staticLoadingTimeout: 60000,
   };
 
   if (
@@ -29,7 +35,5 @@ export function configure<F extends Flags = Flags>(
     throw new Error("@happykit/flags: Invalid configuration");
   }
 
-  const config = Object.assign({}, defaults, options);
-
-  return config as Configuration<F>;
+  return Object.assign({}, defaults, options) as Configuration<F>;
 }
