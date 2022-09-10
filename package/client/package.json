@@ -1,5 +1,6 @@
 {
-  "main": "../dist/client.cjs",
-  "module": "../dist/client.js",
-  "types": "../dist/client.d.ts"
+  "main": "../dist/client.js",
+  "module": "../dist/client.mjs",
+  "types": "../dist/client.d.ts",
+  "type": "module"
 }

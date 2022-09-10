@@ -1,5 +1,6 @@
 {
-  "main": "../dist/context.cjs",
-  "module": "../dist/context.js",
-  "types": "../dist/context.d.ts"
+  "main": "../dist/context.js",
+  "module": "../dist/context.mjs",
+  "types": "../dist/context.d.ts",
+  "type": "module"
 }

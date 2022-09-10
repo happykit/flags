@@ -58,6 +58,7 @@
     "config",
     "context",
     "edge",
+    "evaluate",
     "server",
     "api-route"
   ]
