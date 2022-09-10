@@ -1,6 +1,5 @@
 {
   "main": "../dist/evaluate.js",
   "module": "../dist/evaluate.mjs",
-  "types": "../dist/evaluate.d.ts",
-  "type": "module"
+  "types": "../dist/evaluate.d.ts"
 }
