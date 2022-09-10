@@ -221,3 +221,8 @@ export function createGetEdgeFlags<F extends Flags>(
     );
   };
 }
+
+// export const createGetEdgeFlags =
+//   typeof window === "undefined"
+//     ? createGetEdgeFlagsImpl
+//     : ((() => void 0) as unknown as typeof createGetEdgeFlagsImpl);

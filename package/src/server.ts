@@ -289,3 +289,10 @@ export function createGetFlags<F extends Flags>(
     );
   };
 }
+
+// export const createGetFlags = createGetFlagsImpl;
+// typeof window === "undefined"
+//   ? createGetFlagsImpl
+//   : ((() => {
+//       console.log("dead getFlags on client");
+//     }) as unknown as typeof createGetFlagsImpl);
