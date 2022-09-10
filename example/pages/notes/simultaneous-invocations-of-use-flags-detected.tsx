@@ -1,6 +1,6 @@
 import Link from "next/link";
 import * as React from "react";
-import { Layout } from "../../components/Layout";
+import { Layout } from "components/Layout";
 
 export default function Page() {
   return (

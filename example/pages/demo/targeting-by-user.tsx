@@ -1,15 +1,14 @@
 import * as React from "react";
 import { GetServerSideProps } from "next";
-import { Layout } from "../../components/Layout";
-import { Result } from "../../components/Result";
-import { InitialFlagState, useFlags } from "@happykit/flags/client";
-import { getFlags } from "@happykit/flags/server";
-import { AppFlags } from "../../types/AppFlags";
+import { Layout } from "components/Layout";
+import { Result } from "components/Result";
+import { getFlags } from "flags/server";
+import { type InitialFlagState, useFlags } from "flags/client";
 
 type User = { key: string; name: string };
 
 type ServerSideProps = {
-  initialFlagState: InitialFlagState<AppFlags>;
+  initialFlagState: InitialFlagState;
   user: User;
 };
 
@@ -21,7 +20,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
   // These could be loaded from anywhere
   const user: User = { key: "fake-user-key-1", name: "Jon" };
 
-  const { initialFlagState } = await getFlags<AppFlags>({ context, user });
+  const { initialFlagState } = await getFlags({ context, user });
   return { props: { initialFlagState, user } };
 };
 

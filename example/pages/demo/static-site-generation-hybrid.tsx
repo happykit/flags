@@ -1,20 +1,19 @@
 import * as React from "react";
 import { GetStaticProps } from "next";
-import { Layout } from "../../components/Layout";
-import { Result } from "../../components/Result";
-import { InitialFlagState, useFlags } from "@happykit/flags/client";
-import { getFlags } from "@happykit/flags/server";
-import { AppFlags } from "../../types/AppFlags";
+import { Layout } from "components/Layout";
+import { Result } from "components/Result";
+import { getFlags } from "flags/server";
+import { type InitialFlagState, useFlags } from "flags/client";
 
-type StaticProps = { initialFlagState: InitialFlagState<AppFlags> };
+type StaticProps = { initialFlagState: InitialFlagState };
 
 export const getStaticProps: GetStaticProps<StaticProps> = async (context) => {
-  const { initialFlagState } = await getFlags<AppFlags>({ context });
+  const { initialFlagState } = await getFlags({ context });
   return { props: { initialFlagState } };
 };
 
 export default function Page(props: StaticProps) {
-  const flagBag = useFlags<AppFlags>({ initialState: props.initialFlagState });
+  const flagBag = useFlags({ initialState: props.initialFlagState });
 
   return (
     <Layout

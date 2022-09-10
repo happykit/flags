@@ -1,5 +1,5 @@
 import React from "react";
-import { AppFlags } from "../types/AppFlags";
+import type { AppFlags } from "flags/config";
 
 export function EdgeFunctionContent(props: {
   checkoutVariant: AppFlags["checkout"];

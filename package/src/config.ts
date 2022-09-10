@@ -7,20 +7,9 @@ import type {
 export type Configuration<F extends Flags> = DefaultConfiguration &
   IncomingConfiguration<F>;
 
-let config: Configuration<Flags> | null = null;
-
-// getter is necessary as we can't export a live binding of "config"
-export function getConfig() {
-  return config;
-}
-
-export function _resetConfig() {
-  config = null;
-}
-
 export function configure<F extends Flags = Flags>(
   options: IncomingConfiguration<F>
-) {
+): Configuration<F> {
   const defaults: DefaultConfiguration = {
     endpoint: "https://happykit.dev/api/flags",
     defaultFlags: {},
@@ -40,5 +29,7 @@ export function configure<F extends Flags = Flags>(
     throw new Error("@happykit/flags: Invalid configuration");
   }
 
-  config = Object.assign({}, defaults, options);
+  const config = Object.assign({}, defaults, options);
+
+  return config as Configuration<F>;
 }

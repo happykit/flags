@@ -1,5 +1,6 @@
 {
   "main": "../dist/context.js",
   "module": "../dist/context.mjs",
-  "types": "../dist/context.d.ts"
+  "types": "../dist/context.d.ts",
+  "sideEffects": false
 }

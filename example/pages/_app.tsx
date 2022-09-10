@@ -3,8 +3,6 @@ import Head from "next/head";
 import type { AppProps } from "next/app";
 import "tailwindcss/tailwind.css";
 import Script from "next/script";
-// Import HappyKit configuration
-import "../flags.config";
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (

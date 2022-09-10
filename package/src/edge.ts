@@ -1,6 +1,6 @@
 /** global: fetch */
 import type { NextRequest } from "next/server";
-import { getConfig } from "./config";
+import type { Configuration } from "./config";
 import type { CookieSerializeOptions } from "cookie";
 import { nanoid } from "nanoid";
 import type {
@@ -88,128 +88,146 @@ type GetFlagsErrorBag<F extends Flags> = {
   cookie: null;
 };
 
-export function getEdgeFlags<F extends Flags = Flags>(options: {
-  request: Pick<NextRequest, "cookies" | "headers">;
-  user?: FlagUser;
-  traits?: Traits;
-}): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
-  const config = getConfig();
-  if (!config) {
-    // can't throw MissingConfigurationError here as it would lead to Next.js'
-    // "Dynamic Code Evaluation (e. g. 'eval', 'new Function') not allowed" error
-    throw new Error(
-      "@happykit/flags: Missing configuration. Call configure() first."
-    );
-  }
+export function createGetEdgeFlags<F extends Flags>(config: Configuration<F>) {
+  console.log(
+    "createGetEdgeFlags() on",
+    typeof window === "undefined" ? "server" : "browser"
+  );
+  return function getEdgeFlags(options: {
+    request: Pick<NextRequest, "cookies" | "headers">;
+    user?: FlagUser;
+    traits?: Traits;
+  }): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
+    console.log("getEdgeFlags()");
+    if (!config) {
+      // can't throw MissingConfigurationError here as it would lead to Next.js'
+      // "Dynamic Code Evaluation (e. g. 'eval', 'new Function') not allowed" error
+      throw new Error(
+        "@happykit/flags: Missing configuration. Call configure() first."
+      );
+    }
 
-  // determine visitor key
-  const visitorKeyFromCookie =
-    typeof options.request.cookies.get === "function"
-      ? options.request.cookies.get("hkvk")
-      : // backwards compatible for when cookies was { [key: string]: string; }
-        // in Next.js
-        (options.request.cookies as any).hkvk || null;
+    // determine visitor key
+    const visitorKeyFromCookie =
+      typeof options.request.cookies.get === "function"
+        ? options.request.cookies.get("hkvk")
+        : // backwards compatible for when cookies was { [key: string]: string; }
+          // in Next.js
+          (options.request.cookies as any).hkvk || null;
 
-  // When using server-side rendering and there was no visitor key cookie,
-  // we generate a visitor key
-  // When using static rendering, we never set any visitor key
-  const visitorKey = visitorKeyFromCookie ? visitorKeyFromCookie : nanoid();
+    // When using server-side rendering and there was no visitor key cookie,
+    // we generate a visitor key
+    // When using static rendering, we never set any visitor key
+    const visitorKey = visitorKeyFromCookie ? visitorKeyFromCookie : nanoid();
 
-  const input: Input = {
-    endpoint: config.endpoint,
-    envKey: config.envKey,
-    requestBody: {
-      visitorKey,
-      user: options.user || null,
-      traits: options.traits || null,
-    },
-  };
+    const input: Input = {
+      endpoint: config.endpoint,
+      envKey: config.envKey,
+      requestBody: {
+        visitorKey,
+        user: options.user || null,
+        traits: options.traits || null,
+      },
+    };
 
-  const requestingIp = getRequestingIp(options.request);
+    const requestingIp = getRequestingIp(options.request);
 
-  const xForwardedForHeader: { "x-forwarded-for": string } | {} = requestingIp
-    ? // add x-forwarded-for header so the service worker gets
-      // access to the real client ip
-      { "x-forwarded-for": requestingIp }
-    : {};
+    const xForwardedForHeader: { "x-forwarded-for": string } | {} = requestingIp
+      ? // add x-forwarded-for header so the service worker gets
+        // access to the real client ip
+        { "x-forwarded-for": requestingIp }
+      : {};
 
-  return fetch([input.endpoint, input.envKey].join("/"), {
-    method: "POST",
-    headers: Object.assign(
-      { "content-type": "application/json" },
-      xForwardedForHeader
-    ),
-    body: JSON.stringify(input.requestBody),
-  }).then(
-    (
-      workerResponse
-    ):
-      | Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>>
-      | GetFlagsErrorBag<F> => {
-      if (!workerResponse.ok /* status not 200-299 */) {
-        return {
-          flags: config.defaultFlags as F,
-          data: null,
-          error: "response-not-ok",
-          initialFlagState: { input, outcome: { error: "response-not-ok" } },
-          cookie: null,
-        };
-      }
-
-      return workerResponse.json().then(
-        (workerResponseBody: EvaluationResponseBody<F>) => {
-          // add defaults to flags here, but not in initialFlagState
-          const flags = workerResponseBody.flags
-            ? workerResponseBody.flags
-            : null;
-          const flagsWithDefaults = combineRawFlagsWithDefaultFlags<F>(
-            flags,
-            config.defaultFlags
-          );
-
-          const cookieOptions: CookieSerializeOptions = {
-            path: "/",
-            maxAge: 60 * 60 * 24 * 180,
-            sameSite: "lax",
-          };
-
-          return {
-            flags: flagsWithDefaults,
-            data: workerResponseBody,
-            error: null,
-            initialFlagState: { input, outcome: { data: workerResponseBody } },
-            cookie: workerResponseBody.visitor?.key
-              ? {
-                  name: "hkvk",
-                  value: workerResponseBody.visitor.key,
-                  options: cookieOptions,
-                  args: ["hkvk", workerResponseBody.visitor.key, cookieOptions],
-                }
-              : null,
-          };
-        },
-        () => {
+    return fetch([input.endpoint, input.envKey].join("/"), {
+      method: "POST",
+      headers: Object.assign(
+        { "content-type": "application/json" },
+        xForwardedForHeader
+      ),
+      body: JSON.stringify(input.requestBody),
+    }).then(
+      (
+        workerResponse
+      ):
+        | Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>>
+        | GetFlagsErrorBag<F> => {
+        if (!workerResponse.ok /* status not 200-299 */) {
           return {
             flags: config.defaultFlags as F,
             data: null,
-            error: "invalid-response-body",
-            initialFlagState: {
-              input,
-              outcome: { error: "invalid-response-body" },
-            },
+            error: "response-not-ok",
+            initialFlagState: { input, outcome: { error: "response-not-ok" } },
             cookie: null,
           };
         }
-      );
-    },
-    () => {
-      return {
-        flags: config.defaultFlags as F,
-        data: null,
-        error: "network-error",
-        initialFlagState: { input, outcome: { error: "network-error" } },
-        cookie: null,
-      };
-    }
-  );
+
+        return workerResponse.json().then(
+          (workerResponseBody: EvaluationResponseBody<F>) => {
+            // add defaults to flags here, but not in initialFlagState
+            const flags = workerResponseBody.flags
+              ? workerResponseBody.flags
+              : null;
+            const flagsWithDefaults = combineRawFlagsWithDefaultFlags<F>(
+              flags,
+              config.defaultFlags
+            );
+
+            const cookieOptions: CookieSerializeOptions = {
+              path: "/",
+              maxAge: 60 * 60 * 24 * 180,
+              sameSite: "lax",
+            };
+
+            return {
+              flags: flagsWithDefaults,
+              data: workerResponseBody,
+              error: null,
+              initialFlagState: {
+                input,
+                outcome: { data: workerResponseBody },
+              },
+              cookie: workerResponseBody.visitor?.key
+                ? {
+                    name: "hkvk",
+                    value: workerResponseBody.visitor.key,
+                    options: cookieOptions,
+                    args: [
+                      "hkvk",
+                      workerResponseBody.visitor.key,
+                      cookieOptions,
+                    ],
+                  }
+                : null,
+            };
+          },
+          () => {
+            return {
+              flags: config.defaultFlags as F,
+              data: null,
+              error: "invalid-response-body",
+              initialFlagState: {
+                input,
+                outcome: { error: "invalid-response-body" },
+              },
+              cookie: null,
+            };
+          }
+        );
+      },
+      () => {
+        return {
+          flags: config.defaultFlags as F,
+          data: null,
+          error: "network-error",
+          initialFlagState: { input, outcome: { error: "network-error" } },
+          cookie: null,
+        };
+      }
+    );
+  };
 }
+
+// export const createGetEdgeFlags =
+//   typeof window === "undefined"
+//     ? createGetEdgeFlagsImpl
+//     : ((() => void 0) as unknown as typeof createGetEdgeFlagsImpl);

@@ -1,6 +1,6 @@
 import * as React from "react";
-import { Layout } from "../../components/Layout";
-import { HelpBox } from "../../components/HelpBox";
+import { Layout } from "components/Layout";
+import { HelpBox } from "components/HelpBox";
 import dedent from "dedent";
 
 function Response(props: { children: string }) {

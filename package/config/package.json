@@ -1,5 +1,6 @@
 {
   "main": "../dist/config.js",
   "module": "../dist/config.mjs",
-  "types": "../dist/config.d.ts"
+  "types": "../dist/config.d.ts",
+  "sideEffects": false
 }

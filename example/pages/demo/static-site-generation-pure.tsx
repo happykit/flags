@@ -1,14 +1,14 @@
 import * as React from "react";
 import { GetStaticProps } from "next";
-import { Layout } from "../../components/Layout";
-import { Result } from "../../components/Result";
-import { getFlags } from "@happykit/flags/server";
-import { AppFlags } from "../../types/AppFlags";
+import { Layout } from "components/Layout";
+import { Result } from "components/Result";
+import { getFlags } from "flags/server";
+import type { AppFlags } from "flags/config";
 
 type StaticProps = { flags: AppFlags | null };
 
 export const getStaticProps: GetStaticProps<StaticProps> = async (context) => {
-  const { flags } = await getFlags<AppFlags>({ context });
+  const { flags } = await getFlags({ context });
   return { props: { flags } };
 };
 

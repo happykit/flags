@@ -1,23 +1,16 @@
 import * as React from "react";
 import { GetServerSideProps } from "next";
-import { Layout } from "../../components/Layout";
-import { Result } from "../../components/Result";
-import { InitialFlagState, useFlags } from "@happykit/flags/client";
-import { getFlags } from "@happykit/flags/server";
+import { Layout } from "components/Layout";
+import { Result } from "components/Result";
+import { getFlags } from "flags/server";
+import { useFlags, type InitialFlagState } from "flags/client";
 
-type AppFlags = {
-  ads: boolean;
-  checkout: "short" | "medium" | "full";
-  discount: 5 | 10 | 15;
-  purchaseButtonLabel: string;
-};
-
-type ServerSideProps = { initialFlagState: InitialFlagState<AppFlags> };
+type ServerSideProps = { initialFlagState: InitialFlagState };
 
 export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
   context
 ) => {
-  const { initialFlagState } = await getFlags<AppFlags>({ context });
+  const { initialFlagState } = await getFlags({ context });
   return { props: { initialFlagState } };
 };
 
