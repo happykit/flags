@@ -1,5 +1,6 @@
 {
-  "main": "../dist/api-route.cjs",
-  "module": "../dist/api-route.js",
-  "types": "../dist/api-route.d.ts"
+  "main": "../dist/api-route.js",
+  "module": "../dist/api-route.mjs",
+  "types": "../dist/api-route.d.ts",
+  "type": "module"
 }
