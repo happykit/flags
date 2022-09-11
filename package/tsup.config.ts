@@ -13,7 +13,7 @@ export default defineConfig((options) => ({
   format: ["esm", "cjs"],
   splitting: true,
   sourcemap: false,
-  minify: false,
+  minify: true,
   clean: true,
   skipNodeModulesBundle: true,
   dts: true,

@@ -45,13 +45,13 @@ Add Feature Flags to your Next.js application with a single React Hook. This pac
   - [Setting up the Environment Variable](#setting-up-the-environment-variable)
 - [Basic Usage](#basic-usage)
 - [Exports](#exports)
-- [Factory API](#factory-api)
-- [Your API](#your-api)
-  - [`configure`](#configure)
+- [`@happykit/flags` API](#happykitflags-api)
+- [`flags` API](#flags-api)
+  - [`config`](#config)
   - [`useFlags`](#useflags)
     - [`flagBag`](#flagbag)
     - [Supported user attributes](#supported-user-attributes)
-  - [`getFlags`](#getflags)
+    - [`getFlags`](#getflags)
   - [`getEdgeFlags`](#getedgeflags)
 - [Advanced Usage](#advanced-usage)
   - [With user targeting](#with-user-targeting)
@@ -231,25 +231,29 @@ export default function FooPage(props) {
 - `@happykit/flags/edge`: Use flags in Middleware and Edge API Routes
 - `@happykit/flags/context`: A helper to pass the `flagBag` down through React's context
 
-## Factory API
+## `@happykit/flags` API
 
+After setting up your `flags` folder you will not interact with `@happykit/flags` much. Instead, your application will import from your `flags` folder. That's why the API of `@happykit/flags` is not described in more detail here. It has extensive JSDoc if you want to dig deep.
 
+## `flags` API
 
-## Your API
+This section describes the exports of your `flags` folder.
 
-### `configure`
+### `config`
 
-*exported from `@happykit/flags/config`*
+*exported from `flags/config`*
 
-- `configure(options)`
-  - `options.envKey` _(string)_ _required_: Your HappyKit Flags Client Id
-  - `options.defaultFlags = undefined` _(object)_ _optional_: Key-value pairs of flags and their values. These values are used as fallbacks in `useFlags` and `getFlags`. The fallbacks are used while the actual flags are loaded, in case a flag is missing or when the request loading the flags fails for unexpected reasons. If you don't declare `defaultFlags`, then the flag values will be `undefined`.
-  - `options.endpoint = "https://happykit.dev/api/flags"` _(string)_ _optional_: The endpoint to load flags from. This does not usually need to be changed.
+Exports a `config` object which is shared across all runtimes (server, client, edge).
+
+- `config`
+  - `config.envKey` _(string)_ _required_: Your HappyKit Flags Client Id
+  - `config.defaultFlags = undefined` _(object)_ _optional_: Key-value pairs of flags and their values. These values are used as fallbacks in `useFlags` and `getFlags`. The fallbacks are used while the actual flags are loaded, in case a flag is missing or when the request loading the flags fails for unexpected reasons. If you don't declare `defaultFlags`, then the flag values will be `undefined`.
+  - `config.endpoint = "https://happykit.dev/api/flags"` _(string)_ _optional_: The endpoint to load flags from. This does not usually need to be changed.
 
 
 ### `useFlags`
 
-*exported from your `@happykit/flags/client`*
+*exported from `flags/client`*
 
 This hook loads the flags on the client.
 
@@ -288,9 +292,10 @@ Provide any of these attributes to store them in HappyKit. You will be able to u
 - `avatar` _(string)_: URL to users profile picture
 - `country` _(string)_: Two-letter uppercase country-code of user's county, see [ISO 3166-1](https://en.wikipedia.org/wiki/ISO_3166-1)
 
-### `getFlags`
 
-*exported from `@happykit/flags/server`*
+#### `getFlags`
+
+*exported from `flags/server`*
 
 - `getFlags(options)`
   - `options.context` _(object)_ _required_: The context which you receive from `getStaticProps` or `getServerSideProps`.
@@ -315,7 +320,9 @@ This function returns a promise resolving to an object that looks like this:
 
 ### `getEdgeFlags`
 
-This function is meant to be used from [Next.js Middleware](https://nextjs.org/docs/middleware) (`middleware` files).
+*exported from `flags/edge`*
+
+This function is meant to be used from [Next.js Middleware](https://nextjs.org/docs/middleware) (`middleware` files) and [Edge API Routes](https://nextjs.org/docs/api-routes/edge-api-routes).
 
 *exported from `@happykit/flags/edge`*
 

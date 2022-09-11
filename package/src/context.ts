@@ -14,6 +14,12 @@ const FlagBagContext = React.createContext<FlagBag<Flags> | null>(null);
  * so you might not need this at all._
  */
 export function createUseFlagBag<F extends Flags = Flags>() {
+  /**
+   * Accesses the evaluated flags from context.
+   *
+   * You need to render a <FlagBagProvider /> further up to be able to use
+   * this component.
+   */
   return function useFlagBag() {
     const flagBagContext = React.useContext(FlagBagContext);
     if (flagBagContext === null)

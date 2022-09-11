@@ -5,7 +5,7 @@ import type {
   GetStaticPathsContext,
   GetStaticPropsContext,
 } from "next";
-import { Configuration, validate } from "./config";
+import type { Configuration } from "./config";
 import { nanoid } from "nanoid";
 import type {
   FlagUser,
@@ -17,13 +17,13 @@ import type {
   ResolvingError,
   Input,
 } from "./internal/types";
-import { MissingConfigurationError } from "./internal/types";
 import {
   has,
   serializeVisitorKeyCookie,
   combineRawFlagsWithDefaultFlags,
   getCookie,
 } from "./internal/utils";
+import { applyConfigurationDefaults } from "./internal/apply-configuration-defaults";
 
 export type { GenericEvaluationResponseBody } from "./internal/types";
 
@@ -94,14 +94,17 @@ interface FactoryGetFlagsOptions {
   staticLoadingTimeout?: number;
 }
 
+/**
+ * Creates a getFlags() function your application should use when loading flags on the server.
+ */
 export function createGetFlags<F extends Flags>(
-  config: Configuration<F>,
+  configuration: Configuration<F>,
   {
     serverLoadingTimeout: factoryServerLoadingTimeout = 3000,
     staticLoadingTimeout: factoryStaticLoadingTimeout = 60000,
   }: FactoryGetFlagsOptions = {}
 ) {
-  validate(config);
+  const config = applyConfigurationDefaults(configuration);
   return function getFlags(
     options: {
       context:
@@ -112,8 +115,6 @@ export function createGetFlags<F extends Flags>(
       traits?: Traits;
     } & FactoryGetFlagsOptions
   ): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
-    if (!config) throw new MissingConfigurationError();
-
     const currentStaticLoadingTimeout = has(options, "staticLoadingTimeout")
       ? options.staticLoadingTimeout
       : factoryStaticLoadingTimeout;

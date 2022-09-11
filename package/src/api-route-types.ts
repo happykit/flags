@@ -156,7 +156,6 @@ export type Flag = BooleanFlag | NumberFlag | StringFlag;
 // from Models.Fauna
 export type FlagUserAttributes = {
   key: string;
-  persist?: boolean;
   email?: string;
   name?: string;
   avatar?: string;

@@ -1,19 +1,31 @@
+import { Configuration } from "../config";
+
+/**
+ * A user to load the flags for. A user must at least have a `key`. See the
+ * supported user attributes [here](#supported-user-attributes).
+ * The user information you pass can be used for individual targeting or rules.
+ */
 export type FlagUser = {
   key: string;
-  /**
-   * Persist user in HappyKit
-   *
-   * @deprecated This feature has been removed. It is no longer possible to persist users.
-   */
-  persist?: boolean;
   email?: string;
   name?: string;
   avatar?: string;
   country?: string;
 };
 
+/**
+ * Traits
+ *
+ * An object which you have access to in the flag's rules.
+ * You can target users based on traits.
+ */
 export type Traits = { [key: string]: any };
 
+/**
+ * Generic Feature Flags
+ *
+ * Entries consist of the feature flag name as the key and the resolved variant's value as the value.
+ */
 export type Flags = {
   // A flag can resolve to null when a percentage based rollout is set based
   // on a criteria not present on the user, e.g. when bucketing by trait,
@@ -21,12 +33,13 @@ export type Flags = {
   [key: string]: boolean | number | string | null;
 };
 
-export class MissingConfigurationError extends Error {
-  constructor() {
-    super("@happykit/flags: Missing configuration. Call configure() first.");
-  }
-}
+export type FullConfiguration<F extends Flags> = Required<Configuration<F>>;
 
+/**
+ * The inputs to a flag evaluation.
+ *
+ * Given a flag has not changed, the same inputs will always lead to the same variants when evaluating a flag.
+ */
 export type Input = {
   endpoint: string;
   envKey: string;
@@ -43,6 +56,9 @@ export type ErrorOutcome = {
   error: ResolvingError;
 };
 
+/**
+ * The result of a flag evaluation
+ */
 export type Outcome<F extends Flags> = SuccessOutcome<F> | ErrorOutcome;
 
 /**
@@ -74,6 +90,9 @@ export type EvaluationRequestBody = {
   traits: Traits | null;
 };
 
+/**
+ * The HappyKit API response to a feature flag evaluation request.
+ */
 export type GenericEvaluationResponseBody<F extends Flags> = {
   visitor: { key: string } | null;
   flags: F;
@@ -90,62 +109,14 @@ export type ErrorInitialFlagState = {
   outcome: ErrorOutcome;
 };
 
+/**
+ * The initial flag state.
+ *
+ * In case you preloaded your flags during server-side rendering using `getFlags()`, provide the returned state as `initialState`. The client will then skip the first request whenever possible and use the provided flags instead. This allows you to get rid of loading states and on the client.
+ */
 export type InitialFlagState<F extends Flags> =
   | SuccessInitialFlagState<F>
   | ErrorInitialFlagState;
-
-export type IncomingConfiguration<F extends Flags> = {
-  /**
-   * Find this key in your happykit.dev project settings.
-   *
-   * It specifies the project and environment your flags will be loaded for.
-   *
-   * There are three different keys per project, one for each of these
-   * environments: development, preview and production.
-   *
-   * It's recommeneded to stor eyour `envKey` in an environment variable like
-   * `NEXT_PUBLIC_FLAGS_ENV_KEY`. That way you can pass in a different env key
-   * for each environment easily.
-   */
-  envKey: string;
-  /**
-   * Where the environment variables will be fetched from.
-   *
-   * This gets combined with your `envKey` into something like
-   * `https://happykit.dev/api/flags/flags_pub_000000000`.
-   *
-   * It is rare that you need to pass this in. It is mostly used for development
-   * of this library itself, but it might be useful when you have to proxy the
-   * feature flag requests for whatever reason.
-   *
-   * @default "https://happykit.dev/api/flags"
-   */
-  endpoint?: string;
-  /**
-   * A flags object that will be used as the default.
-   *
-   * This default kicks in when the flags could not be loaded from the server
-   * for whatever reason.
-   *
-   * The default is also used to extend the loaded flags. When a flag was deleted
-   * in happykit, but you have a default set up for it, the default will be served.
-   *
-   * This is most useful to gracefully deal with loading errors of feature flags.
-   * It also keeps the number of possible states a flag can be in small, as
-   * you'll have the guarantee that all flags will always have a value when you set this.
-   *
-   * This can be useful while you're developing in case you haven't created a new
-   * flag yet, but want to program as if it already exists.
-   *
-   * @default `{}`
-   */
-  defaultFlags?: F;
-};
-
-export type DefaultConfiguration = {
-  endpoint: string;
-  defaultFlags: Flags;
-};
 
 type Revalidate = () => void;
 
@@ -211,6 +182,9 @@ export type RevalidatingAfterErrorFlagBag<F extends Flags> = {
   visitorKey: string;
 };
 
+/**
+ * A bag of feature flag related data.
+ */
 export type FlagBag<F extends Flags = Flags> =
   | EmptyFlagBag
   | EvaluatingFlagBag<F>

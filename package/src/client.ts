@@ -1,6 +1,6 @@
 import * as React from "react";
 import { nanoid } from "nanoid";
-import { Configuration, validate } from "./config";
+import type { Configuration } from "./config";
 import {
   InitialFlagState,
   Flags,
@@ -18,7 +18,7 @@ import {
   SucceededFlagBag,
   RevalidatingAfterSuccessFlagBag,
   FailedFlagBag,
-  MissingConfigurationError,
+  FullConfiguration,
 } from "./internal/types";
 import {
   deepEqual,
@@ -28,12 +28,12 @@ import {
   ObjectMap,
   has,
 } from "./internal/utils";
+import { applyConfigurationDefaults } from "./internal/apply-configuration-defaults";
 
 export type {
   FlagUser,
   Traits,
   Flags,
-  MissingConfigurationError,
   InitialFlagState,
   Input,
   Outcome,
@@ -302,7 +302,7 @@ function getInput<F extends Flags>({
   user,
   traits,
 }: {
-  config: Configuration<F>;
+  config: FullConfiguration<F>;
   visitorKeyInState: string | null | undefined;
   generatedVisitorKey: string;
   user: FlagUser | null;
@@ -350,7 +350,7 @@ function isAlmostEqual(
 }
 
 let usedTimes = 0;
-export function useOnce() {
+function useOnce() {
   React.useEffect(() => {
     usedTimes++;
 
@@ -398,17 +398,19 @@ export type UseFlagsOptions<F extends Flags = Flags> =
     } & FactoryUseFlagOptions)
   | undefined;
 
+/**
+ * Creates a useFlags() function your application should use when loading flags on the client.
+ */
 export function createUseFlags<F extends Flags>(
-  config: Configuration<F>,
+  configuration: Configuration<F>,
   {
     revalidateOnFocus: factoryRevalidateOnFocus = true,
     clientLoadingTimeout: factoryClientLoadingOptions = 3000,
   }: FactoryUseFlagOptions = {}
 ) {
-  validate(config);
-  return function useFlags(options: UseFlagsOptions<F> = {}): FlagBag<F> {
-    if (!config) throw new MissingConfigurationError();
+  const config = applyConfigurationDefaults(configuration);
 
+  return function useFlags(options: UseFlagsOptions<F> = {}): FlagBag<F> {
     useOnce();
 
     const [generatedVisitorKey] = React.useState(nanoid);

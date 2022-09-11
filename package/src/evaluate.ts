@@ -7,6 +7,9 @@ import type {
 import { resolveFlagToVariant } from "./internal/resolve-flag-to-variant";
 import type { FlagUser, Traits } from "./internal/types";
 
+/**
+ * Evaluates feature flags to their variant values given some inputs.
+ */
 export function unstable_evaluate({
   flags,
   environment,

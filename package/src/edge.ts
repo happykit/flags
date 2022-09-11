@@ -1,6 +1,6 @@
 /** global: fetch */
 import type { NextRequest } from "next/server";
-import { Configuration, validate } from "./config";
+import type { Configuration } from "./config";
 import type { CookieSerializeOptions } from "cookie";
 import { nanoid } from "nanoid";
 import type {
@@ -14,6 +14,7 @@ import type {
   Input,
 } from "./internal/types";
 import { combineRawFlagsWithDefaultFlags } from "./internal/utils";
+import { applyConfigurationDefaults } from "./internal/apply-configuration-defaults";
 
 export type { GenericEvaluationResponseBody } from "./internal/types";
 
@@ -88,8 +89,14 @@ type GetFlagsErrorBag<F extends Flags> = {
   cookie: null;
 };
 
-export function createGetEdgeFlags<F extends Flags>(config: Configuration<F>) {
-  validate(config);
+/**
+ * Creates the getEdgeFlags() function your application should use when
+ * loading flags from Middleware or Edge API Routes.
+ */
+export function createGetEdgeFlags<F extends Flags>(
+  configuration: Configuration<F>
+) {
+  const config = applyConfigurationDefaults(configuration);
   return function getEdgeFlags(options: {
     request: Pick<NextRequest, "cookies" | "headers">;
     user?: FlagUser;
