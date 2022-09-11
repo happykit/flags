@@ -7,7 +7,7 @@ import type {
 import { resolveFlagToVariant } from "./resolve-flag-to-variant";
 import type { FlagUser, Traits } from "./types";
 
-export function evaluate({
+export function unstable_evaluate({
   flags,
   environment,
   user,

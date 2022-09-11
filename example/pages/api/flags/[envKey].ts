@@ -1,5 +1,5 @@
 import {
-  createReadHandler,
+  unstable_createReadHandler,
   type DefinitionsInEdgeConfig,
 } from "@happykit/flags/api-route";
 
@@ -265,7 +265,7 @@ const definitions: DefinitionsInEdgeConfig = {
   revision: "331789352553153107",
 };
 
-export default createReadHandler({
+export default unstable_createReadHandler({
   async getDefinitions(projectId, envKey, environment) {
     return definitions;
   },

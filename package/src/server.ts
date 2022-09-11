@@ -24,7 +24,6 @@ import {
   combineRawFlagsWithDefaultFlags,
   getCookie,
 } from "./utils";
-import { NextRequest, NextResponse } from "next/server";
 
 export type { GenericEvaluationResponseBody } from "./types";
 

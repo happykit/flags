@@ -6,7 +6,7 @@ import type {
   FlagVisitor,
 } from "./api-route-types";
 import type { NextFetchEvent, NextRequest } from "next/server";
-import { evaluate } from "./evaluate";
+import { unstable_evaluate } from "./evaluate";
 
 function toUser(incomingUser: {
   key: string;
@@ -116,7 +116,7 @@ const defaultCorsHeaders = {
   "Access-Control-Expose-Headers": "*",
 };
 
-export function createWriteHandler({
+export function unstable_createWriteHandler({
   /**
    * Store feature flag definitions in your data source.
    * Called when you change feature flags in HappyKit's UI.
@@ -134,7 +134,10 @@ export function createWriteHandler({
 }) {
   const headers = { ...corsHeaders, "content-type": "application/json" };
 
-  return async function handler(request: NextRequest, event: NextFetchEvent) {
+  return async function writeHandler(
+    request: NextRequest,
+    event: NextFetchEvent
+  ) {
     // handler is called to store flags
     if (request.method === "PUT") {
       if (request.headers.get("Authorization") !== `Bearer ${apiKey}`) {
@@ -173,7 +176,7 @@ export function createWriteHandler({
   };
 }
 
-export function createReadHandler({
+export function unstable_createReadHandler({
   /**
    * Load feature flag definitions from your data source.
    * Called when feature flags are evaluated.
@@ -192,7 +195,10 @@ export function createReadHandler({
 }) {
   const headers = { ...corsHeaders, "content-type": "application/json" };
 
-  return async function handler(request: NextRequest, event: NextFetchEvent) {
+  return async function readHandler(
+    request: NextRequest,
+    event: NextFetchEvent
+  ) {
     // to avoid handling additional requests during development
     if (request.url.endsWith("favicon.ico")) {
       return new Response(null, { status: 404, headers });
@@ -275,7 +281,7 @@ export function createReadHandler({
 
     flags = definitions.flags;
 
-    const evaluatedVariants = evaluate({
+    const evaluatedVariants = unstable_evaluate({
       flags,
       environment,
       user,
