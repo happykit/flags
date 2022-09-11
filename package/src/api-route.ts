@@ -11,7 +11,6 @@ import { unstable_evaluate } from "./evaluate";
 function toUser(incomingUser: {
   key: string;
   email?: unknown;
-  persist?: unknown;
   name?: unknown;
   avatar?: unknown;
   language?: unknown;
@@ -25,7 +24,6 @@ function toUser(incomingUser: {
 
   const user: FlagUserAttributes = {
     key: incomingUser.key.trim().substring(0, 516),
-    persist: Boolean(incomingUser.persist),
   };
 
   if (typeof incomingUser.email === "string")
