@@ -43,6 +43,7 @@ Add Feature Flags to your Next.js application with a single React Hook. This pac
     - [`flags/client.ts`](#flagsclientts)
     - [`flags/server.ts`](#flagsserverts)
     - [`flags/edge.ts`](#flagsedgets)
+    - [`flags/client.ts`](#flagsclientts-1)
   - [Absolute Imports](#absolute-imports)
   - [Setting up the Environment Variable](#setting-up-the-environment-variable)
 - [Basic Usage](#basic-usage)
@@ -148,6 +149,7 @@ import { type AppFlags, config } from "./config";
 export const getEdgeFlags = createGetEdgeFlags<AppFlags>(config);
 ```
 
+#### `flags/client.ts`
 
 ### Absolute Imports
 
