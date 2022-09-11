@@ -1,5 +1,5 @@
 import { Flag } from "./api-route-types";
-import { evaluate } from "./evaluate";
+import { unstable_evaluate } from "./evaluate";
 
 const fakeVariant1 = {
   id: "fake-variant-id-1",
@@ -69,12 +69,12 @@ const flag: Flag = {
 // more in-depth tests are in resolve-flag-to-variant.spec.ts
 describe("evaluate", () => {
   it("should be a function", () => {
-    expect(typeof evaluate).toEqual("function");
+    expect(typeof unstable_evaluate).toEqual("function");
   });
 
   it("evaluates flags", () => {
     expect(
-      evaluate({
+      unstable_evaluate({
         flags: [flag],
         environment: "production",
         user: null,

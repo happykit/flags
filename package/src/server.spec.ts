@@ -1,10 +1,10 @@
 /**
  * @jest-environment node
  */
-import { getFlags } from "./server";
+import { createGetFlags } from "./server";
 import "@testing-library/jest-dom/extend-expect";
 import * as fetchMock from "fetch-mock-jest";
-import { configure, _resetConfig } from "./config";
+import { configure } from "./config";
 import { GetServerSidePropsContext, GetStaticPropsContext } from "next";
 import { nanoid } from "nanoid";
 
@@ -12,15 +12,25 @@ jest.mock("nanoid", () => {
   return { nanoid: jest.fn() };
 });
 
+let getFlags: ReturnType<typeof createGetFlags>;
+
 beforeEach(() => {
-  _resetConfig();
+  getFlags = createGetFlags(configure({ envKey: "flags_pub_000000" }));
   fetchMock.reset();
 });
 
-describe("when called without configure", () => {
-  it("should throw", async () => {
-    expect(() => getFlags({ context: {} as any })).toThrow(
-      Error("@happykit/flags: Missing configuration. Call configure() first.")
+describe("createGetFlags", () => {
+  it("should throw when called without options", async () => {
+    // @ts-ignore this is the situation we want to test
+    expect(() => createGetFlags()).toThrow(
+      Error("@happykit/flags: config missing")
+    );
+  });
+
+  it("should throw with missing envKey", async () => {
+    // @ts-ignore this is the situation we want to test
+    expect(() => createGetFlags({})).toThrow(
+      Error("@happykit/flags: envKey missing")
     );
   });
 });
@@ -28,8 +38,6 @@ describe("when called without configure", () => {
 describe("server-side rendering (pure + hybrid)", () => {
   describe("when traits are passed in", () => {
     it("forwards the passed in traits", async () => {
-      configure({ envKey: "flags_pub_000000" });
-
       fetchMock.post(
         {
           url: "https://happykit.dev/api/flags/flags_pub_000000",
@@ -94,8 +102,6 @@ describe("server-side rendering (pure + hybrid)", () => {
 
   describe("when user is passed in", () => {
     it("forwards the passed in user", async () => {
-      configure({ envKey: "flags_pub_000000" });
-
       fetchMock.post(
         {
           url: "https://happykit.dev/api/flags/flags_pub_000000",
@@ -162,8 +168,6 @@ describe("server-side rendering (pure + hybrid)", () => {
 
   describe("when no cookie exists on initial request", () => {
     it("generates and sets the hkvk cookie", async () => {
-      configure({ envKey: "flags_pub_000000" });
-
       // @ts-ignore
       nanoid.mockReturnValueOnce("V1StGXR8_Z5jdHi6B-myT");
 
@@ -230,8 +234,6 @@ describe("server-side rendering (pure + hybrid)", () => {
 
   describe("when loading times out", () => {
     it("aborts the request", async () => {
-      configure({ envKey: "flags_pub_000000", serverLoadingTimeout: 50 });
-
       const routeMock = fetchMock.post(
         {
           url: "https://happykit.dev/api/flags/flags_pub_000000",
@@ -262,7 +264,7 @@ describe("server-side rendering (pure + hybrid)", () => {
         res: { setHeader: jest.fn() as any },
       } as Partial<GetServerSidePropsContext>;
 
-      expect(await getFlags({ context })).toEqual({
+      expect(await getFlags({ context, serverLoadingTimeout: 50 })).toEqual({
         flags: {},
         data: null,
         error: "request-timed-out",
@@ -291,8 +293,6 @@ describe("server-side rendering (pure + hybrid)", () => {
 
 describe("static site generation (pure + hybrid)", () => {
   it("should set static to true", async () => {
-    configure({ envKey: "flags_pub_000000" });
-
     fetchMock.post(
       {
         url: "https://happykit.dev/api/flags/flags_pub_000000",
@@ -337,8 +337,6 @@ describe("static site generation (pure + hybrid)", () => {
 
   describe("when traits are passed in", () => {
     it("forwards given traits", async () => {
-      configure({ envKey: "flags_pub_000000" });
-
       fetchMock.post(
         {
           url: "https://happykit.dev/api/flags/flags_pub_000000",
@@ -389,8 +387,6 @@ describe("static site generation (pure + hybrid)", () => {
 
   describe("when user is passed in", () => {
     it("forwards a given user", async () => {
-      configure({ envKey: "flags_pub_000000" });
-
       fetchMock.post(
         {
           url: "https://happykit.dev/api/flags/flags_pub_000000",
@@ -441,8 +437,6 @@ describe("static site generation (pure + hybrid)", () => {
 
   describe("when loading times out", () => {
     it("aborts the request", async () => {
-      configure({ envKey: "flags_pub_000000", staticLoadingTimeout: 75 });
-
       const routeMock = fetchMock.post(
         {
           url: "https://happykit.dev/api/flags/flags_pub_000000",
@@ -462,7 +456,12 @@ describe("static site generation (pure + hybrid)", () => {
         { delay: 250 }
       );
 
-      expect(await getFlags({ context: {} as GetStaticPropsContext })).toEqual({
+      expect(
+        await getFlags({
+          context: {} as GetStaticPropsContext,
+          staticLoadingTimeout: 75,
+        })
+      ).toEqual({
         flags: {},
         data: null,
         error: "request-timed-out",

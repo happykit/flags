@@ -4,15 +4,17 @@
 import "@testing-library/jest-dom/extend-expect";
 import "@testing-library/jest-dom";
 import { renderHook } from "@testing-library/react-hooks";
-import { useFlags, cache, UseFlagsOptions } from "./client";
-import { configure, _resetConfig } from "./config";
+import { cache, createUseFlags } from "./client";
+import { configure } from "./config";
 import * as fetchMock from "fetch-mock-jest";
 import { deleteAllCookies } from "../jest/delete-all-cookies";
 import { nanoid } from "nanoid";
-import { FlagBag, Flags, InitialFlagState } from "./types";
+import { Flags, InitialFlagState } from "./types";
+
+let useFlags: ReturnType<typeof createUseFlags>;
 
 beforeEach(() => {
-  _resetConfig();
+  useFlags = createUseFlags(configure({ envKey: "flags_pub_000000" }));
   fetchMock.reset();
   deleteAllCookies(window);
   cache.clear();
@@ -55,7 +57,6 @@ describe("when cookie is not set", () => {
       }
     );
 
-    configure({ envKey: "flags_pub_000000" });
     expect(document.cookie).toEqual("");
 
     const initialStateFromProps: InitialFlagState<Flags> = {
@@ -202,8 +203,6 @@ describe("when cookie is set", () => {
         visitor: { key: visitorKeyInCookie },
       }
     );
-
-    configure({ envKey: "flags_pub_000000" });
 
     const initialStateFromProps: InitialFlagState<Flags> = {
       input: {

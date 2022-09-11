@@ -11,6 +11,7 @@ export type Configuration<F extends Flags> = DefaultConfiguration &
  * Throws if envKey or endpoint are missing in configuration
  */
 export function validate<F extends Flags = Flags>(config: Configuration<F>) {
+  if (!config) throw new Error("@happykit/flags: config missing");
   if (!config.envKey || config.envKey.length === 0)
     throw new Error("@happykit/flags: envKey missing");
   if (!config.endpoint || config.endpoint.length === 0)

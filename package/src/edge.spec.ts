@@ -3,18 +3,20 @@
  */
 // whatwg-fetch defines HeadersInit globally which our tests need
 import "whatwg-fetch";
-import { getEdgeFlags } from "./edge";
 import "@testing-library/jest-dom/extend-expect";
 import * as fetchMock from "fetch-mock-jest";
-import { configure, _resetConfig } from "./config";
+import { configure } from "./config";
+import { createGetEdgeFlags } from "./edge";
 import { nanoid } from "nanoid";
 
 jest.mock("nanoid", () => {
   return { nanoid: jest.fn() };
 });
 
+let getEdgeFlags: ReturnType<typeof createGetEdgeFlags>;
+
 beforeEach(() => {
-  _resetConfig();
+  getEdgeFlags = createGetEdgeFlags(configure({ envKey: "flags_pub_000000" }));
   fetchMock.reset();
 });
 
@@ -36,12 +38,18 @@ function createNextRequest(
   };
 }
 
-describe("when called without configure", () => {
-  it("should throw", async () => {
-    const request = createNextRequest();
+describe("createGetEdgeFlags", () => {
+  it("should throw when called without options", async () => {
+    // @ts-ignore this is the situation we want to test
+    expect(() => createGetEdgeFlags()).toThrow(
+      Error("@happykit/flags: config missing")
+    );
+  });
 
-    expect(() => getEdgeFlags({ request })).toThrow(
-      Error("@happykit/flags: Missing configuration. Call configure() first.")
+  it("should throw with missing envKey", async () => {
+    // @ts-ignore this is the situation we want to test
+    expect(() => createGetEdgeFlags({})).toThrow(
+      Error("@happykit/flags: envKey missing")
     );
   });
 });
@@ -49,8 +57,6 @@ describe("when called without configure", () => {
 describe("middleware", () => {
   describe("when traits are passed in", () => {
     it("forwards the passed in traits", async () => {
-      configure({ envKey: "flags_pub_000000" });
-
       fetchMock.post(
         {
           url: "https://happykit.dev/api/flags/flags_pub_000000",
@@ -115,8 +121,6 @@ describe("middleware", () => {
 
   describe("when user is passed in", () => {
     it("forwards the passed in user", async () => {
-      configure({ envKey: "flags_pub_000000" });
-
       fetchMock.post(
         {
           url: "https://happykit.dev/api/flags/flags_pub_000000",
@@ -192,8 +196,6 @@ describe("middleware", () => {
 
   describe("when no cookie exists on initial request", () => {
     it("generates and sets the hkvk cookie", async () => {
-      configure({ envKey: "flags_pub_000000" });
-
       // @ts-ignore
       nanoid.mockReturnValueOnce("V1StGXR8_Z5jdHi6B-myT");
 
