@@ -1,6 +1,5 @@
 {
   "main": "../dist/edge.js",
   "module": "../dist/edge.mjs",
-  "types": "../dist/edge.d.ts",
-  "sideEffects": false
+  "types": "../dist/edge.d.ts"
 }
