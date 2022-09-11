@@ -4,8 +4,8 @@ import type {
   FlagVariant,
   FlagVisitor,
 } from "./api-route-types";
-import { resolveFlagToVariant } from "./resolve-flag-to-variant";
-import type { FlagUser, Traits } from "./types";
+import { resolveFlagToVariant } from "./internal/resolve-flag-to-variant";
+import type { FlagUser, Traits } from "./internal/types";
 
 export function unstable_evaluate({
   flags,

@@ -9,7 +9,7 @@ import { configure } from "./config";
 import * as fetchMock from "fetch-mock-jest";
 import { deleteAllCookies } from "../jest/delete-all-cookies";
 import { nanoid } from "nanoid";
-import { FlagBag, Flags } from "./types";
+import { FlagBag, Flags } from "./internal/types";
 
 let useFlags: ReturnType<typeof createUseFlags>;
 

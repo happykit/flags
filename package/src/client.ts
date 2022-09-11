@@ -19,7 +19,7 @@ import {
   RevalidatingAfterSuccessFlagBag,
   FailedFlagBag,
   MissingConfigurationError,
-} from "./types";
+} from "./internal/types";
 import {
   deepEqual,
   getCookie,
@@ -27,7 +27,7 @@ import {
   combineRawFlagsWithDefaultFlags,
   ObjectMap,
   has,
-} from "./utils";
+} from "./internal/utils";
 
 export type {
   FlagUser,
@@ -38,7 +38,7 @@ export type {
   Input,
   Outcome,
   FlagBag,
-} from "./types";
+} from "./internal/types";
 
 type Id = number;
 let getId = (() => {

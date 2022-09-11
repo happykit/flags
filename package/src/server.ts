@@ -16,16 +16,16 @@ import type {
   GenericEvaluationResponseBody,
   ResolvingError,
   Input,
-} from "./types";
-import { MissingConfigurationError } from "./types";
+} from "./internal/types";
+import { MissingConfigurationError } from "./internal/types";
 import {
   has,
   serializeVisitorKeyCookie,
   combineRawFlagsWithDefaultFlags,
   getCookie,
-} from "./utils";
+} from "./internal/utils";
 
-export type { GenericEvaluationResponseBody } from "./types";
+export type { GenericEvaluationResponseBody } from "./internal/types";
 
 function getRequestingIp(context: {
   req: IncomingMessage;

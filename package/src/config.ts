@@ -2,7 +2,7 @@ import type {
   DefaultConfiguration,
   IncomingConfiguration,
   Flags,
-} from "./types";
+} from "./internal/types";
 
 export type Configuration<F extends Flags> = DefaultConfiguration &
   IncomingConfiguration<F>;

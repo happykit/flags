@@ -1,5 +1,5 @@
 import * as React from "react";
-import { FlagBag, Flags } from "./types";
+import { FlagBag, Flags } from "./internal/types";
 
 /**
  * Allows you to access the flags from context

@@ -12,10 +12,10 @@ import type {
   GenericEvaluationResponseBody,
   ResolvingError,
   Input,
-} from "./types";
-import { combineRawFlagsWithDefaultFlags } from "./utils";
+} from "./internal/types";
+import { combineRawFlagsWithDefaultFlags } from "./internal/utils";
 
-export type { GenericEvaluationResponseBody } from "./types";
+export type { GenericEvaluationResponseBody } from "./internal/types";
 
 function getRequestingIp(req: Pick<NextRequest, "headers">): null | string {
   const key = "x-forwarded-for";
