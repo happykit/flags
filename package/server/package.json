@@ -1,6 +1,5 @@
 {
   "main": "../dist/server.js",
   "module": "../dist/server.mjs",
-  "types": "../dist/server.d.ts",
-  "sideEffects": false
+  "types": "../dist/server.d.ts"
 }
