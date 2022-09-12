@@ -15,6 +15,8 @@
 &nbsp;
 &nbsp;
 
+> Are you looking for the v2 docs? Find them [here](https://github.com/happykit/flags/tree/v2.0.7/package#readme)
+
 Add Feature Flags to your Next.js application with a single React Hook. This package integrates your Next.js application with HappyKit Flags. Create a free [happykit.dev](https://happykit.dev/signup) account to get started.
 
 **Key Features**
