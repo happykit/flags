@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Nav } from "../components/Nav";
+import { Nav } from "components/Nav";
 import Head from "next/head";
 import { Transition } from "@tailwindui/react";
 import { FlagBag } from "@happykit/flags/client";

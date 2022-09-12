@@ -1,5 +1,5 @@
 {
-  "main": "../dist/edge.cjs",
-  "module": "../dist/edge.js",
+  "main": "../dist/edge.js",
+  "module": "../dist/edge.mjs",
   "types": "../dist/edge.d.ts"
 }

@@ -1,8 +1,8 @@
 import * as React from "react";
 import { GetStaticPaths, GetStaticProps } from "next";
-import { Layout } from "../../../components/Layout";
-import { EdgeFunctionContent } from "../../../components/EdgeFunctionContent";
-import { AppFlags } from "../../../types/AppFlags";
+import { Layout } from "components/Layout";
+import { EdgeFunctionContent } from "components/EdgeFunctionContent";
+import type { AppFlags } from "flags/config";
 
 // ℹ️ Check out the /middleware.ts file as well.
 // That middlware.ts file routes requests to /demo/middlware

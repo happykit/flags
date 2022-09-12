@@ -1,31 +1,30 @@
 import * as React from "react";
 import { GetServerSideProps } from "next";
-import { Layout } from "../../components/Layout";
-import { Result } from "../../components/Result";
-import { useFlags, InitialFlagState } from "@happykit/flags/client";
-import { getFlags } from "@happykit/flags/server";
-import { FlagBagProvider, useFlagBag } from "@happykit/flags/context";
-import { AppFlags } from "../../types/AppFlags";
+import { Layout } from "components/Layout";
+import { Result } from "components/Result";
+import { FlagBagProvider } from "@happykit/flags/context";
+import { getFlags } from "flags/server";
+import { useFlags, useFlagBag, type InitialFlagState } from "flags/client";
 
 type ServerSideProps = {
-  initialFlagState: InitialFlagState<AppFlags>;
+  initialFlagState: InitialFlagState;
 };
 
 function SomeNestedComponent() {
   // The nested component has access to the flagBag using context
-  const flagBag = useFlagBag<AppFlags>();
+  const flagBag = useFlagBag();
   return <Result key="context" value={flagBag} />;
 }
 
 export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
   context
 ) => {
-  const { initialFlagState } = await getFlags<AppFlags>({ context });
+  const { initialFlagState } = await getFlags({ context });
   return { props: { initialFlagState } };
 };
 
 export default function Page(props: ServerSideProps) {
-  const flagBag = useFlags<AppFlags>({ initialState: props.initialFlagState });
+  const flagBag = useFlags({ initialState: props.initialFlagState });
 
   return (
     // The FlagBagProvider is intended to be set on every page

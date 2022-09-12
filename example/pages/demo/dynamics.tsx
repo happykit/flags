@@ -1,10 +1,9 @@
 import * as React from "react";
-import { Layout } from "../../components/Layout";
-import { Result } from "../../components/Result";
-import { useFlags } from "@happykit/flags/client";
-import { AppFlags } from "../../types/AppFlags";
+import { Layout } from "components/Layout";
+import { Result } from "components/Result";
 import { RadioGroup } from "@headlessui/react";
 import clsx from "clsx";
+import { useFlags } from "flags/client";
 
 export default function Page() {
   const users = React.useMemo(
@@ -52,7 +51,7 @@ export default function Page() {
   const [user, setUser] = React.useState(users[0]);
   const [trait, setTraits] = React.useState(traits[0]);
 
-  const flagBag = useFlags<AppFlags>({
+  const flagBag = useFlags({
     user: user.value,
     traits: trait.value,
   });

@@ -131,7 +131,7 @@ export class ObjectMap<Key extends any, Value extends any> {
 
   get<ReturnValue>(key: Key): ReturnValue | null {
     const index = this._getIndex(key);
-    return index === -1 ? null : (this.values[index] as ReturnValue);
+    return index === -1 ? null : (this.values[index] as unknown as ReturnValue);
   }
 
   // exists(key: Key) {

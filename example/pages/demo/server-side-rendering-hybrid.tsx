@@ -1,22 +1,21 @@
 import * as React from "react";
 import { GetServerSideProps } from "next";
-import { Layout } from "../../components/Layout";
-import { Result } from "../../components/Result";
-import { InitialFlagState, useFlags } from "@happykit/flags/client";
-import { getFlags } from "@happykit/flags/server";
-import { AppFlags } from "../../types/AppFlags";
+import { Layout } from "components/Layout";
+import { Result } from "components/Result";
+import { getFlags } from "flags/server";
+import { type InitialFlagState, useFlags } from "flags/client";
 
-type ServerSideProps = { initialFlagState: InitialFlagState<AppFlags> };
+type ServerSideProps = { initialFlagState: InitialFlagState };
 
 export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
   context
 ) => {
-  const { initialFlagState } = await getFlags<AppFlags>({ context });
+  const { initialFlagState } = await getFlags({ context });
   return { props: { initialFlagState } };
 };
 
 export default function Page(props: ServerSideProps) {
-  const flagBag = useFlags<AppFlags>({ initialState: props.initialFlagState });
+  const flagBag = useFlags({ initialState: props.initialFlagState });
   return (
     <Layout
       title="Server Side Rendering (Hybrid)"

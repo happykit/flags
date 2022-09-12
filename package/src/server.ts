@@ -5,7 +5,7 @@ import type {
   GetStaticPathsContext,
   GetStaticPropsContext,
 } from "next";
-import { getConfig } from "./config";
+import type { Configuration } from "./config";
 import { nanoid } from "nanoid";
 import type {
   FlagUser,
@@ -13,19 +13,19 @@ import type {
   Flags,
   SuccessInitialFlagState,
   ErrorInitialFlagState,
-  EvaluationResponseBody,
+  GenericEvaluationResponseBody,
   ResolvingError,
   Input,
-} from "./types";
-import { MissingConfigurationError } from "./types";
+} from "./internal/types";
 import {
   has,
   serializeVisitorKeyCookie,
   combineRawFlagsWithDefaultFlags,
   getCookie,
-} from "./utils";
+} from "./internal/utils";
+import { applyConfigurationDefaults } from "./internal/apply-configuration-defaults";
 
-export type { EvaluationResponseBody } from "./types";
+export type { GenericEvaluationResponseBody } from "./internal/types";
 
 function getRequestingIp(context: {
   req: IncomingMessage;
@@ -51,7 +51,7 @@ type GetFlagsSuccessBag<F extends Flags> = {
    * The actually loaded data without any defaults applied, or null when
    * the flags could not be loaded.
    */
-  data: EvaluationResponseBody<F> | null;
+  data: GenericEvaluationResponseBody<F> | null;
   error: null;
   initialFlagState: SuccessInitialFlagState<F>;
 };
@@ -76,159 +76,216 @@ type GetFlagsErrorBag<F extends Flags> = {
   initialFlagState: ErrorInitialFlagState;
 };
 
-export function getFlags<F extends Flags = Flags>(options: {
-  context:
-    | Pick<GetServerSidePropsContext, "req" | "res">
-    | GetStaticPathsContext
-    | GetStaticPropsContext;
-  user?: FlagUser;
-  traits?: Traits;
-  serverLoadingTimeout?: number | false;
-  staticLoadingTimeout?: number | false;
-}): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
-  const config = getConfig();
-  if (!config) throw new MissingConfigurationError();
+interface FactoryGetFlagsOptions {
+  /**
+   * A timeout in milliseconds after which any server-side evaluation requests
+   * from `getFlags` inside of `getServerSideProps` will be aborted.
+   *
+   * Pass `false` to disable this feature.
+   */
+  serverLoadingTimeout?: number;
+  /**
+   * A timeout in milliseconds after which any static evaluation requests
+   * from `getFlags` inside of `getStaticProps` or `getStaticPaths` will
+   * be aborted.
+   *
+   * Pass `false` to disable this feature.
+   */
+  staticLoadingTimeout?: number;
+}
 
-  const currentStaticLoadingTimeout = has(options, "staticLoadingTimeout")
-    ? options.staticLoadingTimeout
-    : config.staticLoadingTimeout || 0;
+/**
+ * Creates a getFlags() function your application should use when loading flags on the server.
+ */
+export function createGetFlags<F extends Flags>(
+  configuration: Configuration<F>,
+  {
+    serverLoadingTimeout: factoryServerLoadingTimeout = 3000,
+    staticLoadingTimeout: factoryStaticLoadingTimeout = 60000,
+  }: FactoryGetFlagsOptions = {}
+) {
+  const config = applyConfigurationDefaults(configuration);
+  return function getFlags(
+    options: {
+      context:
+        | Pick<GetServerSidePropsContext, "req" | "res">
+        | GetStaticPathsContext
+        | GetStaticPropsContext;
+      user?: FlagUser;
+      traits?: Traits;
+    } & FactoryGetFlagsOptions
+  ): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
+    const currentStaticLoadingTimeout = has(options, "staticLoadingTimeout")
+      ? options.staticLoadingTimeout
+      : factoryStaticLoadingTimeout;
 
-  const currentServerLoadingTimeout = has(options, "serverLoadingTimeout")
-    ? options.serverLoadingTimeout
-    : config.serverLoadingTimeout || 0;
+    const currentServerLoadingTimeout = has(options, "serverLoadingTimeout")
+      ? options.serverLoadingTimeout
+      : factoryServerLoadingTimeout;
 
-  // determine visitor key
-  const visitorKeyFromCookie = has(options.context, "req")
-    ? getCookie(options.context.req.headers.cookie, "hkvk")
-    : null;
+    // determine visitor key
+    const visitorKeyFromCookie = has(options.context, "req")
+      ? getCookie(
+          (
+            options.context as {
+              req: IncomingMessage;
+              res: ServerResponse;
+            }
+          ).req.headers.cookie,
+          "hkvk"
+        )
+      : null;
 
-  // When using server-side rendering and there was no visitor key cookie,
-  // we generate a visitor key
-  // When using static rendering, we never set any visitor key
-  const visitorKey = has(options.context, "req")
-    ? visitorKeyFromCookie
+    // When using server-side rendering and there was no visitor key cookie,
+    // we generate a visitor key
+    // When using static rendering, we never set any visitor key
+    const visitorKey = has(options.context, "req")
       ? visitorKeyFromCookie
-      : nanoid()
-    : null;
+        ? visitorKeyFromCookie
+        : nanoid()
+      : null;
 
-  const input: Input = {
-    endpoint: config.endpoint,
-    envKey: config.envKey,
-    requestBody: {
-      visitorKey,
-      user: options.user || null,
-      traits: options.traits || null,
-    },
-  };
+    const input: Input = {
+      endpoint: config.endpoint,
+      envKey: config.envKey,
+      requestBody: {
+        visitorKey,
+        user: options.user || null,
+        traits: options.traits || null,
+      },
+    };
 
-  const requestingIp = has(options.context, "req")
-    ? getRequestingIp(options.context)
-    : null;
-
-  const xForwardedForHeader: { "x-forwarded-for": string } | {} = requestingIp
-    ? // add x-forwarded-for header so the service worker gets
-      // access to the real client ip
-      { "x-forwarded-for": requestingIp }
-    : {};
-
-  // prepare fetch request timeout controller
-  const controller =
-    typeof AbortController === "function" ? new AbortController() : null;
-  const timeoutDuration = has(options.context, "req")
-    ? currentServerLoadingTimeout
-    : currentStaticLoadingTimeout;
-  const timeoutId =
-    // validate config
-    !controller ||
-    typeof timeoutDuration !== "number" ||
-    isNaN(timeoutDuration) ||
-    timeoutDuration <= 0
-      ? null
-      : setTimeout(() => controller.abort(), timeoutDuration);
-
-  return fetch([input.endpoint, input.envKey].join("/"), {
-    method: "POST",
-    headers: Object.assign(
-      { "content-type": "application/json" },
-      xForwardedForHeader
-    ),
-    signal: controller ? controller.signal : undefined,
-    body: JSON.stringify(input.requestBody),
-  }).then(
-    (
-      workerResponse
-    ):
-      | Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>>
-      | GetFlagsErrorBag<F> => {
-      if (timeoutId) clearTimeout(timeoutId);
-
-      if (!workerResponse.ok /* status not 200-299 */) {
-        return {
-          flags: config.defaultFlags as F,
-          data: null,
-          error: "response-not-ok",
-          initialFlagState: { input, outcome: { error: "response-not-ok" } },
-        };
-      }
-
-      return workerResponse.json().then(
-        (workerResponseBody: EvaluationResponseBody<F>) => {
-          if (has(options.context, "req") && workerResponseBody.visitor?.key) {
-            // always set the cookie so its max age refreshes
-            options.context.res.setHeader(
-              "Set-Cookie",
-              serializeVisitorKeyCookie(workerResponseBody.visitor.key)
-            );
+    const requestingIp = has(options.context, "req")
+      ? getRequestingIp(
+          options.context as {
+            req: IncomingMessage;
+            res: ServerResponse;
           }
+        )
+      : null;
 
-          // add defaults to flags here, but not in initialFlagState
-          const flags = workerResponseBody.flags
-            ? workerResponseBody.flags
-            : null;
-          const flagsWithDefaults = combineRawFlagsWithDefaultFlags<F>(
-            flags,
-            config.defaultFlags
-          );
+    const xForwardedForHeader: { "x-forwarded-for": string } | {} = requestingIp
+      ? // add x-forwarded-for header so the service worker gets
+        // access to the real client ip
+        { "x-forwarded-for": requestingIp }
+      : {};
 
-          return {
-            flags: flagsWithDefaults,
-            data: workerResponseBody,
-            error: null,
-            initialFlagState: { input, outcome: { data: workerResponseBody } },
-          };
-        },
-        (error) => {
+    // prepare fetch request timeout controller
+    const controller =
+      typeof AbortController === "function" ? new AbortController() : null;
+    const timeoutDuration = has(options.context, "req")
+      ? currentServerLoadingTimeout
+      : currentStaticLoadingTimeout;
+    const timeoutId =
+      // validate config
+      !controller ||
+      typeof timeoutDuration !== "number" ||
+      isNaN(timeoutDuration) ||
+      timeoutDuration <= 0
+        ? null
+        : setTimeout(() => controller.abort(), timeoutDuration);
+
+    return fetch([input.endpoint, input.envKey].join("/"), {
+      method: "POST",
+      headers: Object.assign(
+        { "content-type": "application/json" },
+        xForwardedForHeader
+      ),
+      signal: controller ? controller.signal : undefined,
+      body: JSON.stringify(input.requestBody),
+    }).then(
+      (
+        workerResponse
+      ):
+        | Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>>
+        | GetFlagsErrorBag<F> => {
+        if (timeoutId) clearTimeout(timeoutId);
+
+        if (!workerResponse.ok /* status not 200-299 */) {
           return {
             flags: config.defaultFlags as F,
             data: null,
-            error: "invalid-response-body",
+            error: "response-not-ok",
             initialFlagState: {
               input,
-              outcome: { error: "invalid-response-body" },
+              outcome: { error: "response-not-ok" },
             },
           };
         }
-      );
-    },
-    (error) => {
-      if (timeoutId) clearTimeout(timeoutId);
 
-      return error?.name === "AbortError"
-        ? {
-            flags: config.defaultFlags as F,
-            data: null,
-            error: "request-timed-out",
-            initialFlagState: {
-              input,
-              outcome: { error: "request-timed-out" },
-            },
+        return workerResponse.json().then(
+          (workerResponseBody: GenericEvaluationResponseBody<F>) => {
+            if (
+              has(options.context, "req") &&
+              workerResponseBody.visitor?.key
+            ) {
+              // always set the cookie so its max age refreshes
+              (
+                options.context as {
+                  req: IncomingMessage;
+                  res: ServerResponse;
+                }
+              ).res.setHeader(
+                "Set-Cookie",
+                serializeVisitorKeyCookie(workerResponseBody.visitor.key)
+              );
+            }
+
+            // add defaults to flags here, but not in initialFlagState
+            const flags = workerResponseBody.flags
+              ? workerResponseBody.flags
+              : null;
+            const flagsWithDefaults = combineRawFlagsWithDefaultFlags<F>(
+              flags,
+              config.defaultFlags
+            );
+
+            return {
+              flags: flagsWithDefaults,
+              data: workerResponseBody,
+              error: null,
+              initialFlagState: {
+                input,
+                outcome: { data: workerResponseBody },
+              },
+            };
+          },
+          (error) => {
+            return {
+              flags: config.defaultFlags as F,
+              data: null,
+              error: "invalid-response-body",
+              initialFlagState: {
+                input,
+                outcome: { error: "invalid-response-body" },
+              },
+            };
           }
-        : {
-            flags: config.defaultFlags as F,
-            data: null,
-            error: "network-error",
-            initialFlagState: { input, outcome: { error: "network-error" } },
-          };
-    }
-  );
+        );
+      },
+      (error) => {
+        if (timeoutId) clearTimeout(timeoutId);
+
+        return error?.name === "AbortError"
+          ? {
+              flags: config.defaultFlags as F,
+              data: null,
+              error: "request-timed-out",
+              initialFlagState: {
+                input,
+                outcome: { error: "request-timed-out" },
+              },
+            }
+          : {
+              flags: config.defaultFlags as F,
+              data: null,
+              error: "network-error",
+              initialFlagState: {
+                input,
+                outcome: { error: "network-error" },
+              },
+            };
+      }
+    );
+  };
 }

@@ -1,14 +1,13 @@
 import * as React from "react";
 import { GetServerSideProps } from "next";
-import { Layout } from "../../components/Layout";
-import { Result } from "../../components/Result";
-import { InitialFlagState, useFlags } from "@happykit/flags/client";
-import { getFlags } from "@happykit/flags/server";
-import { AppFlags } from "../../types/AppFlags";
+import { Layout } from "components/Layout";
+import { Result } from "components/Result";
+import { getFlags } from "flags/server";
+import { type InitialFlagState, useFlags } from "flags/client";
 
 type Traits = { teamMember: boolean };
 type ServerSideProps = {
-  initialFlagState: InitialFlagState<AppFlags>;
+  initialFlagState: InitialFlagState;
   traits: Traits;
 };
 
@@ -20,7 +19,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
   // These could be loaded from anywhere
   const traits: Traits = { teamMember: true };
 
-  const { initialFlagState } = await getFlags<AppFlags>({ context, traits });
+  const { initialFlagState } = await getFlags({ context, traits });
   return { props: { initialFlagState, traits } };
 };
 

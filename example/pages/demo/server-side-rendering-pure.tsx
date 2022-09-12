@@ -1,19 +1,19 @@
 import * as React from "react";
 import { GetServerSideProps } from "next";
-import { Layout } from "../../components/Layout";
-import { Result } from "../../components/Result";
-import { getFlags, EvaluationResponseBody } from "@happykit/flags/server";
-import { AppFlags } from "../../types/AppFlags";
+import { Layout } from "components/Layout";
+import { Result } from "components/Result";
+import { getFlags, type EvaluationResponseBody } from "flags/server";
+import type { AppFlags } from "flags/config";
 
 type ServerSideProps = {
   flags: AppFlags | null;
-  data: EvaluationResponseBody<AppFlags> | null;
+  data: EvaluationResponseBody | null;
 };
 
 export const getServerSideProps: GetServerSideProps<ServerSideProps> = async (
   context
 ) => {
-  const { flags, data } = await getFlags<AppFlags>({ context });
+  const { flags, data } = await getFlags({ context });
   return { props: { flags, data } };
 };
 

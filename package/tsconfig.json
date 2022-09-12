@@ -8,7 +8,7 @@
     "noImplicitAny": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "removeComments": true,
+    "removeComments": false,
     "strictNullChecks": true,
     "preserveConstEnums": true,
     "sourceMap": true,
@@ -17,5 +17,14 @@
     "types": ["node", "jest"]
   },
   "include": ["./src"],
-  "exclude": ["./config", "./server", "./context", "./dist"]
+  "exclude": [
+    "./client",
+    "./config",
+    "./context",
+    "./edge",
+    "./evaluate",
+    "./server",
+    "./context",
+    "./dist"
+  ]
 }

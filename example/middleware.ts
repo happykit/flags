@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { AppFlags } from "./types/AppFlags";
-// Importing the config is necessary to configure getEdgeFlags
-import "./flags.config";
-import { getEdgeFlags } from "@happykit/flags/edge";
+import { getEdgeFlags } from "flags/edge";
 
-export const config = {
-  matcher: "/demo/middleware",
-};
+export const config = { matcher: "/demo/middleware" };
 
 export async function middleware(request: NextRequest) {
-  const flagBag = await getEdgeFlags<AppFlags>({ request });
+  const flagBag = await getEdgeFlags({ request });
 
   const nextUrl = request.nextUrl.clone();
   nextUrl.pathname = `/demo/middleware/${flagBag.flags?.checkout || "full"}`;

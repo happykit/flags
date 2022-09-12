@@ -1,6 +1,6 @@
 import * as React from "react";
 import { nanoid } from "nanoid";
-import { Configuration, getConfig } from "./config";
+import type { Configuration } from "./config";
 import {
   InitialFlagState,
   Flags,
@@ -9,7 +9,7 @@ import {
   FlagUser,
   Traits,
   FlagBag,
-  EvaluationResponseBody,
+  GenericEvaluationResponseBody,
   SuccessOutcome,
   ErrorOutcome,
   RevalidatingAfterErrorFlagBag,
@@ -18,8 +18,8 @@ import {
   SucceededFlagBag,
   RevalidatingAfterSuccessFlagBag,
   FailedFlagBag,
-  MissingConfigurationError,
-} from "./types";
+  FullConfiguration,
+} from "./internal/types";
 import {
   deepEqual,
   getCookie,
@@ -27,18 +27,18 @@ import {
   combineRawFlagsWithDefaultFlags,
   ObjectMap,
   has,
-} from "./utils";
+} from "./internal/utils";
+import { applyConfigurationDefaults } from "./internal/apply-configuration-defaults";
 
 export type {
   FlagUser,
   Traits,
   Flags,
-  MissingConfigurationError,
   InitialFlagState,
   Input,
   Outcome,
   FlagBag,
-} from "./types";
+} from "./internal/types";
 
 type Id = number;
 let getId = (() => {
@@ -302,7 +302,7 @@ function getInput<F extends Flags>({
   user,
   traits,
 }: {
-  config: Configuration<F>;
+  config: FullConfiguration<F>;
   visitorKeyInState: string | null | undefined;
   generatedVisitorKey: string;
   user: FlagUser | null;
@@ -350,7 +350,7 @@ function isAlmostEqual(
 }
 
 let usedTimes = 0;
-export function useOnce() {
+function useOnce() {
   React.useEffect(() => {
     usedTimes++;
 
@@ -372,308 +372,332 @@ export function useOnce() {
 
 export const cache = new ObjectMap<Input, Outcome<Flags>>();
 
+interface FactoryUseFlagOptions {
+  /**
+   * By default `@happykit/flags` refetches the feature flags when the window
+   * regains focus. You can disable this by passing `revalidateOnFocus: false`.
+   */
+  revalidateOnFocus?: boolean;
+  /**
+   * A timeout in milliseconds after which any client-side evaluation requests
+   * from `useFlags` will be aborted.
+   *
+   * Pass `false` to disable this feature.
+   *
+   * This feature is only supported in [browsers which support](https://caniuse.com/abortcontroller) the [`AbortController`](https://developer.mozilla.org/en-US/docs/Web/API/AbortController).
+   */
+  clientLoadingTimeout?: number;
+}
+
 export type UseFlagsOptions<F extends Flags = Flags> =
-  | {
+  | ({
       user?: FlagUser | null;
       traits?: Traits | null;
       initialState?: InitialFlagState<F>;
-      revalidateOnFocus?: boolean;
       pause?: boolean;
-      loadingTimeout?: number | false;
-    }
+    } & FactoryUseFlagOptions)
   | undefined;
 
-export function useFlags<F extends Flags = Flags>(
-  options: UseFlagsOptions<F> = {}
-): FlagBag<F> {
-  const config = getConfig();
-  if (!config) throw new MissingConfigurationError();
+/**
+ * Creates a useFlags() function your application should use when loading flags on the client.
+ */
+export function createUseFlags<F extends Flags>(
+  configuration: Configuration<F>,
+  {
+    revalidateOnFocus: factoryRevalidateOnFocus = true,
+    clientLoadingTimeout: factoryClientLoadingOptions = 3000,
+  }: FactoryUseFlagOptions = {}
+) {
+  const config = applyConfigurationDefaults(configuration);
 
-  useOnce();
+  return function useFlags(options: UseFlagsOptions<F> = {}): FlagBag<F> {
+    useOnce();
 
-  const [generatedVisitorKey] = React.useState(nanoid);
+    const [generatedVisitorKey] = React.useState(nanoid);
 
-  const currentUser = options.user || null;
-  const currentTraits = options.traits || null;
-  const shouldRevalidateOnFocus =
-    options.revalidateOnFocus === undefined
-      ? config.revalidateOnFocus
-      : options.revalidateOnFocus;
+    const currentUser = options.user || null;
+    const currentTraits = options.traits || null;
+    const shouldRevalidateOnFocus =
+      options.revalidateOnFocus === undefined
+        ? factoryRevalidateOnFocus
+        : options.revalidateOnFocus;
 
-  const currentLoadingTimeout = has(options, "loadingTimeout")
-    ? options.loadingTimeout
-    : // also account for deprecated loadingTimeout
-      config.clientLoadingTimeout || config.loadingTimeout || 0;
+    const currentClientLoadingTimeout = has(options, "clientLoadingTimeout")
+      ? options.clientLoadingTimeout
+      : factoryClientLoadingOptions;
 
-  const [[state, effects], dispatch] = React.useReducer(
-    reducer,
-    options.initialState,
-    (initialFlagState): [State<F>, Effect[]] => {
-      if (!initialFlagState?.input) return [{ name: "empty" }, []];
+    const [[state, effects], dispatch] = React.useReducer(
+      reducer,
+      options.initialState,
+      (initialFlagState): [State<F>, Effect[]] => {
+        if (!initialFlagState?.input) return [{ name: "empty" }, []];
 
+        const input = getInput({
+          config,
+          visitorKeyInState: initialFlagState.input.requestBody.visitorKey,
+          generatedVisitorKey,
+          user: currentUser,
+          traits: currentTraits,
+        });
+
+        if (initialFlagState.outcome.error)
+          return [
+            {
+              name: "failed",
+              input: initialFlagState.input,
+              outcome: initialFlagState.outcome,
+              cachedOutcome: cache.get<SuccessOutcome<F>>(
+                initialFlagState.input
+              ),
+            },
+            // always revalidate because the initial state failed
+            [{ effect: "revalidate-input", input }],
+          ];
+
+        cache.set(initialFlagState.input, initialFlagState.outcome);
+
+        return [
+          {
+            name: "succeeded",
+            input: initialFlagState.input,
+            outcome: initialFlagState.outcome,
+          },
+          // revalidate only if the initial state was for a static render
+          initialFlagState.input.requestBody.visitorKey
+            ? []
+            : [{ effect: "revalidate-input", input }],
+        ];
+      }
+    );
+
+    React.useEffect(() => {
       const input = getInput({
         config,
-        visitorKeyInState: initialFlagState.input.requestBody.visitorKey,
+        visitorKeyInState: state.input?.requestBody.visitorKey,
         generatedVisitorKey,
         user: currentUser,
         traits: currentTraits,
       });
 
-      if (initialFlagState.outcome.error)
-        return [
-          {
-            name: "failed",
-            input: initialFlagState.input,
-            outcome: initialFlagState.outcome,
-            cachedOutcome: cache.get<SuccessOutcome<F>>(initialFlagState.input),
-          },
-          // always revalidate because the initial state failed
-          [{ effect: "revalidate-input", input }],
-        ];
-
-      cache.set(initialFlagState.input, initialFlagState.outcome);
-
-      return [
-        {
-          name: "succeeded",
-          input: initialFlagState.input,
-          outcome: initialFlagState.outcome,
-        },
-        // revalidate only if the initial state was for a static render
-        initialFlagState.input.requestBody.visitorKey
-          ? []
-          : [{ effect: "revalidate-input", input }],
-      ];
-    }
-  );
-
-  React.useEffect(() => {
-    const input = getInput({
-      config,
-      visitorKeyInState: state.input?.requestBody.visitorKey,
-      generatedVisitorKey,
-      user: currentUser,
-      traits: currentTraits,
-    });
-
-    // evaluate if the input has changed, but not if the current input is
-    // static as that will be revalidated on initialisation
-    if (!options.pause && !isAlmostEqual(state.input, input)) {
-      dispatch({ type: "evaluate", input });
-    }
-
-    if (!shouldRevalidateOnFocus) return;
-
-    function handleFocus() {
-      if (document.visibilityState === "visible" && !options.pause) {
-        dispatch({ type: "revalidate" });
+      // evaluate if the input has changed, but not if the current input is
+      // static as that will be revalidated on initialisation
+      if (!options.pause && !isAlmostEqual(state.input, input)) {
+        dispatch({ type: "evaluate", input });
       }
-    }
 
-    // extracted "visibilitychange" for bundle size
-    const visibilityChange = "visibilitychange";
-    document.addEventListener(visibilityChange, handleFocus);
-    return () => {
-      document.removeEventListener(visibilityChange, handleFocus);
-    };
-  }, [
-    state,
-    currentUser,
-    currentTraits,
-    shouldRevalidateOnFocus,
-    options.pause,
-  ]);
+      if (!shouldRevalidateOnFocus) return;
 
-  const revalidate = React.useCallback(
-    () => dispatch({ type: "revalidate" }),
-    [dispatch]
-  );
+      function handleFocus() {
+        if (document.visibilityState === "visible" && !options.pause) {
+          dispatch({ type: "revalidate" });
+        }
+      }
 
-  React.useEffect(() => {
-    effects.forEach((effect) => {
-      switch (effect.effect) {
-        // execute the effect
-        case "fetch": {
-          const { id, input, controller } = effect;
+      // extracted "visibilitychange" for bundle size
+      const visibilityChange = "visibilitychange";
+      document.addEventListener(visibilityChange, handleFocus);
+      return () => {
+        document.removeEventListener(visibilityChange, handleFocus);
+      };
+    }, [
+      state,
+      currentUser,
+      currentTraits,
+      shouldRevalidateOnFocus,
+      options.pause,
+    ]);
 
-          let timeoutId: ReturnType<typeof setTimeout>;
-          if (controller && currentLoadingTimeout) {
-            timeoutId = setTimeout(
-              () => controller.abort(),
-              currentLoadingTimeout
-            );
-          }
+    const revalidate = React.useCallback(
+      () => dispatch({ type: "revalidate" }),
+      [dispatch]
+    );
 
-          fetch([input.endpoint, input.envKey].join("/"), {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify(input.requestBody),
-            signal: controller?.signal,
-          }).then(
-            (response) => {
-              clearTimeout(timeoutId);
+    React.useEffect(() => {
+      effects.forEach((effect) => {
+        switch (effect.effect) {
+          // execute the effect
+          case "fetch": {
+            const { id, input, controller } = effect;
 
-              if (!response.ok /* response.status is not 200-299 */) {
-                dispatch({
-                  type: "settle/failure",
-                  id,
-                  input,
-                  outcome: { error: "response-not-ok" },
-                  thrownError: new Error("Response not ok"),
-                });
-                return null;
-              }
+            let timeoutId: ReturnType<typeof setTimeout>;
+            if (controller && currentClientLoadingTimeout) {
+              timeoutId = setTimeout(
+                () => controller.abort(),
+                currentClientLoadingTimeout
+              );
+            }
 
-              return response.json().then(
-                (data: EvaluationResponseBody<F>) => {
-                  // responses to outdated requests are skipped in the reducer
-                  dispatch({
-                    type: "settle/success",
-                    id,
-                    input,
-                    outcome: { data },
-                  });
-                },
-                (thrownError) => {
+            fetch([input.endpoint, input.envKey].join("/"), {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify(input.requestBody),
+              signal: controller?.signal,
+            }).then(
+              (response) => {
+                clearTimeout(timeoutId);
+
+                if (!response.ok /* response.status is not 200-299 */) {
                   dispatch({
                     type: "settle/failure",
                     id,
                     input,
-                    outcome: { error: "invalid-response-body" },
-                    thrownError,
+                    outcome: { error: "response-not-ok" },
+                    thrownError: new Error("Response not ok"),
                   });
                   return null;
                 }
-              );
-            },
-            (error) => {
-              // aborted from controller due to timeout
-              if (
-                error instanceof DOMException &&
-                error.name === "AbortError"
-              ) {
-                dispatch({
-                  type: "settle/failure",
-                  id,
-                  input,
-                  outcome: { error: "request-timed-out" },
-                  thrownError: error,
-                });
-              } else {
-                dispatch({
-                  type: "settle/failure",
-                  id,
-                  input,
-                  outcome: { error: "network-error" },
-                  thrownError: error,
-                });
+
+                return response.json().then(
+                  (data: GenericEvaluationResponseBody<F>) => {
+                    // responses to outdated requests are skipped in the reducer
+                    dispatch({
+                      type: "settle/success",
+                      id,
+                      input,
+                      outcome: { data },
+                    });
+                  },
+                  (thrownError) => {
+                    dispatch({
+                      type: "settle/failure",
+                      id,
+                      input,
+                      outcome: { error: "invalid-response-body" },
+                      thrownError,
+                    });
+                    return null;
+                  }
+                );
+              },
+              (error) => {
+                // aborted from controller due to timeout
+                if (
+                  error instanceof DOMException &&
+                  error.name === "AbortError"
+                ) {
+                  dispatch({
+                    type: "settle/failure",
+                    id,
+                    input,
+                    outcome: { error: "request-timed-out" },
+                    thrownError: error,
+                  });
+                } else {
+                  dispatch({
+                    type: "settle/failure",
+                    id,
+                    input,
+                    outcome: { error: "network-error" },
+                    thrownError: error,
+                  });
+                }
+
+                return null;
               }
+            );
 
-              return null;
-            }
-          );
+            break;
+          }
 
-          break;
+          case "revalidate-input":
+            dispatch({ type: "revalidate", input: effect.input });
+            break;
+
+          default:
+            return;
         }
+      });
+    }, [effects, dispatch]);
 
-        case "revalidate-input":
-          dispatch({ type: "revalidate", input: effect.input });
-          break;
+    const { defaultFlags } = config;
 
+    const flagBag = React.useMemo<FlagBag<F>>(() => {
+      switch (state.name) {
+        case "evaluating":
+          return {
+            flags: state.cachedOutcome?.data.flags
+              ? combineRawFlagsWithDefaultFlags(
+                  state.cachedOutcome.data.flags,
+                  defaultFlags
+                )
+              : null,
+            data: null,
+            error: null,
+            fetching: true,
+            settled: false,
+            revalidate,
+            visitorKey: state.input.requestBody.visitorKey,
+          } as EvaluatingFlagBag<F>;
+        case "succeeded":
+          return {
+            flags: combineRawFlagsWithDefaultFlags(
+              state.outcome.data.flags,
+              defaultFlags
+            ),
+            data: state.outcome.data,
+            error: null,
+            fetching: false,
+            settled: Boolean(state.input.requestBody.visitorKey),
+            revalidate,
+            visitorKey: state.input.requestBody.visitorKey,
+          } as SucceededFlagBag<F>;
+        case "revalidating-after-success":
+          return {
+            flags: combineRawFlagsWithDefaultFlags(
+              state.outcome.data.flags,
+              defaultFlags
+            ),
+            data: state.outcome.data,
+            error: null,
+            fetching: true,
+            settled: Boolean(state.input.requestBody.visitorKey),
+            revalidate,
+            visitorKey: state.input.requestBody.visitorKey,
+          } as RevalidatingAfterSuccessFlagBag<F>;
+        case "failed":
+          return {
+            flags: state.cachedOutcome?.data.flags
+              ? combineRawFlagsWithDefaultFlags(
+                  state.cachedOutcome.data.flags,
+                  defaultFlags
+                )
+              : defaultFlags || null,
+            data: null,
+            error: state.outcome.error,
+            fetching: false,
+            settled: Boolean(state.input.requestBody.visitorKey),
+            revalidate,
+            visitorKey: state.input.requestBody.visitorKey,
+          } as FailedFlagBag<F>;
+        case "revalidating-after-failure":
+          return {
+            flags: state.cachedOutcome?.data.flags
+              ? combineRawFlagsWithDefaultFlags(
+                  state.cachedOutcome.data.flags,
+                  defaultFlags
+                )
+              : defaultFlags || null,
+            data: null,
+            error: state.outcome.error,
+            fetching: true,
+            settled: Boolean(state.input.requestBody.visitorKey),
+            revalidate,
+            visitorKey: state.input.requestBody.visitorKey,
+          } as RevalidatingAfterErrorFlagBag<F>;
         default:
-          return;
+        case "empty":
+          return {
+            flags: null,
+            data: null,
+            error: null,
+            fetching: false,
+            settled: false,
+            revalidate,
+            visitorKey: null,
+          } as EmptyFlagBag;
       }
-    });
-  }, [effects, dispatch]);
+    }, [state, defaultFlags, revalidate]);
 
-  const { defaultFlags } = config;
-
-  const flagBag = React.useMemo<FlagBag<F>>(() => {
-    switch (state.name) {
-      case "evaluating":
-        return {
-          flags: state.cachedOutcome?.data.flags
-            ? combineRawFlagsWithDefaultFlags(
-                state.cachedOutcome.data.flags,
-                defaultFlags
-              )
-            : null,
-          data: null,
-          error: null,
-          fetching: true,
-          settled: false,
-          revalidate,
-          visitorKey: state.input.requestBody.visitorKey,
-        } as EvaluatingFlagBag<F>;
-      case "succeeded":
-        return {
-          flags: combineRawFlagsWithDefaultFlags(
-            state.outcome.data.flags,
-            defaultFlags
-          ),
-          data: state.outcome.data,
-          error: null,
-          fetching: false,
-          settled: Boolean(state.input.requestBody.visitorKey),
-          revalidate,
-          visitorKey: state.input.requestBody.visitorKey,
-        } as SucceededFlagBag<F>;
-      case "revalidating-after-success":
-        return {
-          flags: combineRawFlagsWithDefaultFlags(
-            state.outcome.data.flags,
-            defaultFlags
-          ),
-          data: state.outcome.data,
-          error: null,
-          fetching: true,
-          settled: Boolean(state.input.requestBody.visitorKey),
-          revalidate,
-          visitorKey: state.input.requestBody.visitorKey,
-        } as RevalidatingAfterSuccessFlagBag<F>;
-      case "failed":
-        return {
-          flags: state.cachedOutcome?.data.flags
-            ? combineRawFlagsWithDefaultFlags(
-                state.cachedOutcome.data.flags,
-                defaultFlags
-              )
-            : defaultFlags || null,
-          data: null,
-          error: state.outcome.error,
-          fetching: false,
-          settled: Boolean(state.input.requestBody.visitorKey),
-          revalidate,
-          visitorKey: state.input.requestBody.visitorKey,
-        } as FailedFlagBag<F>;
-      case "revalidating-after-failure":
-        return {
-          flags: state.cachedOutcome?.data.flags
-            ? combineRawFlagsWithDefaultFlags(
-                state.cachedOutcome.data.flags,
-                defaultFlags
-              )
-            : defaultFlags || null,
-          data: null,
-          error: state.outcome.error,
-          fetching: true,
-          settled: Boolean(state.input.requestBody.visitorKey),
-          revalidate,
-          visitorKey: state.input.requestBody.visitorKey,
-        } as RevalidatingAfterErrorFlagBag<F>;
-      default:
-      case "empty":
-        return {
-          flags: null,
-          data: null,
-          error: null,
-          fetching: false,
-          settled: false,
-          revalidate,
-          visitorKey: null,
-        } as EmptyFlagBag;
-    }
-  }, [state, defaultFlags, revalidate]);
-
-  return flagBag;
+    return flagBag;
+  };
 }

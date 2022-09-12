@@ -26,9 +26,9 @@ Add Feature Flags to your Next.js application with a single React Hook. This pac
 - integrate using a simple `useFlags()` hook
 - only 2 kB gzipped size
 - extremely fast flag responses (~50ms)
-- supports *user targeting*, *custom rules* and *rollouts*
 - supports *server-side rendering* and *static site generation*
-- supports *middleware (edge functions)*
+- supports *middleware* and *edge functions*
+- supports *user targeting*, *custom rules* and *rollouts*
   
 <br />
 
@@ -51,12 +51,14 @@ This is roughly what the usage of feature flags looks like once you're up and ru
 
 ```js
 // pages/index.js
-import { useFlags } from "@happykit/flags/client";
+import { useFlags } from "flags/client";
 
 export default function IndexPage(props) {
   const flagBag = useFlags();
 
-  return flagBag.flags.dogGreeting ? "Who's a good boye" : "Hello";
+  return flagBag.flags.greeting === "dog"
+    ? "Who's a good boye"
+    : "Hello";
 }
 ```
 

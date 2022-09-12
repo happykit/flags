@@ -4,15 +4,16 @@
 import "@testing-library/jest-dom/extend-expect";
 import "@testing-library/jest-dom";
 import { renderHook } from "@testing-library/react-hooks";
-import { useFlags, cache, UseFlagsOptions } from "./client";
-import { configure, _resetConfig } from "./config";
+import { createUseFlags, cache, UseFlagsOptions } from "./client";
 import * as fetchMock from "fetch-mock-jest";
 import { deleteAllCookies } from "../jest/delete-all-cookies";
 import { nanoid } from "nanoid";
-import { FlagBag, Flags } from "./types";
+import { FlagBag, Flags } from "./internal/types";
+
+let useFlags: ReturnType<typeof createUseFlags>;
 
 beforeEach(() => {
-  _resetConfig();
+  useFlags = createUseFlags({ envKey: "flags_pub_000000" });
   fetchMock.reset();
   deleteAllCookies(window);
   cache.clear();
@@ -55,7 +56,6 @@ describe("when cookie is not set", () => {
       }
     );
 
-    configure({ envKey: "flags_pub_000000" });
     expect(document.cookie).toEqual("");
 
     const { result, waitForNextUpdate } = renderHook(() => useFlags());
@@ -144,7 +144,6 @@ describe("when cookie is set", () => {
       }
     );
 
-    configure({ envKey: "flags_pub_000000" });
     expect(document.cookie).toEqual(`hkvk=${visitorKeyInCookie}`);
 
     // start actual testing
@@ -234,7 +233,6 @@ describe("stories", () => {
         }
       );
 
-      configure({ envKey: "flags_pub_000000" });
       expect(document.cookie).toEqual("");
 
       const { result, waitForNextUpdate, rerender } = renderHook<
