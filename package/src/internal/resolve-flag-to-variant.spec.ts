@@ -24,11 +24,8 @@ const fakeVariant3 = {
 
 const flag: Flag = {
   id: "fake-id",
-  description: "fake-description",
   kind: "string",
   slug: "fake-slug",
-  createdAt: "2021-01-20T21:58:31.292434Z",
-  updatedAt: "2021-01-20T21:58:31.292434Z",
   projectId: "fake-project-id",
   variants: [fakeVariant1, fakeVariant2, fakeVariant3],
   production: {

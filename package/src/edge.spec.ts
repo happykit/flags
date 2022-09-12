@@ -5,7 +5,6 @@
 import "whatwg-fetch";
 import "@testing-library/jest-dom/extend-expect";
 import * as fetchMock from "fetch-mock-jest";
-import { configure } from "./config";
 import { createGetEdgeFlags } from "./edge";
 import { nanoid } from "nanoid";
 
@@ -16,7 +15,7 @@ jest.mock("nanoid", () => {
 let getEdgeFlags: ReturnType<typeof createGetEdgeFlags>;
 
 beforeEach(() => {
-  getEdgeFlags = createGetEdgeFlags(configure({ envKey: "flags_pub_000000" }));
+  getEdgeFlags = createGetEdgeFlags({ envKey: "flags_pub_000000" });
   fetchMock.reset();
 });
 

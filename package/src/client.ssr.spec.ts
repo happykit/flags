@@ -5,7 +5,6 @@ import "@testing-library/jest-dom/extend-expect";
 import "@testing-library/jest-dom";
 import { renderHook } from "@testing-library/react-hooks";
 import { createUseFlags, cache } from "./client";
-import { configure } from "./config";
 import * as fetchMock from "fetch-mock-jest";
 import { deleteAllCookies } from "../jest/delete-all-cookies";
 import { nanoid } from "nanoid";
@@ -14,7 +13,7 @@ import { Flags, InitialFlagState } from "./internal/types";
 let useFlags: ReturnType<typeof createUseFlags>;
 
 beforeEach(() => {
-  useFlags = createUseFlags(configure({ envKey: "flags_pub_000000" }));
+  useFlags = createUseFlags({ envKey: "flags_pub_000000" });
   fetchMock.reset();
   deleteAllCookies(window);
   cache.clear();
