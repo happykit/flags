@@ -1,11 +1,11 @@
 import {
   unstable_createReadHandler,
-  type DefinitionsInEdgeConfig,
+  type unstable_DefinitionsInStorage,
 } from "@happykit/flags/api-route";
 
 export const config = { runtime: "experimental-edge" };
 
-const definitions: DefinitionsInEdgeConfig = {
+const definitions: unstable_DefinitionsInStorage = {
   flags: [
     {
       projectId: "289861443285680649",
