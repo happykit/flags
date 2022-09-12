@@ -4,6 +4,7 @@ import type { Configuration } from "../config";
 export function applyConfigurationDefaults<F extends Flags>(
   incomingConfig: Configuration<F>
 ) {
+  if (!incomingConfig) throw new Error("@happykit/flags: config missing");
   if (!incomingConfig.envKey || incomingConfig.envKey.length === 0)
     throw new Error("@happykit/flags: envKey missing");
 
