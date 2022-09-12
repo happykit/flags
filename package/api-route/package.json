@@ -1,5 +1,0 @@
-{
-  "main": "../dist/api-route.js",
-  "module": "../dist/api-route.mjs",
-  "types": "../dist/api-route.d.ts"
-}

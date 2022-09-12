@@ -95,17 +95,18 @@ Put the files create the files listed below within the `flags` folder you just c
 #### `flags/config.ts`
 
 ```ts
-import { configure } from "@happykit/flags/config";
+import type { Configuration } from "@happykit/flags/config";
 
 // You can replace this with your exact flag types
 export type AppFlags = { [key: string]: boolean | number | string | null };
 
-export const config = configure<AppFlags>({
+export const config: Configuration<AppFlags> = {
   envKey: process.env.NEXT_PUBLIC_FLAGS_ENV_KEY!,
-  
-  // You can provide defaults here
+
+  // You can provide defaults flag values here
   defaultFlags: {}, 
-});
+};
+
 ```
 
 #### `flags/client.ts`
@@ -412,12 +413,15 @@ To do so, pass `defaultFlags` to the `configure` call in `flags/config.ts`.
 
 ```ts
 // flags/config.ts (shortened)
-export const config = configure<AppFlags>({  
+import type { Configuration } from "@happykit/flags/config";
+
+export const config: Configuration<AppFlags> = {
   // You can provide defaults here
   defaultFlags: {
     greeting: "dog",
     // .. more defaults ..
   }, 
+  // .. other settings ..
 });
 ```
 
