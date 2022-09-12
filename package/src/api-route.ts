@@ -98,7 +98,7 @@ function toVariantValues(
 //   );
 // }
 
-export type DefinitionsInEdgeConfig = {
+export type unstable_DefinitionsInStorage = {
   revision: string;
   flags: Flag[];
 };
@@ -125,7 +125,7 @@ export function unstable_createWriteHandler({
 }: {
   setDefinitions: (
     projectId: string,
-    definitions: DefinitionsInEdgeConfig
+    definitions: unstable_DefinitionsInStorage
   ) => Promise<boolean>;
   apiKey: string;
   corsHeaders?: Record<string, string>;
@@ -148,7 +148,7 @@ export function unstable_createWriteHandler({
 
       const data = (await request.json().catch(() => null)) as {
         projectId: string;
-        definitions: DefinitionsInEdgeConfig;
+        definitions: unstable_DefinitionsInStorage;
       } | null;
 
       if (!data || !data.projectId || !data.definitions) {
@@ -187,7 +187,7 @@ export function unstable_createReadHandler({
     projectId: string,
     envKey: string,
     environment: Environment
-  ) => Promise<null | DefinitionsInEdgeConfig>;
+  ) => Promise<null | unstable_DefinitionsInStorage>;
   corsHeaders?: Record<string, string>;
   serverTiming?: boolean;
 }) {
