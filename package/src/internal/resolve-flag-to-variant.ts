@@ -8,7 +8,7 @@ import {
   FlagVariant,
   FlagResolution,
   Environment,
-} from "../api-route-types";
+} from "../evaluation-types";
 
 function hasOwnProperty<X extends {}, Y extends PropertyKey>(
   obj: X,

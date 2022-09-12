@@ -1,4 +1,4 @@
-import { Flag } from "./api-route-types";
+import { Flag } from "./evaluation-types";
 import { unstable_evaluate } from "./evaluate";
 
 const fakeVariant1 = {

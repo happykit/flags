@@ -3,7 +3,7 @@ import type {
   Flag,
   FlagVariant,
   FlagVisitor,
-} from "./api-route-types";
+} from "./evaluation-types";
 import { resolveFlagToVariant } from "./internal/resolve-flag-to-variant";
 import type { FlagUser, Traits } from "./internal/types";
 

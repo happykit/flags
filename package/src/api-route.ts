@@ -4,7 +4,7 @@ import type {
   FlagUserAttributes,
   FlagVariant,
   FlagVisitor,
-} from "./api-route-types";
+} from "./evaluation-types";
 import type { NextFetchEvent, NextRequest } from "next/server";
 import { unstable_evaluate } from "./evaluate";
 

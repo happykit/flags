@@ -108,11 +108,8 @@ export type EnvironmentConfiguration = {
 export interface BaseFlag {
   kind: "boolean" | "number" | "string";
   id: string;
-  updatedAt: string;
-  createdAt: string;
   projectId: string;
   slug: string;
-  description: string;
   production: EnvironmentConfiguration;
   preview: EnvironmentConfiguration;
   development: EnvironmentConfiguration;
@@ -121,8 +118,6 @@ export interface BaseFlag {
 
 export interface BaseVariant {
   id: string;
-  name: string;
-  description: string;
   value: string | number | boolean;
 }
 
@@ -171,8 +166,6 @@ export type FlagVisitor = {
 
 export type FlagVariant = {
   id: string;
-  name: string;
-  description: string;
   value: string | number | boolean;
 };
 

@@ -1,5 +1,5 @@
 import { resolveFlagToVariant } from "./resolve-flag-to-variant";
-import type { Flag } from "../api-route-types";
+import type { Flag } from "../evaluation-types";
 
 const fakeVariant1 = {
   id: "fake-variant-id-1",
