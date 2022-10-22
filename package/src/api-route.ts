@@ -182,7 +182,7 @@ const defaultCorsHeaders = {
 //   };
 // }
 
-export function unstable_createReadHandler({
+export function createApiRoute({
   /**
    * Load feature flag definitions from your data source.
    * Called when feature flags are evaluated.
