@@ -1,4 +1,5 @@
 import { Configuration } from "../config";
+import type { Environment } from "../evaluation-types";
 
 /**
  * A user to load the flags for. A user must at least have a `key`. See the
@@ -33,7 +34,10 @@ export type Flags = {
   [key: string]: boolean | number | string | null;
 };
 
-export type FullConfiguration<F extends Flags> = Required<Configuration<F>>;
+export type FullConfiguration<F extends Flags> = Required<Configuration<F>> & {
+  projectId: string;
+  environment: Environment;
+};
 
 /**
  * The inputs to a flag evaluation.

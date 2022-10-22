@@ -16,13 +16,14 @@ import type {
 import { combineRawFlagsWithDefaultFlags, has } from "./internal/utils";
 import { applyConfigurationDefaults } from "./internal/apply-configuration-defaults";
 import {
+  type GetDefinitions,
   toTraits,
   toUser,
   toVariantValues,
   toVisitor,
-  unstable_DefinitionsInStorage,
+  DefinitionsInStorage,
 } from "./api-route";
-import { unstable_evaluate } from "./evaluate";
+import { evaluate } from "./evaluate";
 import type { Environment } from "./evaluation-types";
 
 export type { GenericEvaluationResponseBody } from "./internal/types";
@@ -99,11 +100,7 @@ type GetFlagsErrorBag<F extends Flags> = {
 };
 
 interface FactoryGetEdgeFlagsOptions {
-  getDefinitions?: (
-    projectId: string,
-    envKey: string,
-    environment: Environment
-  ) => Promise<null | unstable_DefinitionsInStorage>;
+  getDefinitions?: GetDefinitions;
 }
 
 /**
@@ -166,31 +163,32 @@ export function createGetEdgeFlags<F extends Flags>(
 
     // new logic
     if (currentGetDefinitions) {
-      // TODO config should parse envKey
-      const match = config.envKey.match(
-        /^flags_pub_(?:(development|preview|production)_)?([a-z0-9]+)$/
-      );
-      if (!match) throw new Error("env key not cool");
-      const projectId = match[2];
-      const environment: Environment =
-        (match[1] as Environment) || "production";
-      if (!projectId) throw new Error("could not parse projectId from env key");
-      if (!environment) throw new Error("could not parse env from env key");
-      // end TODO
-      // call storage.getDefinitions here
-
       const definitionsLatencyStart = Date.now();
-      const definitions = await currentGetDefinitions(
-        projectId,
-        config.envKey,
-        environment
-      ).catch((error) => {
-        console.error(error);
-        return null;
-      });
+      let definitions: DefinitionsInStorage | null;
+      try {
+        definitions = await currentGetDefinitions(
+          config.projectId,
+          config.envKey,
+          config.environment
+        );
+      } catch {
+        return {
+          flags: config.defaultFlags as F,
+          data: null,
+          error: "network-error",
+          initialFlagState: { input, outcome: { error: "network-error" } },
+          cookie: null,
+        };
+      }
       const definitionsLatencyStop = Date.now();
 
-      if (!definitions) {
+      // if definitions don't contain what we expect them to
+      if (
+        !definitions ||
+        definitions.format !== "v1" ||
+        definitions.projectId !== config.projectId ||
+        !Array.isArray(definitions.flags)
+      ) {
         return {
           flags: config.defaultFlags as F,
           data: null,
@@ -203,33 +201,22 @@ export function createGetEdgeFlags<F extends Flags>(
         };
       }
 
-      // something like this if the loaded definitions have the wrong
-      // shape/version/format/projectId
-      //
-      // return {
-      //   flags: config.defaultFlags as F,
-      //   data: null,
-      //   error: "network-error",
-      //   initialFlagState: { input, outcome: { error: "network-error" } },
-      //   cookie: null,
-      // };
-
-      const evaluated = unstable_evaluate({
+      const evaluated = evaluate({
         flags: definitions.flags,
-        environment,
+        environment: config.environment,
         traits: options.traits ? toTraits(options.traits) : null,
         user: options.user ? toUser(options.user) : null,
         visitor: visitorKey ? toVisitor(visitorKey) : null,
       });
 
-      const workerResponseBody: GenericEvaluationResponseBody<F> = {
+      // not actually a response, as we evaluated inline
+      const outcomeData: GenericEvaluationResponseBody<F> = {
         flags: toVariantValues(evaluated) as F,
         visitor: visitorKey ? toVisitor(visitorKey) : null,
       };
 
       // add defaults to flags here, but not in initialFlagState
-      const flags = workerResponseBody.flags ? workerResponseBody.flags : null;
-
+      const flags = outcomeData.flags ? outcomeData.flags : null;
       const flagsWithDefaults = combineRawFlagsWithDefaultFlags<F>(
         flags as F | null,
         config.defaultFlags
@@ -242,18 +229,18 @@ export function createGetEdgeFlags<F extends Flags>(
 
       return {
         flags: flagsWithDefaults,
-        data: workerResponseBody,
+        data: outcomeData,
         error: null,
         initialFlagState: {
           input,
-          outcome: { data: workerResponseBody },
+          outcome: { data: outcomeData },
         },
-        cookie: workerResponseBody.visitor?.key
+        cookie: outcomeData.visitor?.key
           ? {
               name: "hkvk",
-              value: workerResponseBody.visitor.key,
+              value: outcomeData.visitor.key,
               options: cookieOptions,
-              args: ["hkvk", workerResponseBody.visitor.key, cookieOptions],
+              args: ["hkvk", outcomeData.visitor.key, cookieOptions],
             }
           : null,
       };
@@ -284,11 +271,9 @@ export function createGetEdgeFlags<F extends Flags>(
         }
 
         return workerResponse.json().then(
-          (workerResponseBody: GenericEvaluationResponseBody<F>) => {
+          (outcomeData: GenericEvaluationResponseBody<F>) => {
             // add defaults to flags here, but not in initialFlagState
-            const flags = workerResponseBody.flags
-              ? workerResponseBody.flags
-              : null;
+            const flags = outcomeData.flags ? outcomeData.flags : null;
             const flagsWithDefaults = combineRawFlagsWithDefaultFlags<F>(
               flags,
               config.defaultFlags
@@ -296,22 +281,18 @@ export function createGetEdgeFlags<F extends Flags>(
 
             return {
               flags: flagsWithDefaults,
-              data: workerResponseBody,
+              data: outcomeData,
               error: null,
               initialFlagState: {
                 input,
-                outcome: { data: workerResponseBody },
+                outcome: { data: outcomeData },
               },
-              cookie: workerResponseBody.visitor?.key
+              cookie: outcomeData.visitor?.key
                 ? {
                     name: "hkvk",
-                    value: workerResponseBody.visitor.key,
+                    value: outcomeData.visitor.key,
                     options: cookieOptions,
-                    args: [
-                      "hkvk",
-                      workerResponseBody.visitor.key,
-                      cookieOptions,
-                    ],
+                    args: ["hkvk", outcomeData.visitor.key, cookieOptions],
                   }
                 : null,
             };

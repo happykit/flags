@@ -6,7 +6,7 @@ import type {
   FlagVisitor,
 } from "./evaluation-types";
 import type { NextFetchEvent, NextRequest } from "next/server";
-import { unstable_evaluate } from "./evaluate";
+import { evaluate } from "./evaluate";
 
 export function toUser(incomingUser: {
   key: string;
@@ -98,12 +98,18 @@ export function toVariantValues(
 //   );
 // }
 
-export type unstable_DefinitionsInStorage = {
+export type DefinitionsInStorage = {
   projectId: string;
   format: "v1";
   revision: string;
   flags: Flag[];
 };
+
+export type GetDefinitions = (
+  projectId: string,
+  envKey: string,
+  environment: Environment
+) => Promise<DefinitionsInStorage | null>;
 
 // We support the GET, POST, HEAD, and OPTIONS methods from any origin,
 // and allow any header on requests. These headers must be present
@@ -127,7 +133,7 @@ const defaultCorsHeaders = {
 // }: {
 //   setDefinitions: (
 //     projectId: string,
-//     definitions: unstable_DefinitionsInStorage
+//     definitions: DefinitionsInStorage
 //   ) => Promise<boolean>;
 //   apiKey: string;
 //   corsHeaders?: Record<string, string>;
@@ -150,7 +156,7 @@ const defaultCorsHeaders = {
 
 //       const data = (await request.json().catch(() => null)) as {
 //         projectId: string;
-//         definitions: unstable_DefinitionsInStorage;
+//         definitions: DefinitionsInStorage;
 //       } | null;
 
 //       if (!data || !data.projectId || !data.definitions) {
@@ -185,11 +191,7 @@ export function unstable_createReadHandler({
   corsHeaders = defaultCorsHeaders,
   serverTiming = false,
 }: {
-  getDefinitions: (
-    projectId: string,
-    envKey: string,
-    environment: Environment
-  ) => Promise<null | unstable_DefinitionsInStorage>;
+  getDefinitions: GetDefinitions;
   corsHeaders?: Record<string, string>;
   serverTiming?: boolean;
 }) {
@@ -281,7 +283,7 @@ export function unstable_createReadHandler({
 
     flags = definitions.flags;
 
-    const evaluatedVariants = unstable_evaluate({
+    const evaluatedVariants = evaluate({
       flags,
       environment,
       user,
