@@ -13,8 +13,17 @@ import type {
   ResolvingError,
   Input,
 } from "./internal/types";
-import { combineRawFlagsWithDefaultFlags } from "./internal/utils";
+import { combineRawFlagsWithDefaultFlags, has } from "./internal/utils";
 import { applyConfigurationDefaults } from "./internal/apply-configuration-defaults";
+import {
+  toTraits,
+  toUser,
+  toVariantValues,
+  toVisitor,
+  unstable_DefinitionsInStorage,
+} from "./api-route";
+import { unstable_evaluate } from "./evaluate";
+import type { Environment } from "./evaluation-types";
 
 export type { GenericEvaluationResponseBody } from "./internal/types";
 
@@ -89,19 +98,41 @@ type GetFlagsErrorBag<F extends Flags> = {
   cookie: null;
 };
 
+interface FactoryGetEdgeFlagsOptions {
+  getDefinitions?: (
+    projectId: string,
+    envKey: string,
+    environment: Environment
+  ) => Promise<null | unstable_DefinitionsInStorage>;
+}
+
 /**
  * Creates the getEdgeFlags() function your application should use when
  * loading flags from Middleware or Edge API Routes.
  */
 export function createGetEdgeFlags<F extends Flags>(
-  configuration: Configuration<F>
+  configuration: Configuration<F>,
+  { getDefinitions: factoryGetDefinitions }: FactoryGetEdgeFlagsOptions = {}
 ) {
+  const cookieOptions: CookieSerializeOptions = {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 180,
+    sameSite: "lax",
+  };
+
   const config = applyConfigurationDefaults(configuration);
-  return function getEdgeFlags(options: {
-    request: Pick<NextRequest, "cookies" | "headers">;
-    user?: FlagUser;
-    traits?: Traits;
-  }): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
+  return async function getEdgeFlags(
+    options: {
+      request: Pick<NextRequest, "cookies" | "headers">;
+      user?: FlagUser;
+      traits?: Traits;
+    } & FactoryGetEdgeFlagsOptions
+  ): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
+    // todo use whole storage instead?
+    const currentGetDefinitions = has(options, "getDefinitions,")
+      ? options.getDefinitions
+      : factoryGetDefinitions;
+
     // determine visitor key
     const visitorKeyFromCookie =
       typeof options.request.cookies.get === "function"
@@ -132,6 +163,102 @@ export function createGetEdgeFlags<F extends Flags>(
         // access to the real client ip
         { "x-forwarded-for": requestingIp }
       : {};
+
+    // new logic
+    if (currentGetDefinitions) {
+      // TODO config should parse envKey
+      const match = config.envKey.match(
+        /^flags_pub_(?:(development|preview|production)_)?([a-z0-9]+)$/
+      );
+      if (!match) throw new Error("env key not cool");
+      const projectId = match[2];
+      const environment: Environment =
+        (match[1] as Environment) || "production";
+      if (!projectId) throw new Error("could not parse projectId from env key");
+      if (!environment) throw new Error("could not parse env from env key");
+      // end TODO
+      // call storage.getDefinitions here
+
+      const definitionsLatencyStart = Date.now();
+      const definitions = await currentGetDefinitions(
+        projectId,
+        config.envKey,
+        environment
+      ).catch((error) => {
+        console.error(error);
+        return null;
+      });
+      const definitionsLatencyStop = Date.now();
+
+      if (!definitions) {
+        return {
+          flags: config.defaultFlags as F,
+          data: null,
+          error: "response-not-ok",
+          initialFlagState: {
+            input,
+            outcome: { error: "response-not-ok" },
+          },
+          cookie: null,
+        };
+      }
+
+      // something like this if the loaded definitions have the wrong
+      // shape/version/format/projectId
+      //
+      // return {
+      //   flags: config.defaultFlags as F,
+      //   data: null,
+      //   error: "network-error",
+      //   initialFlagState: { input, outcome: { error: "network-error" } },
+      //   cookie: null,
+      // };
+
+      const evaluated = unstable_evaluate({
+        flags: definitions.flags,
+        environment,
+        traits: options.traits ? toTraits(options.traits) : null,
+        user: options.user ? toUser(options.user) : null,
+        visitor: visitorKey ? toVisitor(visitorKey) : null,
+      });
+
+      const workerResponseBody: GenericEvaluationResponseBody<F> = {
+        flags: toVariantValues(evaluated) as F,
+        visitor: visitorKey ? toVisitor(visitorKey) : null,
+      };
+
+      // add defaults to flags here, but not in initialFlagState
+      const flags = workerResponseBody.flags ? workerResponseBody.flags : null;
+
+      const flagsWithDefaults = combineRawFlagsWithDefaultFlags<F>(
+        flags as F | null,
+        config.defaultFlags
+      );
+
+      console.log(
+        "reading edge config from getEdgeFlags took",
+        String(definitionsLatencyStop - definitionsLatencyStart) + "ms"
+      );
+
+      return {
+        flags: flagsWithDefaults,
+        data: workerResponseBody,
+        error: null,
+        initialFlagState: {
+          input,
+          outcome: { data: workerResponseBody },
+        },
+        cookie: workerResponseBody.visitor?.key
+          ? {
+              name: "hkvk",
+              value: workerResponseBody.visitor.key,
+              options: cookieOptions,
+              args: ["hkvk", workerResponseBody.visitor.key, cookieOptions],
+            }
+          : null,
+      };
+    }
+    // end new logic
 
     return fetch([input.endpoint, input.envKey].join("/"), {
       method: "POST",
@@ -166,12 +293,6 @@ export function createGetEdgeFlags<F extends Flags>(
               flags,
               config.defaultFlags
             );
-
-            const cookieOptions: CookieSerializeOptions = {
-              path: "/",
-              maxAge: 60 * 60 * 24 * 180,
-              sameSite: "lax",
-            };
 
             return {
               flags: flagsWithDefaults,
