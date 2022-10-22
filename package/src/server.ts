@@ -24,6 +24,15 @@ import {
   getCookie,
 } from "./internal/utils";
 import { applyConfigurationDefaults } from "./internal/apply-configuration-defaults";
+import {
+  toTraits,
+  toUser,
+  toVariantValues,
+  toVisitor,
+  unstable_DefinitionsInStorage,
+} from "./api-route";
+import { unstable_evaluate } from "./evaluate";
+import { Environment } from "./evaluation-types";
 
 export type { GenericEvaluationResponseBody } from "./internal/types";
 
@@ -92,6 +101,12 @@ interface FactoryGetFlagsOptions {
    * Pass `false` to disable this feature.
    */
   staticLoadingTimeout?: number;
+
+  getDefinitions?: (
+    projectId: string,
+    envKey: string,
+    environment: Environment
+  ) => Promise<null | unstable_DefinitionsInStorage>;
 }
 
 /**
@@ -102,10 +117,11 @@ export function createGetFlags<F extends Flags>(
   {
     serverLoadingTimeout: factoryServerLoadingTimeout = 3000,
     staticLoadingTimeout: factoryStaticLoadingTimeout = 60000,
+    getDefinitions: factoryGetDefinitions,
   }: FactoryGetFlagsOptions = {}
 ) {
   const config = applyConfigurationDefaults(configuration);
-  return function getFlags(
+  return async function getFlags(
     options: {
       context:
         | Pick<GetServerSidePropsContext, "req" | "res">
@@ -122,6 +138,11 @@ export function createGetFlags<F extends Flags>(
     const currentServerLoadingTimeout = has(options, "serverLoadingTimeout")
       ? options.serverLoadingTimeout
       : factoryServerLoadingTimeout;
+
+    // todo use whole storage instead?
+    const currentGetDefinitions = has(options, "getDefinitions,")
+      ? options.getDefinitions
+      : factoryGetDefinitions;
 
     // determine visitor key
     const visitorKeyFromCookie = has(options.context, "req")
@@ -184,6 +205,114 @@ export function createGetFlags<F extends Flags>(
       timeoutDuration <= 0
         ? null
         : setTimeout(() => controller.abort(), timeoutDuration);
+
+    // new logic
+    if (currentGetDefinitions) {
+      // TODO config should parse envKey
+      const match = config.envKey.match(
+        /^flags_pub_(?:(development|preview|production)_)?([a-z0-9]+)$/
+      );
+      if (!match) throw new Error("env key not cool");
+      const projectId = match[2];
+      const environment: Environment =
+        (match[1] as Environment) || "production";
+      if (!projectId) throw new Error("could not parse projectId from env key");
+      if (!environment) throw new Error("could not parse env from env key");
+      // end TODO
+      // call storage.getDefinitions here
+
+      const definitionsLatencyStart = Date.now();
+      const definitions = await currentGetDefinitions(
+        projectId,
+        config.envKey,
+        environment
+      ).catch((error) => {
+        console.error(error);
+        return null;
+      });
+      const definitionsLatencyStop = Date.now();
+
+      if (!definitions) {
+        return {
+          flags: config.defaultFlags as F,
+          data: null,
+          error: "response-not-ok",
+          initialFlagState: {
+            input,
+            outcome: { error: "response-not-ok" },
+          },
+        };
+      }
+
+      // something like this if the loaded definitions have the wrong
+      // shape/version/format/projectId
+      //
+      // return {
+      //   flags: config.defaultFlags as F,
+      //   data: null,
+      //   error: "invalid-response-body",
+      //   initialFlagState: {
+      //     input,
+      //     outcome: { error: "invalid-response-body" },
+      //   },
+      // };
+
+      if (has(options.context, "req") && visitorKey) {
+        // always set the cookie so its max age refreshes
+        (
+          options.context as {
+            req: IncomingMessage;
+            res: ServerResponse;
+          }
+        ).res.setHeader("Set-Cookie", serializeVisitorKeyCookie(visitorKey));
+      }
+
+      const evaluated = unstable_evaluate({
+        flags: definitions.flags,
+        environment,
+        traits: options.traits ? toTraits(options.traits) : null,
+        user: options.user ? toUser(options.user) : null,
+        visitor: visitorKey ? toVisitor(visitorKey) : null,
+      });
+
+      const workerResponseBody: GenericEvaluationResponseBody<F> = {
+        flags: toVariantValues(evaluated) as F,
+        visitor: visitorKey ? toVisitor(visitorKey) : null,
+      };
+
+      // add defaults to flags here, but not in initialFlagState
+      const flags = workerResponseBody.flags ? workerResponseBody.flags : null;
+
+      const flagsWithDefaults = combineRawFlagsWithDefaultFlags<F>(
+        flags as F | null,
+        config.defaultFlags
+      );
+
+      console.log("using getFlags with edge config");
+
+      if (options.context) {
+        (
+          options.context as {
+            req: IncomingMessage;
+            res?: ServerResponse;
+          }
+        ).res?.setHeader(
+          "x-edge-config-latency",
+          String(definitionsLatencyStop - definitionsLatencyStart)
+        );
+      }
+
+      return {
+        flags: flagsWithDefaults,
+        data: workerResponseBody,
+        error: null,
+        initialFlagState: {
+          input,
+          outcome: { data: workerResponseBody },
+        },
+      };
+    }
+    // end new logic
 
     return fetch([input.endpoint, input.envKey].join("/"), {
       method: "POST",
