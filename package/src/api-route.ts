@@ -8,7 +8,7 @@ import type {
 import type { NextFetchEvent, NextRequest } from "next/server";
 import { unstable_evaluate } from "./evaluate";
 
-function toUser(incomingUser: {
+export function toUser(incomingUser: {
   key: string;
   email?: unknown;
   name?: unknown;
@@ -43,7 +43,7 @@ function toUser(incomingUser: {
 }
 
 // the visitor attributes are always collected by the worker
-function toVisitor(visitorKey: string): FlagVisitor {
+export function toVisitor(visitorKey: string): FlagVisitor {
   return { key: visitorKey };
 }
 
@@ -52,7 +52,7 @@ function toVisitor(visitorKey: string): FlagVisitor {
  * Keys may at most be 1024 chars.
  * otherwise the trait gets left out.
  */
-function toTraits(
+export function toTraits(
   incomingTraits?: {
     [key: string]: any;
   } | null
@@ -75,7 +75,7 @@ function toTraits(
   );
 }
 
-function toVariantValues(
+export function toVariantValues(
   input: Record<string, FlagVariant | null>
 ): Record<string, FlagVariant["value"] | null> {
   return Object.entries(input).reduce<
@@ -99,6 +99,8 @@ function toVariantValues(
 // }
 
 export type unstable_DefinitionsInStorage = {
+  projectId: string;
+  format: "v1";
   revision: string;
   flags: Flag[];
 };
@@ -114,65 +116,65 @@ const defaultCorsHeaders = {
   "Access-Control-Expose-Headers": "*",
 };
 
-export function unstable_createWriteHandler({
-  /**
-   * Store feature flag definitions in your data source.
-   * Called when you change feature flags in HappyKit's UI.
-   */
-  setDefinitions,
-  apiKey,
-  corsHeaders = defaultCorsHeaders,
-}: {
-  setDefinitions: (
-    projectId: string,
-    definitions: unstable_DefinitionsInStorage
-  ) => Promise<boolean>;
-  apiKey: string;
-  corsHeaders?: Record<string, string>;
-}) {
-  const headers = { ...corsHeaders, "content-type": "application/json" };
+// export function unstable_createWriteHandler({
+//   /**
+//    * Store feature flag definitions in your data source.
+//    * Called when you change feature flags in HappyKit's UI.
+//    */
+//   setDefinitions,
+//   apiKey,
+//   corsHeaders = defaultCorsHeaders,
+// }: {
+//   setDefinitions: (
+//     projectId: string,
+//     definitions: unstable_DefinitionsInStorage
+//   ) => Promise<boolean>;
+//   apiKey: string;
+//   corsHeaders?: Record<string, string>;
+// }) {
+//   const headers = { ...corsHeaders, "content-type": "application/json" };
 
-  return async function writeHandler(
-    request: NextRequest,
-    event: NextFetchEvent
-  ) {
-    // handler is called to store flags
-    if (request.method === "PUT") {
-      if (request.headers.get("Authorization") !== `Bearer ${apiKey}`) {
-        return new Response(null, {
-          status: 401,
-          statusText: "Unauthorized",
-          headers: corsHeaders,
-        });
-      }
+//   return async function writeHandler(
+//     request: NextRequest,
+//     event: NextFetchEvent
+//   ) {
+//     // handler is called to store flags
+//     if (request.method === "PUT") {
+//       if (request.headers.get("Authorization") !== `Bearer ${apiKey}`) {
+//         return new Response(null, {
+//           status: 401,
+//           statusText: "Unauthorized",
+//           headers: corsHeaders,
+//         });
+//       }
 
-      const data = (await request.json().catch(() => null)) as {
-        projectId: string;
-        definitions: unstable_DefinitionsInStorage;
-      } | null;
+//       const data = (await request.json().catch(() => null)) as {
+//         projectId: string;
+//         definitions: unstable_DefinitionsInStorage;
+//       } | null;
 
-      if (!data || !data.projectId || !data.definitions) {
-        return new Response(
-          JSON.stringify({ reason: "Invalid request body" }),
-          { status: 422, headers }
-        );
-      }
+//       if (!data || !data.projectId || !data.definitions) {
+//         return new Response(
+//           JSON.stringify({ reason: "Invalid request body" }),
+//           { status: 422, headers }
+//         );
+//       }
 
-      const ok = await setDefinitions(data.projectId, data.definitions);
+//       const ok = await setDefinitions(data.projectId, data.definitions);
 
-      return ok
-        ? new Response(null, { status: 200, headers: corsHeaders })
-        : new Response(null, {
-            status: 500,
-            statusText: "Could not store definitions",
-            headers: corsHeaders,
-          });
-    }
+//       return ok
+//         ? new Response(null, { status: 200, headers: corsHeaders })
+//         : new Response(null, {
+//             status: 500,
+//             statusText: "Could not store definitions",
+//             headers: corsHeaders,
+//           });
+//     }
 
-    // to avoid handling additional requests during development
-    return new Response(null, { status: 404, headers });
-  };
-}
+//     // to avoid handling additional requests during development
+//     return new Response(null, { status: 404, headers });
+//   };
+// }
 
 export function unstable_createReadHandler({
   /**
