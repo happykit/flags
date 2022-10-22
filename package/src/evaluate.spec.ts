@@ -1,5 +1,5 @@
 import { Flag } from "./evaluation-types";
-import { unstable_evaluate } from "./evaluate";
+import { evaluate } from "./evaluate";
 
 const fakeVariant1 = {
   id: "fake-variant-id-1",
@@ -24,11 +24,11 @@ const fakeVariant3 = {
 
 const flag: Flag = {
   id: "fake-id",
-  description: "fake-description",
+  // description: "fake-description",
   kind: "string",
   slug: "fake-slug",
-  createdAt: "2021-01-20T21:58:31.292434Z",
-  updatedAt: "2021-01-20T21:58:31.292434Z",
+  // createdAt: "2021-01-20T21:58:31.292434Z",
+  // updatedAt: "2021-01-20T21:58:31.292434Z",
   projectId: "fake-project-id",
   variants: [fakeVariant1, fakeVariant2, fakeVariant3],
   production: {
@@ -69,12 +69,12 @@ const flag: Flag = {
 // more in-depth tests are in resolve-flag-to-variant.spec.ts
 describe("evaluate", () => {
   it("should be a function", () => {
-    expect(typeof unstable_evaluate).toEqual("function");
+    expect(typeof evaluate).toEqual("function");
   });
 
   it("evaluates flags", () => {
     expect(
-      unstable_evaluate({
+      evaluate({
         flags: [flag],
         environment: "production",
         user: null,

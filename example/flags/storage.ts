@@ -1,15 +1,16 @@
-import { unstable_DefinitionsInStorage } from "@happykit/flags/api-route";
+import type { GetDefinitions } from "@happykit/flags/api-route";
 import { get } from "@vercel/edge-config";
 
-export async function getDefinitions(
-  projectId: string,
-  envKey: string,
-  environment: string
-) {
-  const data = (await get(
+export const getDefinitions: GetDefinitions = async (
+  projectId,
+  envKey,
+  environment
+) => {
+  // TODO fix types here once get() supports generics properly
+  const definitions = (await get(
     `happykit_v1_${projectId}`
-  )) as unknown as unstable_DefinitionsInStorage;
+  )) as unknown as Awaited<ReturnType<GetDefinitions>>;
 
   // read from edge config here
-  return data ?? null;
-}
+  return definitions ?? null;
+};
