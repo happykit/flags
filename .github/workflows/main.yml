@@ -40,5 +40,5 @@ jobs:
         run: pnpm build
         env:
           CI: true
-          NEXT_PUBLIC_FLAGS_ENDPOINT: https://happykit.dev/api/flags
+          NEXT_PUBLIC_FLAGS_ENDPOINT: /api/flags
           NEXT_PUBLIC_FLAGS_ENV_KEY: flags_pub_development_289861443285680649
