@@ -23,15 +23,14 @@ import {
   getCookie,
 } from "./internal/utils";
 import { applyConfigurationDefaults } from "./internal/apply-configuration-defaults";
+import type { GetDefinitions, DefinitionsInStorage } from "./api-route";
 import {
-  type GetDefinitions,
+  evaluate,
   toTraits,
   toUser,
   toVariantValues,
   toVisitor,
-  DefinitionsInStorage,
-} from "./api-route";
-import { evaluate } from "./evaluate";
+} from "./evaluate";
 import { resolvingErrorBag } from "./internal/errors";
 
 export type { GenericEvaluationResponseBody } from "./internal/types";
@@ -246,8 +245,6 @@ export function createGetFlags<F extends Flags>(
         flags as F | null,
         config.defaultFlags
       );
-
-      console.log("using getFlags with edge config");
 
       return {
         flags: flagsWithDefaults,

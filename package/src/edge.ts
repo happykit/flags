@@ -14,15 +14,14 @@ import type {
 } from "./internal/types";
 import { combineRawFlagsWithDefaultFlags, has } from "./internal/utils";
 import { applyConfigurationDefaults } from "./internal/apply-configuration-defaults";
+import type { GetDefinitions, DefinitionsInStorage } from "./api-route";
 import {
-  type GetDefinitions,
+  evaluate,
   toTraits,
   toUser,
   toVariantValues,
   toVisitor,
-  DefinitionsInStorage,
-} from "./api-route";
-import { evaluate } from "./evaluate";
+} from "./evaluate";
 import { resolvingErrorBag } from "./internal/errors";
 
 export type { GenericEvaluationResponseBody } from "./internal/types";
