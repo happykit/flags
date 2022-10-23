@@ -11,11 +11,10 @@ import type {
   FlagUser,
   Traits,
   Flags,
-  SuccessInitialFlagState,
-  ErrorInitialFlagState,
   GenericEvaluationResponseBody,
-  ResolvingError,
   Input,
+  GetFlagsSuccessBag,
+  GetFlagsErrorBag,
 } from "./internal/types";
 import {
   has,
@@ -33,7 +32,6 @@ import {
   DefinitionsInStorage,
 } from "./api-route";
 import { evaluate } from "./evaluate";
-import { Environment } from "./evaluation-types";
 
 export type { GenericEvaluationResponseBody } from "./internal/types";
 
@@ -48,43 +46,6 @@ function getRequestingIp(context: {
   if (remoteAddress) return remoteAddress;
   return null;
 }
-
-type GetFlagsSuccessBag<F extends Flags> = {
-  /**
-   * The resolved flags
-   *
-   * In case the default flags contain flags not present in the loaded flags,
-   * the missing flags will get added to the returned flags.
-   */
-  flags: F;
-  /**
-   * The actually loaded data without any defaults applied, or null when
-   * the flags could not be loaded.
-   */
-  data: GenericEvaluationResponseBody<F> | null;
-  error: null;
-  initialFlagState: SuccessInitialFlagState<F>;
-};
-
-type GetFlagsErrorBag<F extends Flags> = {
-  /**
-   * The resolved flags
-   *
-   * In case the flags could not be loaded, you will see the default
-   * flags here (from config.defaultFlags)
-   */
-  flags: F | null;
-  /**
-   * The actually loaded data without any defaults applied, or null when
-   * the flags could not be loaded.
-   */
-  data: null;
-  error: ResolvingError;
-  /**
-   * The initial flag state that you can use to initialize useFlags()
-   */
-  initialFlagState: ErrorInitialFlagState;
-};
 
 interface FactoryGetFlagsOptions {
   /**
