@@ -4,7 +4,6 @@
 import { createGetFlags } from "./server";
 import "@testing-library/jest-dom/extend-expect";
 import * as fetchMock from "fetch-mock-jest";
-import { configure } from "./config";
 import { GetServerSidePropsContext, GetStaticPropsContext } from "next";
 import { nanoid } from "nanoid";
 
@@ -15,15 +14,15 @@ jest.mock("nanoid", () => {
 let getFlags: ReturnType<typeof createGetFlags>;
 
 beforeEach(() => {
-  getFlags = createGetFlags(configure({ envKey: "flags_pub_000000" }));
+  getFlags = createGetFlags({ envKey: "flags_pub_000000" });
   fetchMock.reset();
 });
 
 describe("createGetFlags", () => {
   it("should throw when called without options", async () => {
     // @ts-ignore this is the situation we want to test
-    expect(() => createGetFlags()).toThrow(
-      Error("@happykit/flags: config missing")
+    expect(() => createGetFlags()).toThrowError(
+      "@happykit/flags: config missing"
     );
   });
 

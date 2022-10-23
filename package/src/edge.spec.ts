@@ -5,7 +5,6 @@
 import "whatwg-fetch";
 import "@testing-library/jest-dom/extend-expect";
 import * as fetchMock from "fetch-mock-jest";
-import { configure } from "./config";
 import { createGetEdgeFlags } from "./edge";
 import { nanoid } from "nanoid";
 
@@ -16,7 +15,7 @@ jest.mock("nanoid", () => {
 let getEdgeFlags: ReturnType<typeof createGetEdgeFlags>;
 
 beforeEach(() => {
-  getEdgeFlags = createGetEdgeFlags(configure({ envKey: "flags_pub_000000" }));
+  getEdgeFlags = createGetEdgeFlags({ envKey: "flags_pub_000000" });
   fetchMock.reset();
 });
 
@@ -41,15 +40,15 @@ function createNextRequest(
 describe("createGetEdgeFlags", () => {
   it("should throw when called without options", async () => {
     // @ts-ignore this is the situation we want to test
-    expect(() => createGetEdgeFlags()).toThrow(
-      Error("@happykit/flags: config missing")
+    expect(() => createGetEdgeFlags()).toThrowError(
+      "@happykit/flags: config missing"
     );
   });
 
   it("should throw with missing envKey", async () => {
     // @ts-ignore this is the situation we want to test
-    expect(() => createGetEdgeFlags({})).toThrow(
-      Error("@happykit/flags: envKey missing")
+    expect(() => createGetEdgeFlags({})).toThrowError(
+      "@happykit/flags: envKey missing"
     );
   });
 });

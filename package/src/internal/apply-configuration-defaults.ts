@@ -5,7 +5,13 @@ import type { Environment } from "../evaluation-types";
 export function applyConfigurationDefaults<F extends Flags>(
   incomingConfig: Configuration<F>
 ) {
-  if (!incomingConfig.envKey || incomingConfig.envKey.length === 0)
+  if (!incomingConfig) throw new Error("@happykit/flags: config missing");
+
+  if (
+    !incomingConfig ||
+    !incomingConfig.envKey ||
+    incomingConfig.envKey.length === 0
+  )
     throw new Error("@happykit/flags: envKey missing");
 
   const defaults = {
