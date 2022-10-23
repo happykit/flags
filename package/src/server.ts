@@ -98,7 +98,6 @@ export function createGetFlags<F extends Flags>(
       ? options.serverLoadingTimeout
       : factoryServerLoadingTimeout;
 
-    // todo use whole storage instead?
     const currentGetDefinitions = has(options, "getDefinitions,")
       ? options.getDefinitions
       : factoryGetDefinitions;
@@ -185,6 +184,25 @@ export function createGetFlags<F extends Flags>(
       }
       const definitionsLatencyStop = Date.now();
 
+      // TODO just for demo purposes for now, delete afterwards
+      if (options.context) {
+        const res = (
+          options.context as {
+            req: IncomingMessage;
+            res?: ServerResponse;
+          }
+        ).res;
+
+        if (res && !res.hasHeader("server-timing")) {
+          res.setHeader(
+            "server-timing",
+            `edge-config;dur=${
+              definitionsLatencyStop - definitionsLatencyStart
+            }`
+          );
+        }
+      }
+
       if (
         !definitions ||
         definitions.format !== "v1" ||
@@ -230,18 +248,6 @@ export function createGetFlags<F extends Flags>(
       );
 
       console.log("using getFlags with edge config");
-
-      if (options.context) {
-        (
-          options.context as {
-            req: IncomingMessage;
-            res?: ServerResponse;
-          }
-        ).res?.setHeader(
-          "x-edge-config-latency",
-          String(definitionsLatencyStop - definitionsLatencyStart)
-        );
-      }
 
       return {
         flags: flagsWithDefaults,
