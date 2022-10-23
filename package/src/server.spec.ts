@@ -21,8 +21,8 @@ beforeEach(() => {
 describe("createGetFlags", () => {
   it("should throw when called without options", async () => {
     // @ts-ignore this is the situation we want to test
-    expect(() => createGetFlags()).toThrow(
-      Error("@happykit/flags: config missing")
+    expect(() => createGetFlags()).toThrowError(
+      "@happykit/flags: config missing"
     );
   });
 
