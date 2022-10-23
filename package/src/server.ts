@@ -23,7 +23,7 @@ import {
   getCookie,
 } from "./internal/utils";
 import { applyConfigurationDefaults } from "./internal/apply-configuration-defaults";
-import type { GetDefinitions, DefinitionsInStorage } from "./api-route";
+import type { GetDefinitions, Definitions } from "./api-route";
 import {
   evaluate,
   toTraits,
@@ -166,7 +166,7 @@ export function createGetFlags<F extends Flags>(
     // new logic
     if (currentGetDefinitions) {
       const definitionsLatencyStart = Date.now();
-      let definitions: DefinitionsInStorage | null;
+      let definitions: Definitions | null;
 
       try {
         definitions = await currentGetDefinitions(

@@ -1,4 +1,4 @@
-import type { GetDefinitions } from "@happykit/flags/api-route";
+import type { GetDefinitions, Definitions } from "@happykit/flags/api-route";
 import { get } from "@vercel/edge-config";
 
 export const getDefinitions: GetDefinitions = async (
@@ -6,11 +6,6 @@ export const getDefinitions: GetDefinitions = async (
   envKey,
   environment
 ) => {
-  // TODO fix types here once get() supports generics properly
-  const definitions = (await get(
-    `happykit_v1_${projectId}`
-  )) as unknown as Awaited<ReturnType<GetDefinitions>>;
-
-  // read from edge config here
+  const definitions = await get<Definitions>(`happykit_v1_${projectId}`);
   return definitions ?? null;
 };
