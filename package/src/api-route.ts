@@ -20,7 +20,7 @@ import {
 //   );
 // }
 
-export type DefinitionsInStorage = {
+export type Definitions = {
   projectId: string;
   format: "v1";
   revision: string;
@@ -31,7 +31,7 @@ export type GetDefinitions = (
   projectId: string,
   envKey: string,
   environment: Environment
-) => Promise<DefinitionsInStorage | null>;
+) => Promise<Definitions | null>;
 
 // We support the GET, POST, HEAD, and OPTIONS methods from any origin,
 // and allow any header on requests. These headers must be present
@@ -55,7 +55,7 @@ const defaultCorsHeaders = {
 // }: {
 //   setDefinitions: (
 //     projectId: string,
-//     definitions: DefinitionsInStorage
+//     definitions: Definitions
 //   ) => Promise<boolean>;
 //   apiKey: string;
 //   corsHeaders?: Record<string, string>;
@@ -78,7 +78,7 @@ const defaultCorsHeaders = {
 
 //       const data = (await request.json().catch(() => null)) as {
 //         projectId: string;
-//         definitions: DefinitionsInStorage;
+//         definitions: Definitions;
 //       } | null;
 
 //       if (!data || !data.projectId || !data.definitions) {
