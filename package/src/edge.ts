@@ -23,6 +23,7 @@ import {
   DefinitionsInStorage,
 } from "./api-route";
 import { evaluate } from "./evaluate";
+import { resolvingErrorBag } from "./internal/errors";
 
 export type { GenericEvaluationResponseBody } from "./internal/types";
 
@@ -106,13 +107,12 @@ export function createGetEdgeFlags<F extends Flags>(
           config.environment
         );
       } catch {
-        return {
-          flags: config.defaultFlags as F,
-          data: null,
+        return resolvingErrorBag<F>({
           error: "network-error",
-          initialFlagState: { input, outcome: { error: "network-error" } },
+          flags: config.defaultFlags,
+          input,
           cookie: null,
-        };
+        });
       }
       const definitionsLatencyStop = Date.now();
 
@@ -123,16 +123,12 @@ export function createGetEdgeFlags<F extends Flags>(
         definitions.projectId !== config.projectId ||
         !Array.isArray(definitions.flags)
       ) {
-        return {
-          flags: config.defaultFlags as F,
-          data: null,
+        return resolvingErrorBag<F>({
           error: "response-not-ok",
-          initialFlagState: {
-            input,
-            outcome: { error: "response-not-ok" },
-          },
+          flags: config.defaultFlags,
+          input,
           cookie: null,
-        };
+        });
       }
 
       const evaluated = evaluate({
@@ -195,13 +191,12 @@ export function createGetEdgeFlags<F extends Flags>(
         | Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>>
         | GetFlagsErrorBag<F> => {
         if (!workerResponse.ok /* status not 200-299 */) {
-          return {
-            flags: config.defaultFlags as F,
-            data: null,
+          return resolvingErrorBag<F>({
             error: "response-not-ok",
-            initialFlagState: { input, outcome: { error: "response-not-ok" } },
+            flags: config.defaultFlags,
+            input,
             cookie: null,
-          };
+          });
         }
 
         return workerResponse.json().then(
@@ -232,27 +227,22 @@ export function createGetEdgeFlags<F extends Flags>(
             };
           },
           () => {
-            return {
-              flags: config.defaultFlags as F,
-              data: null,
+            return resolvingErrorBag<F>({
               error: "invalid-response-body",
-              initialFlagState: {
-                input,
-                outcome: { error: "invalid-response-body" },
-              },
+              flags: config.defaultFlags,
+              input,
               cookie: null,
-            };
+            });
           }
         );
       },
       () => {
-        return {
-          flags: config.defaultFlags as F,
-          data: null,
+        return resolvingErrorBag<F>({
           error: "network-error",
-          initialFlagState: { input, outcome: { error: "network-error" } },
+          input,
+          flags: config.defaultFlags,
           cookie: null,
-        };
+        });
       }
     );
   };

@@ -32,6 +32,7 @@ import {
   DefinitionsInStorage,
 } from "./api-route";
 import { evaluate } from "./evaluate";
+import { resolvingErrorBag } from "./internal/errors";
 
 export type { GenericEvaluationResponseBody } from "./internal/types";
 
@@ -176,12 +177,11 @@ export function createGetFlags<F extends Flags>(
           config.environment
         );
       } catch {
-        return {
-          flags: config.defaultFlags as F,
-          data: null,
+        return resolvingErrorBag<F>({
           error: "network-error",
-          initialFlagState: { input, outcome: { error: "network-error" } },
-        };
+          flags: config.defaultFlags,
+          input,
+        });
       }
       const definitionsLatencyStop = Date.now();
 
@@ -191,15 +191,11 @@ export function createGetFlags<F extends Flags>(
         definitions.projectId !== config.projectId ||
         !Array.isArray(definitions.flags)
       ) {
-        return {
-          flags: config.defaultFlags as F,
-          data: null,
+        return resolvingErrorBag<F>({
           error: "response-not-ok",
-          initialFlagState: {
-            input,
-            outcome: { error: "response-not-ok" },
-          },
-        };
+          flags: config.defaultFlags,
+          input,
+        });
       }
 
       if (has(options.context, "req") && visitorKey) {
@@ -276,15 +272,11 @@ export function createGetFlags<F extends Flags>(
         if (timeoutId) clearTimeout(timeoutId);
 
         if (!workerResponse.ok /* status not 200-299 */) {
-          return {
-            flags: config.defaultFlags as F,
-            data: null,
+          return resolvingErrorBag<F>({
             error: "response-not-ok",
-            initialFlagState: {
-              input,
-              outcome: { error: "response-not-ok" },
-            },
-          };
+            flags: config.defaultFlags,
+            input,
+          });
         }
 
         return workerResponse.json().then(
@@ -320,40 +312,25 @@ export function createGetFlags<F extends Flags>(
             };
           },
           (error) => {
-            return {
-              flags: config.defaultFlags as F,
-              data: null,
+            return resolvingErrorBag<F>({
               error: "invalid-response-body",
-              initialFlagState: {
-                input,
-                outcome: { error: "invalid-response-body" },
-              },
-            };
+              flags: config.defaultFlags,
+              input,
+            });
           }
         );
       },
       (error) => {
         if (timeoutId) clearTimeout(timeoutId);
 
-        return error?.name === "AbortError"
-          ? {
-              flags: config.defaultFlags as F,
-              data: null,
-              error: "request-timed-out",
-              initialFlagState: {
-                input,
-                outcome: { error: "request-timed-out" },
-              },
-            }
-          : {
-              flags: config.defaultFlags as F,
-              data: null,
-              error: "network-error",
-              initialFlagState: {
-                input,
-                outcome: { error: "network-error" },
-              },
-            };
+        return resolvingErrorBag<F>({
+          error:
+            error?.name === "AbortError"
+              ? "request-timed-out"
+              : "network-error",
+          input,
+          flags: config.defaultFlags,
+        });
       }
     );
   };
