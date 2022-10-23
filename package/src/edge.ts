@@ -60,7 +60,6 @@ export function createGetEdgeFlags<F extends Flags>(
       traits?: Traits;
     } & FactoryGetEdgeFlagsOptions
   ): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
-    // todo use whole storage instead?
     const currentGetDefinitions = has(options, "getDefinitions,")
       ? options.getDefinitions
       : factoryGetDefinitions;
