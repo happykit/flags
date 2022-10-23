@@ -215,9 +215,9 @@ export function createApiRoute({
 
     const serverTimingHeader = serverTiming
       ? {
-          "Server-Timing": [
+          "server-timing": [
             originStop !== null && originStart !== null
-              ? `origin;dur=${originStop - originStart}`
+              ? `definitions;dur=${originStop - originStart}`
               : null,
           ]
             .filter(Boolean)

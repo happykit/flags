@@ -65,6 +65,11 @@ interface FactoryGetFlagsOptions {
   staticLoadingTimeout?: number;
 
   getDefinitions?: GetDefinitions;
+  serverTiming?: boolean;
+}
+
+function isString(incoming: any): incoming is string {
+  return typeof incoming === "string";
 }
 
 /**
@@ -76,6 +81,7 @@ export function createGetFlags<F extends Flags>(
     serverLoadingTimeout: factoryServerLoadingTimeout = 3000,
     staticLoadingTimeout: factoryStaticLoadingTimeout = 60000,
     getDefinitions: factoryGetDefinitions,
+    serverTiming,
   }: FactoryGetFlagsOptions = {}
 ) {
   const config = applyConfigurationDefaults(configuration);
@@ -192,12 +198,18 @@ export function createGetFlags<F extends Flags>(
           }
         ).res;
 
-        if (res && !res.hasHeader("server-timing")) {
+        if (res && serverTiming) {
+          const originalServerTiming = res.getHeader("server-timing");
           res.setHeader(
             "server-timing",
-            `edge-config;dur=${
-              definitionsLatencyStop - definitionsLatencyStart
-            }`
+            [
+              ...(Array.isArray(originalServerTiming)
+                ? originalServerTiming
+                : [originalServerTiming]),
+              `definitions;dur=${
+                definitionsLatencyStop - definitionsLatencyStart
+              }`,
+            ].filter(isString)
           );
         }
       }
