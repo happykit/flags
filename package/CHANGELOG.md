@@ -1,5 +1,11 @@
 # @happykit/flags
 
+## 3.1.0
+
+### Minor Changes
+
+- b3c53da: Add custom storage capabilities
+
 ## 3.0.0
 
 ### Major Changes
