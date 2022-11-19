@@ -20,7 +20,7 @@ function curl(literals: TemplateStringsArray, ...placeholders: any[]) {
 
 export default function Page() {
   const endpoint = [
-    process.env.NEXT_PUBLIC_FLAGS_ENDPOINT,
+    "https://happykit.dev/api/flags",
     process.env.NEXT_PUBLIC_FLAGS_ENV_KEY,
   ].join("/");
 

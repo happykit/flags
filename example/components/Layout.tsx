@@ -31,10 +31,7 @@ export function Layout(props: {
         .getEntriesByType("resource")
         .filter((entry) => {
           return entry.name.endsWith(
-            [
-              process.env.NEXT_PUBLIC_FLAGS_ENDPOINT!,
-              process.env.NEXT_PUBLIC_FLAGS_ENV_KEY!,
-            ].join("/")
+            ["/api/flags", process.env.NEXT_PUBLIC_FLAGS_ENV_KEY!].join("/")
           );
         });
 
