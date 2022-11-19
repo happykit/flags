@@ -29,14 +29,14 @@ export function Layout(props: {
     if (props.flagBag && props.flagBag.settled) {
       const entries = performance
         .getEntriesByType("resource")
-        .filter(
-          (entry) =>
-            entry.name ===
+        .filter((entry) => {
+          return entry.name.endsWith(
             [
               process.env.NEXT_PUBLIC_FLAGS_ENDPOINT!,
               process.env.NEXT_PUBLIC_FLAGS_ENV_KEY!,
             ].join("/")
-        );
+          );
+        });
 
       if (entries.length > 0) {
         setPerformanceEntry(

@@ -1,4 +1,6 @@
+import { CookieSerializeOptions } from "cookie";
 import { Configuration } from "../config";
+import type { Environment } from "../evaluation-types";
 
 /**
  * A user to load the flags for. A user must at least have a `key`. See the
@@ -33,7 +35,10 @@ export type Flags = {
   [key: string]: boolean | number | string | null;
 };
 
-export type FullConfiguration<F extends Flags> = Required<Configuration<F>>;
+export type FullConfiguration<F extends Flags> = Required<Configuration<F>> & {
+  projectId: string;
+  environment: Environment;
+};
 
 /**
  * The inputs to a flag evaluation.
@@ -192,3 +197,72 @@ export type FlagBag<F extends Flags = Flags> =
   | RevalidatingAfterSuccessFlagBag<F>
   | FailedFlagBag<F>
   | RevalidatingAfterErrorFlagBag<F>;
+
+export type GetFlagsSuccessBag<F extends Flags> = {
+  /**
+   * The resolved flags
+   *
+   * In case the default flags contain flags not present in the loaded flags,
+   * the missing flags will get added to the returned flags.
+   */
+  flags: F;
+  /**
+   * The actually loaded data without any defaults applied, or null when
+   * the flags could not be loaded.
+   */
+  data: GenericEvaluationResponseBody<F> | null;
+  error: null;
+  initialFlagState: SuccessInitialFlagState<F>;
+  /**
+   * The cookie options you should forward using
+   *
+   * Only used for edge, not for server.
+   *
+   * ```
+   * response.cookie(
+   *   flagBag.cookie.name,
+   *   flagBag.cookie.value,
+   *   flagBag.cookie.options
+   * );
+   * ```
+   *
+   * or using
+   *
+   * ```
+   * response.cookie(...flagBag.cookie.args)
+   * ```
+   */
+  cookie?: {
+    name: string;
+    value: string;
+    options: CookieSerializeOptions;
+    /**
+     * Arguments for response.cookie()
+     */
+    args: [string, string, CookieSerializeOptions];
+  } | null;
+};
+
+export type GetFlagsErrorBag<F extends Flags> = {
+  /**
+   * The resolved flags
+   *
+   * In case the flags could not be loaded, you will see the default
+   * flags here (from config.defaultFlags)
+   */
+  flags: F | null;
+  /**
+   * The actually loaded data without any defaults applied, or null when
+   * the flags could not be loaded.
+   */
+  data: null;
+  error: ResolvingError;
+  /**
+   * The initial flag state that you can use to initialize useFlags()
+   */
+  initialFlagState: ErrorInitialFlagState;
+  /**
+   * Only used for edge, not for server.
+   */
+  cookie?: null;
+};

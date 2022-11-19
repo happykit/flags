@@ -29,7 +29,6 @@ const exampleFlagBag = {
 };
 
 export default function Index() {
-  console.log(useFlags());
   return (
     <Layout title="Introduction" flagBag={null}>
       {/* Replace with your content */}

@@ -11,11 +11,10 @@ import type {
   FlagUser,
   Traits,
   Flags,
-  SuccessInitialFlagState,
-  ErrorInitialFlagState,
   GenericEvaluationResponseBody,
-  ResolvingError,
   Input,
+  GetFlagsSuccessBag,
+  GetFlagsErrorBag,
 } from "./internal/types";
 import {
   has,
@@ -24,6 +23,15 @@ import {
   getCookie,
 } from "./internal/utils";
 import { applyConfigurationDefaults } from "./internal/apply-configuration-defaults";
+import type { GetDefinitions, Definitions } from "./api-route";
+import {
+  evaluate,
+  toTraits,
+  toUser,
+  toVariantValues,
+  toVisitor,
+} from "./evaluate";
+import { resolvingErrorBag } from "./internal/errors";
 
 export type { GenericEvaluationResponseBody } from "./internal/types";
 
@@ -38,43 +46,6 @@ function getRequestingIp(context: {
   if (remoteAddress) return remoteAddress;
   return null;
 }
-
-type GetFlagsSuccessBag<F extends Flags> = {
-  /**
-   * The resolved flags
-   *
-   * In case the default flags contain flags not present in the loaded flags,
-   * the missing flags will get added to the returned flags.
-   */
-  flags: F;
-  /**
-   * The actually loaded data without any defaults applied, or null when
-   * the flags could not be loaded.
-   */
-  data: GenericEvaluationResponseBody<F> | null;
-  error: null;
-  initialFlagState: SuccessInitialFlagState<F>;
-};
-
-type GetFlagsErrorBag<F extends Flags> = {
-  /**
-   * The resolved flags
-   *
-   * In case the flags could not be loaded, you will see the default
-   * flags here (from config.defaultFlags)
-   */
-  flags: F | null;
-  /**
-   * The actually loaded data without any defaults applied, or null when
-   * the flags could not be loaded.
-   */
-  data: null;
-  error: ResolvingError;
-  /**
-   * The initial flag state that you can use to initialize useFlags()
-   */
-  initialFlagState: ErrorInitialFlagState;
-};
 
 interface FactoryGetFlagsOptions {
   /**
@@ -92,6 +63,13 @@ interface FactoryGetFlagsOptions {
    * Pass `false` to disable this feature.
    */
   staticLoadingTimeout?: number;
+
+  getDefinitions?: GetDefinitions;
+  serverTiming?: boolean;
+}
+
+function isString(incoming: any): incoming is string {
+  return typeof incoming === "string";
 }
 
 /**
@@ -102,10 +80,12 @@ export function createGetFlags<F extends Flags>(
   {
     serverLoadingTimeout: factoryServerLoadingTimeout = 3000,
     staticLoadingTimeout: factoryStaticLoadingTimeout = 60000,
+    getDefinitions: factoryGetDefinitions,
+    serverTiming,
   }: FactoryGetFlagsOptions = {}
 ) {
   const config = applyConfigurationDefaults(configuration);
-  return function getFlags(
+  return async function getFlags(
     options: {
       context:
         | Pick<GetServerSidePropsContext, "req" | "res">
@@ -122,6 +102,10 @@ export function createGetFlags<F extends Flags>(
     const currentServerLoadingTimeout = has(options, "serverLoadingTimeout")
       ? options.serverLoadingTimeout
       : factoryServerLoadingTimeout;
+
+    const currentGetDefinitions = has(options, "getDefinitions,")
+      ? options.getDefinitions
+      : factoryGetDefinitions;
 
     // determine visitor key
     const visitorKeyFromCookie = has(options.context, "req")
@@ -185,6 +169,107 @@ export function createGetFlags<F extends Flags>(
         ? null
         : setTimeout(() => controller.abort(), timeoutDuration);
 
+    // new logic
+    if (currentGetDefinitions) {
+      const definitionsLatencyStart = Date.now();
+      let definitions: Definitions | null;
+
+      try {
+        definitions = await currentGetDefinitions(
+          config.projectId,
+          config.envKey,
+          config.environment
+        );
+      } catch {
+        return resolvingErrorBag<F>({
+          error: "network-error",
+          flags: config.defaultFlags,
+          input,
+        });
+      }
+      const definitionsLatencyStop = Date.now();
+
+      // TODO just for demo purposes for now, delete afterwards
+      if (options.context) {
+        const res = (
+          options.context as {
+            req: IncomingMessage;
+            res?: ServerResponse;
+          }
+        ).res;
+
+        if (res && serverTiming) {
+          const originalServerTiming = res.getHeader("server-timing");
+          res.setHeader(
+            "server-timing",
+            [
+              ...(Array.isArray(originalServerTiming)
+                ? originalServerTiming
+                : [originalServerTiming]),
+              `definitions;dur=${
+                definitionsLatencyStop - definitionsLatencyStart
+              }`,
+            ].filter(isString)
+          );
+        }
+      }
+
+      if (
+        !definitions ||
+        definitions.format !== "v1" ||
+        definitions.projectId !== config.projectId ||
+        !Array.isArray(definitions.flags)
+      ) {
+        return resolvingErrorBag<F>({
+          error: "response-not-ok",
+          flags: config.defaultFlags,
+          input,
+        });
+      }
+
+      if (has(options.context, "req") && visitorKey) {
+        // always set the cookie so its max age refreshes
+        (
+          options.context as {
+            req: IncomingMessage;
+            res: ServerResponse;
+          }
+        ).res.setHeader("Set-Cookie", serializeVisitorKeyCookie(visitorKey));
+      }
+
+      const evaluated = evaluate({
+        flags: definitions.flags,
+        environment: config.environment,
+        traits: options.traits ? toTraits(options.traits) : null,
+        user: options.user ? toUser(options.user) : null,
+        visitor: visitorKey ? toVisitor(visitorKey) : null,
+      });
+
+      const outcomeData: GenericEvaluationResponseBody<F> = {
+        flags: toVariantValues(evaluated) as F,
+        visitor: visitorKey ? toVisitor(visitorKey) : null,
+      };
+
+      // add defaults to flags here, but not in initialFlagState
+      const flags = outcomeData.flags ? outcomeData.flags : null;
+
+      const flagsWithDefaults = combineRawFlagsWithDefaultFlags<F>(
+        flags as F | null,
+        config.defaultFlags
+      );
+
+      return {
+        flags: flagsWithDefaults,
+        data: outcomeData,
+        error: null,
+        initialFlagState: {
+          input,
+          outcome: { data: outcomeData },
+        },
+      };
+    }
+    // end new logic
+
     return fetch([input.endpoint, input.envKey].join("/"), {
       method: "POST",
       headers: Object.assign(
@@ -202,23 +287,16 @@ export function createGetFlags<F extends Flags>(
         if (timeoutId) clearTimeout(timeoutId);
 
         if (!workerResponse.ok /* status not 200-299 */) {
-          return {
-            flags: config.defaultFlags as F,
-            data: null,
+          return resolvingErrorBag<F>({
             error: "response-not-ok",
-            initialFlagState: {
-              input,
-              outcome: { error: "response-not-ok" },
-            },
-          };
+            flags: config.defaultFlags,
+            input,
+          });
         }
 
         return workerResponse.json().then(
-          (workerResponseBody: GenericEvaluationResponseBody<F>) => {
-            if (
-              has(options.context, "req") &&
-              workerResponseBody.visitor?.key
-            ) {
+          (outcomeData: GenericEvaluationResponseBody<F>) => {
+            if (has(options.context, "req") && outcomeData.visitor?.key) {
               // always set the cookie so its max age refreshes
               (
                 options.context as {
@@ -227,14 +305,12 @@ export function createGetFlags<F extends Flags>(
                 }
               ).res.setHeader(
                 "Set-Cookie",
-                serializeVisitorKeyCookie(workerResponseBody.visitor.key)
+                serializeVisitorKeyCookie(outcomeData.visitor.key)
               );
             }
 
             // add defaults to flags here, but not in initialFlagState
-            const flags = workerResponseBody.flags
-              ? workerResponseBody.flags
-              : null;
+            const flags = outcomeData.flags ? outcomeData.flags : null;
             const flagsWithDefaults = combineRawFlagsWithDefaultFlags<F>(
               flags,
               config.defaultFlags
@@ -242,49 +318,34 @@ export function createGetFlags<F extends Flags>(
 
             return {
               flags: flagsWithDefaults,
-              data: workerResponseBody,
+              data: outcomeData,
               error: null,
               initialFlagState: {
                 input,
-                outcome: { data: workerResponseBody },
+                outcome: { data: outcomeData },
               },
             };
           },
           (error) => {
-            return {
-              flags: config.defaultFlags as F,
-              data: null,
+            return resolvingErrorBag<F>({
               error: "invalid-response-body",
-              initialFlagState: {
-                input,
-                outcome: { error: "invalid-response-body" },
-              },
-            };
+              flags: config.defaultFlags,
+              input,
+            });
           }
         );
       },
       (error) => {
         if (timeoutId) clearTimeout(timeoutId);
 
-        return error?.name === "AbortError"
-          ? {
-              flags: config.defaultFlags as F,
-              data: null,
-              error: "request-timed-out",
-              initialFlagState: {
-                input,
-                outcome: { error: "request-timed-out" },
-              },
-            }
-          : {
-              flags: config.defaultFlags as F,
-              data: null,
-              error: "network-error",
-              initialFlagState: {
-                input,
-                outcome: { error: "network-error" },
-              },
-            };
+        return resolvingErrorBag<F>({
+          error:
+            error?.name === "AbortError"
+              ? "request-timed-out"
+              : "network-error",
+          input,
+          flags: config.defaultFlags,
+        });
       }
     );
   };

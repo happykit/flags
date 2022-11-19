@@ -7,14 +7,22 @@ import type {
   FlagUser,
   Traits,
   Flags,
-  SuccessInitialFlagState,
-  ErrorInitialFlagState,
   GenericEvaluationResponseBody,
-  ResolvingError,
   Input,
+  GetFlagsSuccessBag,
+  GetFlagsErrorBag,
 } from "./internal/types";
-import { combineRawFlagsWithDefaultFlags } from "./internal/utils";
+import { combineRawFlagsWithDefaultFlags, has } from "./internal/utils";
 import { applyConfigurationDefaults } from "./internal/apply-configuration-defaults";
+import type { GetDefinitions, Definitions } from "./api-route";
+import {
+  evaluate,
+  toTraits,
+  toUser,
+  toVariantValues,
+  toVisitor,
+} from "./evaluate";
+import { resolvingErrorBag } from "./internal/errors";
 
 export type { GenericEvaluationResponseBody } from "./internal/types";
 
@@ -25,83 +33,36 @@ function getRequestingIp(req: Pick<NextRequest, "headers">): null | string {
   return null;
 }
 
-type GetFlagsSuccessBag<F extends Flags> = {
-  /**
-   * The resolved flags
-   *
-   * In case the default flags contain flags not present in the loaded flags,
-   * the missing flags will get added to the returned flags.
-   */
-  flags: F;
-  /**
-   * The actually loaded data without any defaults applied, or null when
-   * the flags could not be loaded.
-   */
-  data: GenericEvaluationResponseBody<F> | null;
-  error: null;
-  initialFlagState: SuccessInitialFlagState<F>;
-  /**
-   * The cookie options you should forward using
-   *
-   * ```
-   * response.cookie(
-   *   flagBag.cookie.name,
-   *   flagBag.cookie.value,
-   *   flagBag.cookie.options
-   * );
-   * ```
-   *
-   * or using
-   *
-   * ```
-   * response.cookie(...flagBag.cookie.args)
-   * ```
-   */
-  cookie: {
-    name: string;
-    value: string;
-    options: CookieSerializeOptions;
-    /**
-     * Arguments for response.cookie()
-     */
-    args: [string, string, CookieSerializeOptions];
-  } | null;
-};
-
-type GetFlagsErrorBag<F extends Flags> = {
-  /**
-   * The resolved flags
-   *
-   * In case the flags could not be loaded, you will see the default
-   * flags here (from config.defaultFlags)
-   */
-  flags: F | null;
-  /**
-   * The actually loaded data without any defaults applied, or null when
-   * the flags could not be loaded.
-   */
-  data: null;
-  error: ResolvingError;
-  /**
-   * The initial flag state that you can use to initialize useFlags()
-   */
-  initialFlagState: ErrorInitialFlagState;
-  cookie: null;
-};
+interface FactoryGetEdgeFlagsOptions {
+  getDefinitions?: GetDefinitions;
+}
 
 /**
  * Creates the getEdgeFlags() function your application should use when
  * loading flags from Middleware or Edge API Routes.
  */
 export function createGetEdgeFlags<F extends Flags>(
-  configuration: Configuration<F>
+  configuration: Configuration<F>,
+  { getDefinitions: factoryGetDefinitions }: FactoryGetEdgeFlagsOptions = {}
 ) {
+  const cookieOptions: CookieSerializeOptions = {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 180,
+    sameSite: "lax",
+  };
+
   const config = applyConfigurationDefaults(configuration);
-  return function getEdgeFlags(options: {
-    request: Pick<NextRequest, "cookies" | "headers">;
-    user?: FlagUser;
-    traits?: Traits;
-  }): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
+  return async function getEdgeFlags(
+    options: {
+      request: Pick<NextRequest, "cookies" | "headers">;
+      user?: FlagUser;
+      traits?: Traits;
+    } & FactoryGetEdgeFlagsOptions
+  ): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
+    const currentGetDefinitions = has(options, "getDefinitions,")
+      ? options.getDefinitions
+      : factoryGetDefinitions;
+
     // determine visitor key
     const visitorKeyFromCookie =
       typeof options.request.cookies.get === "function"
@@ -133,6 +94,82 @@ export function createGetEdgeFlags<F extends Flags>(
         { "x-forwarded-for": requestingIp }
       : {};
 
+    // new logic
+    if (currentGetDefinitions) {
+      const definitionsLatencyStart = Date.now();
+      let definitions: Definitions | null;
+      try {
+        definitions = await currentGetDefinitions(
+          config.projectId,
+          config.envKey,
+          config.environment
+        );
+      } catch {
+        return resolvingErrorBag<F>({
+          error: "network-error",
+          flags: config.defaultFlags,
+          input,
+          cookie: null,
+        });
+      }
+      const definitionsLatencyStop = Date.now();
+
+      // if definitions don't contain what we expect them to
+      if (
+        !definitions ||
+        definitions.format !== "v1" ||
+        definitions.projectId !== config.projectId ||
+        !Array.isArray(definitions.flags)
+      ) {
+        return resolvingErrorBag<F>({
+          error: "response-not-ok",
+          flags: config.defaultFlags,
+          input,
+          cookie: null,
+        });
+      }
+
+      const evaluated = evaluate({
+        flags: definitions.flags,
+        environment: config.environment,
+        traits: options.traits ? toTraits(options.traits) : null,
+        user: options.user ? toUser(options.user) : null,
+        visitor: visitorKey ? toVisitor(visitorKey) : null,
+      });
+
+      // not actually a response, as we evaluated inline
+      const outcomeData: GenericEvaluationResponseBody<F> = {
+        flags: toVariantValues(evaluated) as F,
+        visitor: visitorKey ? toVisitor(visitorKey) : null,
+      };
+
+      // add defaults to flags here, but not in initialFlagState
+      const flags = outcomeData.flags ? outcomeData.flags : null;
+      const flagsWithDefaults = combineRawFlagsWithDefaultFlags<F>(
+        flags as F | null,
+        config.defaultFlags
+      );
+
+      return {
+        flags: flagsWithDefaults,
+        data: outcomeData,
+        error: null,
+        initialFlagState: {
+          input,
+          outcome: { data: outcomeData },
+        },
+        cookie: outcomeData.visitor?.key
+          ? {
+              name: "hkvk",
+              value: outcomeData.visitor.key,
+              options: cookieOptions,
+              args: ["hkvk", outcomeData.visitor.key, cookieOptions],
+            }
+          : null,
+      };
+    }
+    // end new logic
+
     return fetch([input.endpoint, input.envKey].join("/"), {
       method: "POST",
       headers: Object.assign(
@@ -147,76 +184,58 @@ export function createGetEdgeFlags<F extends Flags>(
         | Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>>
         | GetFlagsErrorBag<F> => {
         if (!workerResponse.ok /* status not 200-299 */) {
-          return {
-            flags: config.defaultFlags as F,
-            data: null,
+          return resolvingErrorBag<F>({
             error: "response-not-ok",
-            initialFlagState: { input, outcome: { error: "response-not-ok" } },
+            flags: config.defaultFlags,
+            input,
             cookie: null,
-          };
+          });
         }
 
         return workerResponse.json().then(
-          (workerResponseBody: GenericEvaluationResponseBody<F>) => {
+          (outcomeData: GenericEvaluationResponseBody<F>) => {
             // add defaults to flags here, but not in initialFlagState
-            const flags = workerResponseBody.flags
-              ? workerResponseBody.flags
-              : null;
+            const flags = outcomeData.flags ? outcomeData.flags : null;
             const flagsWithDefaults = combineRawFlagsWithDefaultFlags<F>(
               flags,
               config.defaultFlags
             );
 
-            const cookieOptions: CookieSerializeOptions = {
-              path: "/",
-              maxAge: 60 * 60 * 24 * 180,
-              sameSite: "lax",
-            };
-
             return {
               flags: flagsWithDefaults,
-              data: workerResponseBody,
+              data: outcomeData,
               error: null,
               initialFlagState: {
                 input,
-                outcome: { data: workerResponseBody },
+                outcome: { data: outcomeData },
               },
-              cookie: workerResponseBody.visitor?.key
+              cookie: outcomeData.visitor?.key
                 ? {
                     name: "hkvk",
-                    value: workerResponseBody.visitor.key,
+                    value: outcomeData.visitor.key,
                     options: cookieOptions,
-                    args: [
-                      "hkvk",
-                      workerResponseBody.visitor.key,
-                      cookieOptions,
-                    ],
+                    args: ["hkvk", outcomeData.visitor.key, cookieOptions],
                   }
                 : null,
             };
           },
           () => {
-            return {
-              flags: config.defaultFlags as F,
-              data: null,
+            return resolvingErrorBag<F>({
               error: "invalid-response-body",
-              initialFlagState: {
-                input,
-                outcome: { error: "invalid-response-body" },
-              },
+              flags: config.defaultFlags,
+              input,
               cookie: null,
-            };
+            });
           }
         );
       },
       () => {
-        return {
-          flags: config.defaultFlags as F,
-          data: null,
+        return resolvingErrorBag<F>({
           error: "network-error",
-          initialFlagState: { input, outcome: { error: "network-error" } },
+          input,
+          flags: config.defaultFlags,
           cookie: null,
-        };
+        });
       }
     );
   };

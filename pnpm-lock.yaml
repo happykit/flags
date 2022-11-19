@@ -26,6 +26,7 @@ importers:
       '@types/dedent': 0.7.0
       '@types/node': 17.0.15
       '@types/react': 18.0.18
+      '@vercel/edge-config': 0.1.0-canary.14
       autoprefixer: 10.4.2
       clsx: 1.1.1
       dedent: 0.7.0
@@ -43,6 +44,7 @@ importers:
       '@types/dedent': 0.7.0
       '@types/node': 17.0.15
       '@types/react': 18.0.18
+      '@vercel/edge-config': 0.1.0-canary.14
       autoprefixer: 10.4.2_postcss@8.4.6
       clsx: 1.1.1
       dedent: 0.7.0
@@ -2147,6 +2149,11 @@ packages:
     dependencies:
       '@types/yargs-parser': 21.0.0
     dev: true
+
+  /@vercel/edge-config/0.1.0-canary.14:
+    resolution: {integrity: sha512-i4QuCNBbdhKeFiPbrS5fdw5AEZqwHBRwrjcDwEw6eUNBq58idiu+QBly1VyCwO6GG/f4596Uoq8UQ8LLacaBtQ==}
+    engines: {node: '>=14.6'}
+    dev: false
 
   /abab/2.0.6:
     resolution: {integrity: sha512-j2afSsaIENvHZN2B8GOpF566vZ5WVk5opAiMTvWgaQT8DkbOqsTfvNAvHoRGU2zzP8cPoqys+xHTRDWW8L+/BA==}

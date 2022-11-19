@@ -64,6 +64,8 @@ Add Feature Flags to your Next.js application with a single React Hook. This pac
   - [With static site generation (client only)](#with-static-site-generation-client-only)
   - [With static site generation (pure)](#with-static-site-generation-pure)
   - [With disabled revalidation](#with-disabled-revalidation)
+  - [With custom storage](#with-custom-storage)
+  - [With same domain evaluations](#with-same-domain-evaluations)
 - [Examples](#examples)
   - [Full example](#full-example)
   - [TypeScript example](#typescript-example)
@@ -108,7 +110,6 @@ export const config: Configuration<AppFlags> = {
   // You can provide defaults flag values here
   defaultFlags: {}, 
 };
-
 ```
 
 #### `flags/client.ts`
@@ -147,7 +148,6 @@ import { type AppFlags, config } from "./config";
 
 export const getEdgeFlags = createGetEdgeFlags<AppFlags>(config);
 ```
-
 
 ### Absolute Imports
 
@@ -559,6 +559,96 @@ export default function FooPage(props) {
   return flagBag.flags.greeting === "dog" ? "Woof" : "Hello";
 }
 ```
+
+### With custom storage
+
+> Please get in touch with me before attempting to follow this section.
+> It is not yet showing all steps necessary as the systems involved are not
+> fully released.
+
+By default `@happykit/flags` evaluates your feature flags by sending a request to [HappyKit's Public API](https://flags.happykit.dev/docs/public-api).
+
+This means your application needs to contact HappyKit. These APIs are already extremely fast. But you can squeeze out a bit more if you have a faster way to provide the definitions to your application.
+
+Let's assume you have storage which your application can access at extremely low latency. This system holds your feature flag definitons. Let's also assume every time you change your feature flags on happykit.dev, the latest flag definitions get written into your storage.
+
+You can then tell `@happykit/flags` to load your feature flag definitions from your magical ultra low latency storage and evaluate the feature flags in your own application.
+
+Create a file called `flags/storage.ts`:
+
+```ts
+import type { GetDefinitions, Definitions } from "@happykit/flags/api-route";
+
+export const getDefinitions: GetDefinitions = async (
+  projectId,
+  envKey,
+  environment
+) => {
+  const definitions = /* load your feature flag definitions from somewhere */;
+  return definitions ?? null;
+};
+```
+
+This file controls how your feature flag definitions are loaded.
+
+You can now pass the `getDefinitions` method to `getFlags` and `getEdgeFlags` factories.
+
+Make this change in `flags/server.ts`:
+
+```diff
+-export const getFlags = createGetFlags<AppFlags>(config);
++export const getFlags = createGetFlags<AppFlags>(config, { getDefinitions });
+```
+
+And make this change in `flags/edge.ts`
+
+```diff
+-export const getEdgeFlags = createGetEdgeFlags<AppFlags>(config);
++export const getEdgeFlags = createGetEdgeFlags<AppFlags>(config, { getDefinitions });
+```
+
+Now `@happykit/flags` will load your feature flag definitions from your own storage every time you use `getFlags` or `getEdgeFlags`.
+
+*In theory you could commit a file to your own repository containing HappyKit's feature flag definitions and load this json from `getDefinitions`. This would give you feature flags at 0 latency.*
+
+*The downside would be that updates to your flags would require a redeployment, and that changes would not affect other preview deployments.*
+
+### With same domain evaluations
+
+> Please get in touch with me before attempting to follow this section.
+> It is not yet showing all steps necessary as the systems involved are not
+> fully released.
+
+When you use client-side feature flags your user's browser needs to connect to happykit.dev to evaluate the feature flags. This DNS lookup takes a bit of time. What if you could evaluate feature flags on your own domain? Then you'd save the DNS lookup.
+
+This is what `@happykit/flags/api-route` allows you to do.
+
+This assumes you have created a `flags/storage.ts` file as shown in [With custom storage](#with-custom-storage).
+
+Create a file called `pages/api/flags/[envKey].ts` and fill it with this content:
+
+```ts
+import { createApiRoute } from "@happykit/flags/api-route";
+import { getDefinitions } from "flags/storage";
+
+export const config = { runtime: "experimental-edge" };
+
+export default createApiRoute({ getDefinitions });
+```
+
+This creates an [Edge API Route](https://nextjs.org/docs/api-routes/edge-api-routes) which can evaluate feature flags on your own domain at `/api/flags/:envKey`.
+
+You can now reconfigure your application to evaluate your client-side flags on your own domain at `/api/flags` instead of querying happykit.dev. To do so, change your endpoint in `flags/config.ts` to a relative path:
+
+```ts
+// flags/config.ts
+export const config: Configuration<AppFlags> = {
+  envKey: process.env.NEXT_PUBLIC_FLAGS_ENV_KEY!,
+  endpoint: "/api/flags", // <-- add this line
+};
+```
+
+Your client is now evaluating flags on your own domain.
 
 ## Examples
 

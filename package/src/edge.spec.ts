@@ -40,15 +40,15 @@ function createNextRequest(
 describe("createGetEdgeFlags", () => {
   it("should throw when called without options", async () => {
     // @ts-ignore this is the situation we want to test
-    expect(() => createGetEdgeFlags()).toThrow(
-      Error("@happykit/flags: config missing")
+    expect(() => createGetEdgeFlags()).toThrowError(
+      "@happykit/flags: config missing"
     );
   });
 
   it("should throw with missing envKey", async () => {
     // @ts-ignore this is the situation we want to test
-    expect(() => createGetEdgeFlags({})).toThrow(
-      Error("@happykit/flags: envKey missing")
+    expect(() => createGetEdgeFlags({})).toThrowError(
+      "@happykit/flags: envKey missing"
     );
   });
 });

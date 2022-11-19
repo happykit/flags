@@ -8,6 +8,7 @@ export default defineConfig((options) => ({
     "src/edge.ts",
     "src/evaluate.ts",
     "src/context.ts",
+    "src/api-route.ts",
   ],
   format: ["esm", "cjs"],
   splitting: true,
@@ -24,5 +25,6 @@ export default defineConfig((options) => ({
     "@happykit/flags/edge",
     "@happykit/flags/evaluate",
     "@happykit/flags/context",
+    "@happykit/flags/api-route",
   ],
 }));
