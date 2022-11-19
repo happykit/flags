@@ -44,66 +44,6 @@ const defaultCorsHeaders = {
   "Access-Control-Expose-Headers": "*",
 };
 
-// export function unstable_createWriteHandler({
-//   /**
-//    * Store feature flag definitions in your data source.
-//    * Called when you change feature flags in HappyKit's UI.
-//    */
-//   setDefinitions,
-//   apiKey,
-//   corsHeaders = defaultCorsHeaders,
-// }: {
-//   setDefinitions: (
-//     projectId: string,
-//     definitions: Definitions
-//   ) => Promise<boolean>;
-//   apiKey: string;
-//   corsHeaders?: Record<string, string>;
-// }) {
-//   const headers = { ...corsHeaders, "content-type": "application/json" };
-
-//   return async function writeHandler(
-//     request: NextRequest,
-//     event: NextFetchEvent
-//   ) {
-//     // handler is called to store flags
-//     if (request.method === "PUT") {
-//       if (request.headers.get("Authorization") !== `Bearer ${apiKey}`) {
-//         return new Response(null, {
-//           status: 401,
-//           statusText: "Unauthorized",
-//           headers: corsHeaders,
-//         });
-//       }
-
-//       const data = (await request.json().catch(() => null)) as {
-//         projectId: string;
-//         definitions: Definitions;
-//       } | null;
-
-//       if (!data || !data.projectId || !data.definitions) {
-//         return new Response(
-//           JSON.stringify({ reason: "Invalid request body" }),
-//           { status: 422, headers }
-//         );
-//       }
-
-//       const ok = await setDefinitions(data.projectId, data.definitions);
-
-//       return ok
-//         ? new Response(null, { status: 200, headers: corsHeaders })
-//         : new Response(null, {
-//             status: 500,
-//             statusText: "Could not store definitions",
-//             headers: corsHeaders,
-//           });
-//     }
-
-//     // to avoid handling additional requests during development
-//     return new Response(null, { status: 404, headers });
-//   };
-// }
-
 export function createApiRoute({
   /**
    * Load feature flag definitions from your data source.
