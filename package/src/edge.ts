@@ -150,11 +150,6 @@ export function createGetEdgeFlags<F extends Flags>(
         config.defaultFlags
       );
 
-      console.log(
-        "reading edge config from getEdgeFlags took",
-        String(definitionsLatencyStop - definitionsLatencyStart) + "ms"
-      );
-
       return {
         flags: flagsWithDefaults,
         data: outcomeData,
