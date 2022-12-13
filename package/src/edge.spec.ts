@@ -259,4 +259,68 @@ describe("middleware", () => {
       });
     });
   });
+
+  describe("when request cookies are an object", () => {
+    it("gets the cookie value", async () => {
+      fetchMock.post(
+        {
+          url: "https://happykit.dev/api/flags/flags_pub_000000",
+          body: {
+            traits: null,
+            user: null,
+            visitorKey: "V1StGXR8_Z5jdHi6B-myT",
+          },
+        },
+        {
+          headers: { "content-type": "application/json" },
+          body: {
+            flags: { meal: "large" },
+            visitor: { key: "V1StGXR8_Z5jdHi6B-myT" },
+          },
+        }
+      );
+
+      const request = createNextRequest({
+        cookies: { hkvk: { name: "hkvk", value: "V1StGXR8_Z5jdHi6B-myT" } },
+      });
+
+      expect(
+        await getEdgeFlags({ request })
+      ).toEqual({
+        flags: { meal: "large" },
+        data: {
+          flags: { meal: "large" },
+          visitor: { key: "V1StGXR8_Z5jdHi6B-myT" },
+        },
+        error: null,
+        initialFlagState: {
+          input: {
+            endpoint: "https://happykit.dev/api/flags",
+            envKey: "flags_pub_000000",
+            requestBody: {
+              traits: null,
+              user: null,
+              visitorKey: "V1StGXR8_Z5jdHi6B-myT",
+            },
+          },
+          outcome: {
+            data: {
+              flags: { meal: "large" },
+              visitor: { key: "V1StGXR8_Z5jdHi6B-myT" },
+            },
+          },
+        },
+        cookie: {
+          args: [
+            "hkvk",
+            "V1StGXR8_Z5jdHi6B-myT",
+            { maxAge: 15552000, path: "/", sameSite: "lax" },
+          ],
+          name: "hkvk",
+          options: { maxAge: 15552000, path: "/", sameSite: "lax" },
+          value: "V1StGXR8_Z5jdHi6B-myT",
+        },
+      });
+    });
+  });
 });
