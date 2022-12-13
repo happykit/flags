@@ -64,12 +64,17 @@ export function createGetEdgeFlags<F extends Flags>(
       : factoryGetDefinitions;
 
     // determine visitor key
-    const visitorKeyFromCookie =
-      typeof options.request.cookies.get === "function"
-        ? options.request.cookies.get("hkvk")
-        : // backwards compatible for when cookies was { [key: string]: string; }
-          // in Next.js
-          (options.request.cookies as any).hkvk || null;
+    let visitorKeyFromCookie;
+    if (typeof options.request.cookies.get === "function") {
+      const fromCookiesGet = options.request.cookies.get("hkvk");
+      
+      // In Next.js 13, the value returned from cookies.get() is an object with the type: { name: string, value: string }
+      visitorKeyFromCookie = typeof fromCookiesGet === 'string' ? fromCookiesGet : fromCookiesGet?.value;
+    } else {
+      // backwards compatible for when cookies was { [key: string]: string; }
+      // in Next.js
+      visitorKeyFromCokoie = (options.request.cookies as any).hkvk || null;
+    }
 
     // When using server-side rendering and there was no visitor key cookie,
     // we generate a visitor key
