@@ -1,5 +1,11 @@
 # @happykit/flags
 
+## 3.1.1
+
+### Patch Changes
+
+- d509435: Update the cookie logic to work with Next.js 13.
+
 ## 3.1.0
 
 ### Minor Changes
