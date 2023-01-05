@@ -168,7 +168,8 @@ import { useFlag } from "../../../flags/client"
 
 ### Setting up the Environment Variable
 
-You might have noticed that `flags/config.ts` uses an Environment Variable called `NEXT_PUBLIC_FLAGS_ENV_KEY`. This variable is used to tell HappyKit which flags it should use. Let's set this up now.
+You might have noticed that `flags/config.ts` uses an Environment Variable called `
+`. This variable is used to tell HappyKit which flags it should use. Let's set this up now.
 
 Create an account on [`happykit.dev`](https://happykit.dev/signup) to receive your `envKey`. You'll find it in the **Keys** section of your project settings once you created a project.
 
@@ -178,7 +179,7 @@ Store your `envKey` in `.env.local`:
 
 ```bash
 # .env.local
-NEXT_PUBLIC_FLAGS_ENVIRONMENT_KEY=flags_pub_development_xxxxxxxxxx
+NEXT_PUBLIC_FLAGS_ENV_KEY=flags_pub_development_xxxxxxxxxx
 ```
 
 Later on, don't forget to also provide the environment variable in production.
