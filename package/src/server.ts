@@ -47,7 +47,7 @@ function getRequestingIp(context: {
   return null;
 }
 
-interface FactoryGetFlagsOptions {
+export interface FactoryGetFlagsOptions {
   /**
    * A timeout in milliseconds after which any server-side evaluation requests
    * from `getFlags` inside of `getServerSideProps` will be aborted.
@@ -88,9 +88,9 @@ export function createGetFlags<F extends Flags>(
   return async function getFlags(
     options: {
       context:
-        | Pick<GetServerSidePropsContext, "req" | "res">
-        | GetStaticPathsContext
-        | GetStaticPropsContext;
+      | Pick<GetServerSidePropsContext, "req" | "res">
+      | GetStaticPathsContext
+      | GetStaticPropsContext;
       user?: FlagUser;
       traits?: Traits;
     } & FactoryGetFlagsOptions
@@ -110,14 +110,14 @@ export function createGetFlags<F extends Flags>(
     // determine visitor key
     const visitorKeyFromCookie = has(options.context, "req")
       ? getCookie(
-          (
-            options.context as {
-              req: IncomingMessage;
-              res: ServerResponse;
-            }
-          ).req.headers.cookie,
-          "hkvk"
-        )
+        (
+          options.context as {
+            req: IncomingMessage;
+            res: ServerResponse;
+          }
+        ).req.headers.cookie,
+        "hkvk"
+      )
       : null;
 
     // When using server-side rendering and there was no visitor key cookie,
@@ -141,17 +141,17 @@ export function createGetFlags<F extends Flags>(
 
     const requestingIp = has(options.context, "req")
       ? getRequestingIp(
-          options.context as {
-            req: IncomingMessage;
-            res: ServerResponse;
-          }
-        )
+        options.context as {
+          req: IncomingMessage;
+          res: ServerResponse;
+        }
+      )
       : null;
 
     const xForwardedForHeader: { "x-forwarded-for": string } | {} = requestingIp
       ? // add x-forwarded-for header so the service worker gets
-        // access to the real client ip
-        { "x-forwarded-for": requestingIp }
+      // access to the real client ip
+      { "x-forwarded-for": requestingIp }
       : {};
 
     // prepare fetch request timeout controller
@@ -163,9 +163,9 @@ export function createGetFlags<F extends Flags>(
     const timeoutId =
       // validate config
       !controller ||
-      typeof timeoutDuration !== "number" ||
-      isNaN(timeoutDuration) ||
-      timeoutDuration <= 0
+        typeof timeoutDuration !== "number" ||
+        isNaN(timeoutDuration) ||
+        timeoutDuration <= 0
         ? null
         : setTimeout(() => controller.abort(), timeoutDuration);
 
@@ -206,8 +206,7 @@ export function createGetFlags<F extends Flags>(
               ...(Array.isArray(originalServerTiming)
                 ? originalServerTiming
                 : [originalServerTiming]),
-              `definitions;dur=${
-                definitionsLatencyStop - definitionsLatencyStart
+              `definitions;dur=${definitionsLatencyStop - definitionsLatencyStart
               }`,
             ].filter(isString)
           );
