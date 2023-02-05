@@ -81,7 +81,13 @@ export default function Page() {
           <a href="https://happykit.dev/">happykit.dev</a>.
         </p>
         <p>Below is the simplest possible request:</p>
-        <pre>{curl`curl -X "POST" "${endpoint}"`}</pre>
+        <pre>
+          {curl`
+              curl -X "POST" "${endpoint}"
+              -H "content-type: application/json"
+              -d '{}'
+          `}
+        </pre>
         The response would look something like
         <Response>
           {JSON.stringify(
