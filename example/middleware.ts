@@ -4,7 +4,6 @@ import { getEdgeFlags } from "flags/edge";
 export const config = { matcher: "/demo/middleware" };
 
 export async function middleware(request: NextRequest) {
-  request.cookies.get("");
   const flagBag = await getEdgeFlags({ request });
 
   const nextUrl = request.nextUrl.clone();
