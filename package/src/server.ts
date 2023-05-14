@@ -278,6 +278,7 @@ export function createGetFlags<F extends Flags>(
       ),
       signal: controller ? controller.signal : undefined,
       body: JSON.stringify(input.requestBody),
+      cache: "no-store",
     }).then(
       (
         workerResponse
