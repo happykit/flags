@@ -1,5 +1,11 @@
 # @happykit/flags
 
+## 3.1.3
+
+### Patch Changes
+
+- 21a540c: add cache: no-store to all fetch requests
+
 ## 3.1.2
 
 ### Patch Changes
