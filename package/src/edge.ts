@@ -63,23 +63,10 @@ export function createGetEdgeFlags<F extends Flags>(
       ? options.getDefinitions
       : factoryGetDefinitions;
 
-    // determine visitor key
-    let visitorKeyFromCookie;
-    if (typeof options.request.cookies.get === "function") {
-      const fromCookiesGet = options.request.cookies.get("hkvk");
-
-      // @ts-expect-error -- In Next.js 13, the value returned from cookies.get() is an object with the type: { name: string, value: string }
-      visitorKeyFromCookie = typeof fromCookiesGet === 'string' ? fromCookiesGet : fromCookiesGet?.value;
-    } else {
-      // backwards compatible for when cookies was { [key: string]: string; }
-      // in Next.js
-      visitorKeyFromCookie = (options.request.cookies as any).hkvk || null;
-    }
-
     // When using server-side rendering and there was no visitor key cookie,
     // we generate a visitor key
     // When using static rendering, we never set any visitor key
-    const visitorKey = visitorKeyFromCookie ? visitorKeyFromCookie : nanoid();
+    const visitorKey = options.request.cookies.get("hkvk")?.value ?? nanoid();
 
     const input: Input = {
       endpoint: config.endpoint,
@@ -101,7 +88,6 @@ export function createGetEdgeFlags<F extends Flags>(
 
     // new logic
     if (currentGetDefinitions) {
-      const definitionsLatencyStart = Date.now();
       let definitions: Definitions | null;
       try {
         definitions = await currentGetDefinitions(
@@ -117,7 +103,6 @@ export function createGetEdgeFlags<F extends Flags>(
           cookie: null,
         });
       }
-      const definitionsLatencyStop = Date.now();
 
       // if definitions don't contain what we expect them to
       if (
