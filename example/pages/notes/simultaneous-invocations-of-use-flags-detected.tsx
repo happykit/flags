@@ -47,11 +47,9 @@ export default function Page() {
         </p>
         <p>
           You can alternatively pass the return value via{" "}
-          <Link href="/demo/context">
-            <a>Context</a>
-          </Link>{" "}
-          if you dislike passing props. I would personally recommend passing it
-          via props instead though.
+          <Link href="/demo/context">Context</Link> if you dislike passing
+          props. I would personally recommend passing it via props instead
+          though.
         </p>
       </article>
     </Layout>
