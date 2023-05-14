@@ -15,14 +15,14 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v3
 
-      - uses: pnpm/action-setup@v2.2.2
+      - uses: pnpm/action-setup@v2
         with:
           version: 7
 
       - name: Use Node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
-          node-version: 16.x
+          node-version: "16"
           cache: "pnpm"
 
       - name: Use cached node_modules
@@ -37,6 +37,7 @@ jobs:
         run: pnpm install --frozen-lockfile
         env:
           CI: true
+
       - name: Create Release Pull Request or Publish to npm
         id: changesets
         uses: changesets/action@v1
