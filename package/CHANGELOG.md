@@ -1,5 +1,11 @@
 # @happykit/flags
 
+## 3.1.2
+
+### Patch Changes
+
+- c53e69a: ensure getEdgeFlags is compatible with Next.js 13.4
+
 ## 3.1.1
 
 ### Patch Changes
