@@ -7,6 +7,7 @@ import "@testing-library/jest-dom/extend-expect";
 import * as fetchMock from "fetch-mock-jest";
 import { createGetEdgeFlags } from "./edge";
 import { nanoid } from "nanoid";
+import { RequestCookies } from "next/dist/compiled/@edge-runtime/cookies";
 
 jest.mock("nanoid", () => {
   return { nanoid: jest.fn() };
@@ -22,18 +23,12 @@ beforeEach(() => {
 // const { NextRequest } = await import(
 //   "next/dist/server/web/spec-extension/request"
 // );
-function createNextRequest(
-  options: {
-    headers?: HeadersInit;
-    cookies?: any;
-  } = {}
-) {
+function createNextRequest(options: { headers?: HeadersInit }) {
+  const headers = new Headers(options.headers || []);
+
   return {
-    headers: new Headers(options.headers || []),
-    cookies: {
-      get: (key: string) =>
-        options.cookies ? options.cookies[key] || undefined : undefined,
-    } as any,
+    headers,
+    cookies: new RequestCookies(headers),
   };
 }
 
@@ -75,7 +70,7 @@ describe("middleware", () => {
       );
 
       const request = createNextRequest({
-        cookies: { hkvk: "V1StGXR8_Z5jdHi6B-myT" },
+        headers: new Headers({ Cookie: "hkvk=V1StGXR8_Z5jdHi6B-myT" }),
       });
 
       expect(
@@ -139,7 +134,7 @@ describe("middleware", () => {
       );
 
       const request = createNextRequest({
-        cookies: { hkvk: "V1StGXR8_Z5jdHi6B-myT" },
+        headers: { Cookie: "hkvk=V1StGXR8_Z5jdHi6B-myT" },
       });
 
       expect(
@@ -218,9 +213,7 @@ describe("middleware", () => {
         }
       );
 
-      const request = createNextRequest({
-        cookies: { foo: "bar" },
-      });
+      const request = createNextRequest({ headers: { Cookie: "foo=bar" } });
 
       expect(await getEdgeFlags({ request })).toEqual({
         flags: { meal: "large" },
@@ -281,12 +274,10 @@ describe("middleware", () => {
       );
 
       const request = createNextRequest({
-        cookies: { hkvk: { name: "hkvk", value: "V1StGXR8_Z5jdHi6B-myT" } },
+        headers: { Cookie: "hkvk=V1StGXR8_Z5jdHi6B-myT" },
       });
 
-      expect(
-        await getEdgeFlags({ request })
-      ).toEqual({
+      expect(await getEdgeFlags({ request })).toEqual({
         flags: { meal: "large" },
         data: {
           flags: { meal: "large" },

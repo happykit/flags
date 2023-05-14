@@ -1,5 +1,4 @@
 /** global: fetch */
-import type { NextRequest } from "next/server";
 import type { Configuration } from "./config";
 import type { CookieSerializeOptions } from "cookie";
 import { nanoid } from "nanoid";
@@ -26,7 +25,7 @@ import { resolvingErrorBag } from "./internal/errors";
 
 export type { GenericEvaluationResponseBody } from "./internal/types";
 
-function getRequestingIp(req: Pick<NextRequest, "headers">): null | string {
+function getRequestingIp(req: { headers: Headers }): null | string {
   const key = "x-forwarded-for";
   const xForwardedFor = req.headers.get(key);
   if (typeof xForwardedFor === "string") return xForwardedFor;
@@ -54,7 +53,10 @@ export function createGetEdgeFlags<F extends Flags>(
   const config = applyConfigurationDefaults(configuration);
   return async function getEdgeFlags(
     options: {
-      request: Pick<NextRequest, "cookies" | "headers">;
+      request: {
+        cookies?: any; // using any to be compatible with Next.js 12 and 13
+        headers: Headers;
+      };
       user?: FlagUser;
       traits?: Traits;
     } & FactoryGetEdgeFlagsOptions
@@ -68,8 +70,11 @@ export function createGetEdgeFlags<F extends Flags>(
     if (typeof options.request.cookies.get === "function") {
       const fromCookiesGet = options.request.cookies.get("hkvk");
 
-      // @ts-expect-error -- In Next.js 13, the value returned from cookies.get() is an object with the type: { name: string, value: string }
-      visitorKeyFromCookie = typeof fromCookiesGet === 'string' ? fromCookiesGet : fromCookiesGet?.value;
+      // In Next.js 13, the value returned from cookies.get() is an object with the type: { name: string, value: string }
+      visitorKeyFromCookie =
+        typeof fromCookiesGet === "string"
+          ? fromCookiesGet
+          : fromCookiesGet?.value;
     } else {
       // backwards compatible for when cookies was { [key: string]: string; }
       // in Next.js
@@ -101,7 +106,6 @@ export function createGetEdgeFlags<F extends Flags>(
 
     // new logic
     if (currentGetDefinitions) {
-      const definitionsLatencyStart = Date.now();
       let definitions: Definitions | null;
       try {
         definitions = await currentGetDefinitions(
@@ -117,7 +121,6 @@ export function createGetEdgeFlags<F extends Flags>(
           cookie: null,
         });
       }
-      const definitionsLatencyStop = Date.now();
 
       // if definitions don't contain what we expect them to
       if (
