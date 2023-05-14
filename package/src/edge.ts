@@ -1,5 +1,4 @@
 /** global: fetch */
-import type { NextRequest } from "next/server";
 import type { Configuration } from "./config";
 import type { CookieSerializeOptions } from "cookie";
 import { nanoid } from "nanoid";
@@ -26,7 +25,7 @@ import { resolvingErrorBag } from "./internal/errors";
 
 export type { GenericEvaluationResponseBody } from "./internal/types";
 
-function getRequestingIp(req: Pick<NextRequest, "headers">): null | string {
+function getRequestingIp(req: { headers: Headers }): null | string {
   const key = "x-forwarded-for";
   const xForwardedFor = req.headers.get(key);
   if (typeof xForwardedFor === "string") return xForwardedFor;
@@ -54,7 +53,10 @@ export function createGetEdgeFlags<F extends Flags>(
   const config = applyConfigurationDefaults(configuration);
   return async function getEdgeFlags(
     options: {
-      request: Pick<NextRequest, "cookies" | "headers">;
+      request: {
+        cookies?: any; // using any to be compatible with Next.js 12 and 13
+        headers: Headers;
+      };
       user?: FlagUser;
       traits?: Traits;
     } & FactoryGetEdgeFlagsOptions
@@ -63,10 +65,26 @@ export function createGetEdgeFlags<F extends Flags>(
       ? options.getDefinitions
       : factoryGetDefinitions;
 
+    // determine visitor key
+    let visitorKeyFromCookie;
+    if (typeof options.request.cookies.get === "function") {
+      const fromCookiesGet = options.request.cookies.get("hkvk");
+
+      // In Next.js 13, the value returned from cookies.get() is an object with the type: { name: string, value: string }
+      visitorKeyFromCookie =
+        typeof fromCookiesGet === "string"
+          ? fromCookiesGet
+          : fromCookiesGet?.value;
+    } else {
+      // backwards compatible for when cookies was { [key: string]: string; }
+      // in Next.js
+      visitorKeyFromCookie = (options.request.cookies as any).hkvk || null;
+    }
+
     // When using server-side rendering and there was no visitor key cookie,
     // we generate a visitor key
     // When using static rendering, we never set any visitor key
-    const visitorKey = options.request.cookies.get("hkvk")?.value ?? nanoid();
+    const visitorKey = visitorKeyFromCookie ? visitorKeyFromCookie : nanoid();
 
     const input: Input = {
       endpoint: config.endpoint,
