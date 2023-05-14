@@ -7,6 +7,7 @@
     "dev": "pnpm turbo run dev",
     "test": "pnpm turbo run test",
     "build": "pnpm turbo run build",
+    "release": "pnpm build && changeset publish",
     "version-packages": "changeset version && pnpm i --no-frozen-lockfile && git add ."
   },
   "workspaces": [
