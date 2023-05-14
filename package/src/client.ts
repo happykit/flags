@@ -532,6 +532,7 @@ export function createUseFlags<F extends Flags>(
               headers: { "content-type": "application/json" },
               body: JSON.stringify(input.requestBody),
               signal: controller?.signal,
+              cache: "no-store",
             }).then(
               (response) => {
                 clearTimeout(timeoutId);

@@ -185,6 +185,7 @@ export function createGetEdgeFlags<F extends Flags>(
         xForwardedForHeader
       ),
       body: JSON.stringify(input.requestBody),
+      cache: "no-store",
     }).then(
       (
         workerResponse
