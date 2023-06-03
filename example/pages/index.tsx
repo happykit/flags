@@ -1,7 +1,6 @@
 import * as React from "react";
 import { Layout } from "components/Layout";
 import { Result } from "components/Result";
-import { useFlags } from "flags/client";
 
 // defined outside to guarantee a consistent ref
 const exampleFlagBag = {

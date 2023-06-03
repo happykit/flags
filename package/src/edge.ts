@@ -249,3 +249,20 @@ export function createGetEdgeFlags<F extends Flags>(
     );
   };
 }
+
+/**
+ * Sets a cookie called hkvk on the response, which contains the generated visitorKey.
+ *
+ * @returns The generated visitorKey
+ */
+export function ensureVisitorKeyCookie(response: {
+  cookies: { set: (name: string, value: string, options: any) => any };
+}) {
+  const visitorKey = nanoid();
+  response.cookies.set("hkvk", visitorKey, {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 180,
+    sameSite: "lax",
+  });
+  return visitorKey;
+}
