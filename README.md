@@ -23,13 +23,14 @@ Add Feature Flags to your Next.js application with a single React Hook. This pac
 ## Key Features
 
 - written for Next.js
-- integrate using a simple `useFlags()` hook
+- integrate using a simple `useFlags()` hook or `getFlags()` function
+- supports App Router (Server Components & Client Components)
 - only 2 kB gzipped size
 - extremely fast flag responses (~50ms)
-- supports *server-side rendering* and *static site generation*
-- supports *middleware* and *edge functions*
-- supports *user targeting*, *custom rules* and *rollouts*
-  
+- supports Server-Side Rendering and Static Site Generation
+- supports Middleware and Edge Functions
+- supports User Targeting, Custom Rules and Rollouts
+
 <br />
 
 <details>
@@ -56,15 +57,11 @@ import { useFlags } from "flags/client";
 export default function IndexPage(props) {
   const flagBag = useFlags();
 
-  return flagBag.flags.greeting === "dog"
-    ? "Who's a good boye"
-    : "Hello";
+  return flagBag.flags.greeting === "dog" ? "Who's a good boye" : "Hello";
 }
 ```
 
-
-The self documenting examples at [flags.happykit.dev](https://flags.happykit.dev/) show how to use `@happykit/flags` for client-side, static and server-side rendering. 
-
+The self documenting examples at [flags.happykit.dev](https://flags.happykit.dev/) show how to use `@happykit/flags` for client-side, static and server-side rendering.
 
 ## Full Tutorial
 
