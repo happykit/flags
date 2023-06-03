@@ -86,14 +86,24 @@ export function createGetFlags<F extends Flags>(
 ) {
   const config = applyConfigurationDefaults(configuration);
   return async function getFlags(
-    options: {
-      context:
-        | Pick<GetServerSidePropsContext, "req" | "res">
-        | GetStaticPathsContext
-        | GetStaticPropsContext;
-      user?: FlagUser;
-      traits?: Traits;
-    } & FactoryGetFlagsOptions
+    options: (
+      | {
+          context:
+            | Pick<GetServerSidePropsContext, "req" | "res">
+            | GetStaticPathsContext
+            | GetStaticPropsContext;
+          user?: FlagUser;
+          traits?: Traits;
+          visitorKey?: never;
+        }
+      | {
+          context?: never;
+          user?: FlagUser;
+          traits?: Traits;
+          visitorKey?: string;
+        }
+    ) &
+      FactoryGetFlagsOptions
   ): Promise<GetFlagsSuccessBag<F> | GetFlagsErrorBag<F>> {
     const currentStaticLoadingTimeout = has(options, "staticLoadingTimeout")
       ? options.staticLoadingTimeout
@@ -108,7 +118,9 @@ export function createGetFlags<F extends Flags>(
       : factoryGetDefinitions;
 
     // determine visitor key
-    const visitorKeyFromCookie = has(options.context, "req")
+    const visitorKeyFromCookie = options.visitorKey
+      ? null // ignore cookie if provided directly
+      : options.context && has(options.context, "req")
       ? getCookie(
           (
             options.context as {
@@ -123,7 +135,9 @@ export function createGetFlags<F extends Flags>(
     // When using server-side rendering and there was no visitor key cookie,
     // we generate a visitor key
     // When using static rendering, we never set any visitor key
-    const visitorKey = has(options.context, "req")
+    const visitorKey = options.visitorKey
+      ? options.visitorKey // if provided directly, ignore context
+      : options.context && has(options.context, "req")
       ? visitorKeyFromCookie
         ? visitorKeyFromCookie
         : nanoid()
@@ -139,17 +153,18 @@ export function createGetFlags<F extends Flags>(
       },
     };
 
-    const requestingIp = has(options.context, "req")
-      ? getRequestingIp(
-          options.context as {
-            req: IncomingMessage;
-            res: ServerResponse;
-          }
-        )
-      : null;
+    const requestingIp =
+      options.context && has(options.context, "req")
+        ? getRequestingIp(
+            options.context as {
+              req: IncomingMessage;
+              res: ServerResponse;
+            }
+          )
+        : null;
 
     const xForwardedForHeader: { "x-forwarded-for": string } | {} = requestingIp
-      ? // add x-forwarded-for header so the service worker gets
+      ? // add x-forwarded-for header so the happykit api gets
         // access to the real client ip
         { "x-forwarded-for": requestingIp }
       : {};
@@ -157,9 +172,13 @@ export function createGetFlags<F extends Flags>(
     // prepare fetch request timeout controller
     const controller =
       typeof AbortController === "function" ? new AbortController() : null;
-    const timeoutDuration = has(options.context, "req")
-      ? currentServerLoadingTimeout
-      : currentStaticLoadingTimeout;
+    const timeoutDuration =
+      !options.context || has(options.context, "req")
+        ? // use server loading timeout in next.js 13, where we can't depend on
+          // context.req to determine whether we're building statically or not
+          currentServerLoadingTimeout
+        : currentStaticLoadingTimeout;
+
     const timeoutId =
       // validate config
       !controller ||
@@ -227,7 +246,7 @@ export function createGetFlags<F extends Flags>(
         });
       }
 
-      if (has(options.context, "req") && visitorKey) {
+      if (options.context && has(options.context, "req") && visitorKey) {
         // always set the cookie so its max age refreshes
         (
           options.context as {
@@ -297,7 +316,11 @@ export function createGetFlags<F extends Flags>(
 
         return workerResponse.json().then(
           (outcomeData: GenericEvaluationResponseBody<F>) => {
-            if (has(options.context, "req") && outcomeData.visitor?.key) {
+            if (
+              options.context &&
+              has(options.context, "req") &&
+              outcomeData.visitor?.key
+            ) {
               // always set the cookie so its max age refreshes
               (
                 options.context as {

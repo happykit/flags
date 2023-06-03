@@ -1,34 +1,14 @@
 import * as React from "react";
-import Link from "next/link";
-import { useRouter } from "next/dist/client/router";
 
-function NavLink(props: {
-  href: string;
-  children: React.ReactNode;
-  indent?: boolean;
+export function Nav({
+  NavLink,
+}: {
+  NavLink: (props: {
+    href: string;
+    children: React.ReactNode;
+    indent?: boolean | undefined;
+  }) => JSX.Element;
 }) {
-  const router = useRouter();
-  const active =
-    router.asPath === props.href ||
-    // TODO this is a workaround since the _middeware's rewrite messes with asPath
-    (props.href === "/demo/middleware" && router.asPath.startsWith(props.href));
-  return (
-    <Link
-      href={props.href}
-      className={[
-        "group w-full flex items-center pr-2 py-2 text-sm font-medium text-gray-600 rounded-md hover:text-gray-900 hover:bg-gray-50",
-        props.indent ? "pl-10" : "pl-7",
-        active
-          ? "bg-gray-100 text-gray-900"
-          : "bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-      ].join(" ")}
-    >
-      {props.children}
-    </Link>
-  );
-}
-
-export function Nav() {
   return (
     <React.Fragment>
       <div>
@@ -38,7 +18,18 @@ export function Nav() {
         <NavLink href="/demo/basic-usage">Basic Usage</NavLink>
       </div>
       <div className="bg-white text-gray-600 group w-full flex items-center pl-7 pr-2 py-2 text-sm font-medium rounded-md">
-        Rendering Strategies
+        App Router
+      </div>
+      <div className="space-y-1 list-disc">
+        <NavLink indent href="/demo/client-components">
+          Client Components
+        </NavLink>
+        <NavLink indent href="/demo/server-components">
+          Server Components
+        </NavLink>
+      </div>
+      <div className="bg-white text-gray-600 group w-full flex items-center pl-7 pr-2 py-2 text-sm font-medium rounded-md">
+        Pages Router
       </div>
       <div className="space-y-1 list-disc">
         <NavLink indent href="/demo/client-side-rendering">
