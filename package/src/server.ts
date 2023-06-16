@@ -18,7 +18,6 @@ import type {
 } from "./internal/types";
 import {
   has,
-  serializeVisitorKeyCookie,
   combineRawFlagsWithDefaultFlags,
   getCookie,
 } from "./internal/utils";
@@ -247,13 +246,16 @@ export function createGetFlags<F extends Flags>(
       }
 
       if (options.context && has(options.context, "req") && visitorKey) {
-        // always set the cookie so its max age refreshes
-        (
-          options.context as {
+        const visitorKeyCookie = config.serializeVisitorKeyCookie(visitorKey);
+
+        if (visitorKeyCookie) {
+          // always set the cookie so its max age refreshes
+          const context = options.context as {
             req: IncomingMessage;
             res: ServerResponse;
-          }
-        ).res.setHeader("Set-Cookie", serializeVisitorKeyCookie(visitorKey));
+          };
+          context.res.setHeader("Set-Cookie", visitorKeyCookie);
+        }
       }
 
       const evaluated = evaluate({
@@ -321,16 +323,17 @@ export function createGetFlags<F extends Flags>(
               has(options.context, "req") &&
               outcomeData.visitor?.key
             ) {
-              // always set the cookie so its max age refreshes
-              (
-                options.context as {
-                  req: IncomingMessage;
-                  res: ServerResponse;
-                }
-              ).res.setHeader(
-                "Set-Cookie",
-                serializeVisitorKeyCookie(outcomeData.visitor.key)
+              const visitorKeyCookie = config.serializeVisitorKeyCookie(
+                outcomeData.visitor.key
               );
+              // always set the cookie so its max age refreshes
+              const context = options.context as {
+                req: IncomingMessage;
+                res: ServerResponse;
+              };
+              if (visitorKeyCookie) {
+                context.res.setHeader("Set-Cookie", visitorKeyCookie);
+              }
             }
 
             // add defaults to flags here, but not in initialFlagState

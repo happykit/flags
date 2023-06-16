@@ -13,4 +13,8 @@ export const config: Configuration<AppFlags> = {
   // You can just delete this line in your own application.
   // It's only here because we use it while working on @happykit/flags itself.
   endpoint: process.env.NEXT_PUBLIC_FLAGS_ENDPOINT,
+  serializeVisitorKeyCookie: (visitorKey) => {
+    console.log("serializedVisitorKeyCookie called", visitorKey);
+    return null;
+  },
 };
