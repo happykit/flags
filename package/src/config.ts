@@ -49,4 +49,17 @@ export type Configuration<F extends Flags> = {
    * @default "https://happykit.dev/api/flags"
    */
   endpoint?: string;
+
+  /**
+   * Gets called with a visitorKey and must return a string which can be assigned to `document.cookie` or null.
+   *
+   * The name of the cookie you set within that string must be `hkvk` (short for "happykit visitor key").
+   *
+   * If the option is undefined, it will use the default implementation which sets the cookie for 180 days.
+   * You can override this with your own behavior or write a function which returns null to set no cookie at all.
+   *
+   * @param visitorKey the randomly assigned key of the visitor
+   * @returns null or cookie to set, for example `hkvk=${encodeURIComponent(visitorKey)}; Path=/; Max-Age=15552000; SameSite=Lax`
+   */
+  serializeVisitorKeyCookie?: (visitorKey: string) => string | null;
 };

@@ -68,13 +68,6 @@ export function getCookie(
   return null;
 }
 
-export function serializeVisitorKeyCookie(visitorKey: string) {
-  // Max-Age 15552000 seconds equals 180 days
-  return `hkvk=${encodeURIComponent(
-    visitorKey
-  )}; Path=/; Max-Age=15552000; SameSite=Lax`;
-}
-
 // source: https://github.com/lukeed/dequal/blob/master/src/lite.js
 export function deepEqual(objA: any, objB: any) {
   var ctor, len;

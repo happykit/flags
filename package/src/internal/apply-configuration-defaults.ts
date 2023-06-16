@@ -2,6 +2,13 @@ import type { Flags, FullConfiguration } from "./types";
 import type { Configuration } from "../config";
 import type { Environment } from "../evaluation-types";
 
+function serializeVisitorKeyCookie(visitorKey: string) {
+  // Max-Age 15552000 seconds equals 180 days
+  return `hkvk=${encodeURIComponent(
+    visitorKey
+  )}; Path=/; Max-Age=15552000; SameSite=Lax`;
+}
+
 export function applyConfigurationDefaults<F extends Flags>(
   incomingConfig: Configuration<F>
 ) {
@@ -9,9 +16,10 @@ export function applyConfigurationDefaults<F extends Flags>(
   if (!incomingConfig.envKey || incomingConfig.envKey.length === 0)
     throw new Error("@happykit/flags: envKey missing");
 
-  const defaults = {
+  const defaults: Partial<Configuration<F>> = {
     endpoint: "https://happykit.dev/api/flags",
     defaultFlags: {} as F,
+    serializeVisitorKeyCookie,
   };
 
   const match = incomingConfig.envKey.match(

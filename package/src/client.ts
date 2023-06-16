@@ -23,7 +23,6 @@ import {
 import {
   deepEqual,
   getCookie,
-  serializeVisitorKeyCookie,
   combineRawFlagsWithDefaultFlags,
   ObjectMap,
   has,
@@ -165,134 +164,139 @@ function canSettle<F extends Flags>(state: State<F>) {
   );
 }
 
-/**
- * The reducer returns a tuple of [state, effects].
- *
- * effects is an array of effects to execute. The emitted effects are then later
- * executed in another hook.
- *
- * This pattern is basically a hand-rolled version of
- * https://github.com/davidkpiano/useEffectReducer
- *
- * We use a hand-rolled version to keep the size of this package minimal.
- */
-function reducer<F extends Flags>(
-  tuple: readonly [State<F>, Effect[]],
-  action: Action<F>
-): readonly [State<F>, Effect[]] {
-  const [state /* and effects */] = tuple;
+function createReducer<F extends Flags>(config: FullConfiguration<F>) {
+  /**
+   * The reducer returns a tuple of [state, effects].
+   *
+   * effects is an array of effects to execute. The emitted effects are then later
+   * executed in another hook.
+   *
+   * This pattern is basically a hand-rolled version of
+   * https://github.com/davidkpiano/useEffectReducer
+   *
+   * We use a hand-rolled version to keep the size of this package minimal.
+   */
+  return function reducer<F extends Flags>(
+    tuple: readonly [State<F>, Effect[]],
+    action: Action<F>
+  ): readonly [State<F>, Effect[]] {
+    const [state /* and effects */] = tuple;
 
-  switch (action.type) {
-    case "evaluate": {
-      const cachedOutcome = cache.get<SuccessOutcome<F>>(action.input);
+    switch (action.type) {
+      case "evaluate": {
+        const cachedOutcome = cache.get<SuccessOutcome<F>>(action.input);
 
-      const [effects, pending] = createFetchEffects<F>(
-        action.input,
-        state.pending
-      );
+        const [effects, pending] = createFetchEffects<F>(
+          action.input,
+          state.pending
+        );
 
-      // action.input will always differ from state.input, because we do not
-      // dispatch "evaluate" otherwise
-      return [
-        {
-          name: "evaluating",
-          input: action.input,
-          cachedOutcome,
-          pending,
-        },
-        effects,
-      ];
-    }
-    case "revalidate": {
-      if (state.name === "empty") return tuple;
-
-      const input = action.input || state.input;
-      const [effects, pending] = createFetchEffects<F>(input, state.pending);
-
-      if (state.name === "succeeded")
-        return [
-          {
-            name: "revalidating-after-success",
-            input: state.input,
-            outcome: state.outcome,
-            cachedOutcome: state.cachedOutcome,
-            pending,
-          },
-          effects,
-        ];
-
-      if (state.name === "failed")
-        return [
-          {
-            name: "revalidating-after-failure",
-            input: state.input,
-            outcome: state.outcome,
-            cachedOutcome: state.cachedOutcome,
-            pending,
-          },
-          effects,
-        ];
-
-      if (state.name === "evaluating")
+        // action.input will always differ from state.input, because we do not
+        // dispatch "evaluate" otherwise
         return [
           {
             name: "evaluating",
-            input: state.input,
-            outcome: state.outcome,
-            cachedOutcome: state.cachedOutcome,
+            input: action.input,
+            cachedOutcome,
             pending,
           },
           effects,
         ];
+      }
+      case "revalidate": {
+        if (state.name === "empty") return tuple;
 
-      return tuple;
-    }
-    case "settle/failure": {
-      if (!canSettle(state)) return tuple;
+        const input = action.input || state.input;
+        const [effects, pending] = createFetchEffects<F>(input, state.pending);
 
-      // ignore outdated responses
-      if (state.pending?.id !== action.id) return tuple;
+        if (state.name === "succeeded")
+          return [
+            {
+              name: "revalidating-after-success",
+              input: state.input,
+              outcome: state.outcome,
+              cachedOutcome: state.cachedOutcome,
+              pending,
+            },
+            effects,
+          ];
 
-      if (action.thrownError) {
-        console.error("@happykit/flags: Failed to load flags");
-        console.error(action.thrownError);
+        if (state.name === "failed")
+          return [
+            {
+              name: "revalidating-after-failure",
+              input: state.input,
+              outcome: state.outcome,
+              cachedOutcome: state.cachedOutcome,
+              pending,
+            },
+            effects,
+          ];
+
+        if (state.name === "evaluating")
+          return [
+            {
+              name: "evaluating",
+              input: state.input,
+              outcome: state.outcome,
+              cachedOutcome: state.cachedOutcome,
+              pending,
+            },
+            effects,
+          ];
+
+        return tuple;
+      }
+      case "settle/failure": {
+        if (!canSettle(state)) return tuple;
+
+        // ignore outdated responses
+        if (state.pending?.id !== action.id) return tuple;
+
+        if (action.thrownError) {
+          console.error("@happykit/flags: Failed to load flags");
+          console.error(action.thrownError);
+        }
+
+        const cachedOutcome = cache.get<SuccessOutcome<F>>(action.input);
+        return [
+          {
+            name: "failed",
+            input: action.input,
+            outcome: action.outcome,
+            cachedOutcome,
+          },
+          [],
+        ];
+      }
+      case "settle/success": {
+        if (!canSettle(state)) return tuple;
+
+        // ignore outdated responses
+        if (state.pending?.id !== action.id) return tuple;
+
+        const visitorKey = action.outcome.data.visitor?.key;
+        if (visitorKey) {
+          const visitorKeyCookie = config.serializeVisitorKeyCookie(visitorKey);
+          if (visitorKeyCookie) document.cookie = visitorKeyCookie;
+        }
+
+        cache.set(action.input, action.outcome);
+
+        return [
+          {
+            name: "succeeded",
+            input: action.input,
+            outcome: action.outcome,
+          },
+          [],
+        ];
       }
 
-      const cachedOutcome = cache.get<SuccessOutcome<F>>(action.input);
-      return [
-        {
-          name: "failed",
-          input: action.input,
-          outcome: action.outcome,
-          cachedOutcome,
-        },
-        [],
-      ];
+      default:
+        return tuple;
     }
-    case "settle/success": {
-      if (!canSettle(state)) return tuple;
-
-      // ignore outdated responses
-      if (state.pending?.id !== action.id) return tuple;
-
-      const visitorKey = action.outcome.data.visitor?.key;
-      if (visitorKey) document.cookie = serializeVisitorKeyCookie(visitorKey);
-
-      cache.set(action.input, action.outcome);
-
-      return [
-        {
-          name: "succeeded",
-          input: action.input,
-          outcome: action.outcome,
-        },
-        [],
-      ];
-    }
-
-    default:
-      return tuple;
-  }
+  };
 }
 
 function getInput<F extends Flags>({
@@ -409,6 +413,7 @@ export function createUseFlags<F extends Flags>(
   }: FactoryUseFlagOptions = {}
 ) {
   const config = applyConfigurationDefaults(configuration);
+  const reducer = createReducer(config);
 
   return function useFlags(options: UseFlagsOptions<F> = {}): FlagBag<F> {
     useOnce();
