@@ -1,5 +1,12 @@
 # example
 
+## 0.1.7
+
+### Patch Changes
+
+- Updated dependencies [79d13e9]
+  - @happykit/flags@3.3.0
+
 ## 0.1.6
 
 ### Patch Changes
