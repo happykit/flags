@@ -156,13 +156,13 @@ It's recommended to enable [Absolute Imports](https://nextjs.org/docs/advanced-f
 This will allow you to later import your flags like
 
 ```ts
-import { useFlag } from "flags/client";
+import { useFlags } from "flags/client";
 ```
 
 instead of having to use relative imports like
 
 ```ts
-import { useFlag } from "../../../flags/client";
+import { useFlags } from "../../../flags/client";
 ```
 
 ### Setting up the Environment Variable
