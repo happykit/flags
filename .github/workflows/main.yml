@@ -26,6 +26,9 @@ jobs:
           restore-keys: |
             nodeModules-
 
+      - name: Print pnpm version
+        run: pnpm --version
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         env:
