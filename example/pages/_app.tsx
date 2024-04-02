@@ -3,6 +3,7 @@ import Head from "next/head";
 import type { AppProps } from "next/app";
 import "tailwindcss/tailwind.css";
 import Script from "next/script";
+import { VercelToolbar } from "@vercel/toolbar/next";
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
@@ -17,6 +18,15 @@ function MyApp({ Component, pageProps }: AppProps) {
         />
       )}
       <Component {...pageProps} />
+      {
+        // shows the toolbar when developing locally or in preview, but not in production
+        process.env.NEXT_PUBLIC_FLAGS_ENV_KEY &&
+        /^flags_pub_(development|preview)_/.test(
+          process.env.NEXT_PUBLIC_FLAGS_ENV_KEY
+        ) ? (
+          <VercelToolbar />
+        ) : null
+      }
     </React.Fragment>
   );
 }
