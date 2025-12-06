@@ -1,26 +1,24 @@
 {
-  "name": "happykit",
-  "private": true,
-  "license": "MIT",
-  "author": "Dominik Ferber",
-  "scripts": {
-    "dev": "pnpm turbo run dev",
-    "test": "pnpm turbo run test",
-    "build": "pnpm turbo run build",
-    "release": "pnpm build && changeset publish",
-    "version-packages": "changeset version && pnpm i --no-frozen-lockfile && git add ."
-  },
-  "workspaces": [
-    "package",
-    "example"
-  ],
-  "dependencies": {
-    "next": "14.1.4",
-    "react": "18.2.0",
-    "react-dom": "18.2.0"
-  },
-  "devDependencies": {
-    "@changesets/cli": "^2.27.1",
-    "turbo": "1.9.4"
-  }
+	"name": "happykit",
+	"private": true,
+	"license": "MIT",
+	"author": "Dominik Ferber",
+	"scripts": {
+		"dev": "pnpm turbo run dev",
+		"test": "pnpm turbo run test",
+		"build": "pnpm turbo run build",
+		"release": "pnpm build && changeset publish",
+		"version-packages": "changeset version && pnpm i --no-frozen-lockfile && git add ."
+	},
+	"workspaces": ["package", "example"],
+	"dependencies": {
+		"next": "16.0.7",
+		"react": "19.2.1",
+		"react-dom": "19.2.1"
+	},
+	"devDependencies": {
+		"@changesets/cli": "^2.27.1",
+		"turbo": "1.9.4"
+	},
+	"packageManager": "pnpm@10.24.0+sha512.01ff8ae71b4419903b65c60fb2dc9d34cf8bb6e06d03bde112ef38f7a34d6904c424ba66bea5cdcf12890230bf39f9580473140ed9c946fef328b6e5238a345a"
 }

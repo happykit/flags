@@ -1,31 +1,31 @@
 {
-  "name": "example",
-  "version": "0.1.7",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
-  },
-  "dependencies": {
-    "@happykit/flags": "workspace:*",
-    "@headlessui/react": "1.4.3",
-    "@tailwindcss/typography": "0.5.1",
-    "@tailwindui/react": "0.1.1",
-    "@types/dedent": "0.7.0",
-    "@types/node": "17.0.15",
-    "@types/react": "18.0.18",
-    "@vercel/edge-config": "0.1.0-canary.14",
-    "@vercel/flags": "2.4.0-bde40fe0-20240402110149",
-    "@vercel/toolbar": "^0.1.13",
-    "autoprefixer": "10.4.2",
-    "clsx": "1.1.1",
-    "dedent": "0.7.0",
-    "next": "14.1.4",
-    "postcss": "8.4.6",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "tailwindcss": "3.0.18",
-    "typescript": "4.5.5"
-  }
+	"name": "example",
+	"version": "0.1.7",
+	"private": true,
+	"scripts": {
+		"dev": "next dev",
+		"build": "next build",
+		"start": "next start"
+	},
+	"dependencies": {
+		"@happykit/flags": "workspace:*",
+		"@headlessui/react": "1.4.3",
+		"@tailwindcss/typography": "0.5.1",
+		"@tailwindui/react": "0.1.1",
+		"@types/dedent": "0.7.0",
+		"@types/node": "24.10.1",
+		"@types/react": "19.2.1",
+		"@vercel/edge-config": "0.1.0-canary.14",
+		"@vercel/flags": "2.4.0-bde40fe0-20240402110149",
+		"@vercel/toolbar": "^0.1.13",
+		"autoprefixer": "10.4.2",
+		"clsx": "1.1.1",
+		"dedent": "0.7.0",
+		"next": "16.0.7",
+		"postcss": "8.4.6",
+		"react": "19.2.1",
+		"react-dom": "19.2.1",
+		"tailwindcss": "3.0.18",
+		"typescript": "4.5.5"
+	}
 }
